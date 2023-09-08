@@ -7,6 +7,11 @@ QMzyme
 
 QM-based enzyme model generation and validation.
 
+To install local developer version:
+git clone https://github.com/hklem/QMzyme
+cd QMzyme
+pip install -e 
+
 ### Copyright
 
 Copyright (c) 2023, Heidi Klem
