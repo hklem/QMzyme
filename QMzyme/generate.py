@@ -458,7 +458,8 @@ def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 					continue
 				if atom_name == ' H  ':
 					continue
-				if ' CA ' not in [res_info(x,'atom_name') for x in atom.GetNeighbors()]:
+				if ' CA ' not in [res_info(x,'atom_name') for x in \
+				   atom.GetNeighbors()]:
 					remove_ids.append(atom.GetIdx())
 			else:
 				continue
