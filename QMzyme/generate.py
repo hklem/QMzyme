@@ -347,7 +347,7 @@ def add_H(pdb_file=None, output_file=None, remove_files=False):
 	'''
 	if output_file is None:
 		output_file=pdb_file.split('.pdb')[0]+'_reduced.pdb'
-	cmd = "reduce -NOFLIP {} > {}".format(pdb_file,output_file)
+	cmd = "reduce -NOFLIP -Quiet {} > {}".format(pdb_file,output_file)
 	os.system(cmd)
 	new_mol = Chem.MolFromPDBFile(output_file,removeHs=False,sanitize=False)
 	if remove_files is True:
