@@ -20,31 +20,49 @@ protein_residues =	["ALA", "ARG", "ASH", "ASN", "ASP", "CYM",
 	"CYS", "CYX", "GLH", "GLN", "GLU", "GLY", "HIS", "HID", "HIE",
 	"HIP", "HYP", "ILE", "LEU", "LYN", "LYS", "MET", "PHE", "PRO",
 	"SER", "THR", "TRP", "TYR", "VAL"]
-
-def res_info(atom,info):
-	''' Options for info are 'chain', 'res_name', 'res_number', 'atom_name'.
+###############################################################################
+def res_info(atom,info='atom_name'):
+	''' 
+	Options for info are 'chain', 'res_name', 'res_number', 'atom_name'.
 	'''
 	if info == 'res_name':
+		#######################################################################
 		return atom.GetPDBResidueInfo().GetResidueName()
+		#######################################################################
 	if info == 'atom_name':
+		#######################################################################
 		return atom.GetPDBResidueInfo().GetName()
+		#######################################################################
 	if info == 'res_number':
+		#######################################################################
 		return atom.GetPDBResidueInfo().GetResidueNumber()
+		#######################################################################
 	if info == 'chain':
+		#######################################################################
 		return atom.GetPDBResidueInfo().GetChainId()
+		#######################################################################
+	else:
+		print("ERROR: Improper residue info selection. Options are 'chain',"
+			  " 'res_name', 'res_number' and 'atom_name'.")
 
+###############################################################################
 def define_residue(atom):
 	''' 
-	Returns a tuple that completely defines the residue that atom belongs to: 
-	('chain','residue name', 'residue number')
+	Returns a tuple that completely defines the residue that 
+	atom belongs to: ('chain','residue name', 'residue number')
 	'''
+	##########################################################################
 	return (res_info(atom,'chain'),res_info(atom,'res_name'),
 			res_info(atom,'res_number'))
+	##########################################################################
 
-
+###############################################################################
 def atom_coords(mol,atom):
+	##########################################################################
 	return np.asarray(mol.GetConformer().GetAtomPosition(atom.GetIdx()))
+	##########################################################################
 
+###############################################################################
 def download(pdb_list):
 	baseUrl = 'http://www.pdb.org/pdb/download/downloadFile.do?fileFormat'+\
 	 '=pdb&compression=NO&structureId='
@@ -54,13 +72,14 @@ def download(pdb_list):
 		print(pdbUrl)
 
 		with urlopen(pdbUrl) as response, open(outFileName, 'wb') as outFile:
-
 			data = response.read()
 			outFile.write(data)
 			print('Downloading {} as {}.'.format(structure[:4], outFileName))
-
+	##########################################################################
 	return(data)
+	##########################################################################
 
+###############################################################################
 def PDB_file_info(pdb_file):
 	'''
 	Input: PDB file name. Prints helpful information about what is present in 
@@ -110,8 +129,7 @@ def PDB_file_info(pdb_file):
 	if h_present == True:
 		print("Hydrogens are present")
 	else:
-		print("Hydrogens are not present. Structure will be automatically"+ 
-			  "protonated during truncation step.")
+		print("Hydrogens are not present.")
 	if no_chain_info == True:
 		print("Chain IDs not defined were set to 'X'.")
 	print("----------------------------------------------")
@@ -137,70 +155,7 @@ def PDB_file_info(pdb_file):
 			print(".........")
 	print("----------------------------------------------")
 
-def separate_protein(pdb_file,add_protein_residue=[]):
-	"""
-	Useful to identify non-amino acid molecules in the pdb file. 
-	This can be used to identify bound ligands, substrates, 
-	cofactors, etc. The code automatically removes water molecules 
-	for simplicity. You can add any three letter residue name to 
-	be considered as protein. For example, you might want to 
-	include water molecules in the protein mol object, so you 
-	would include the argument add_protein_residue=['WAT'] or 
-	add_protein_residue=['HOH'] depending on how it is defined in 
-	the PDB. This function automatically generates structure files 
-	in pdb format of the separated protein and non_protein residues.
-	"""
-
-	if len(add_protein_residue)>0:
-		for i in range(len(add_protein_residue)):
-			protein_residues.append(add_protein_residue[i])
-
-	base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
-	protein_mol = Chem.RWMol(base_mol)
-	non_protein_mol = Chem.RWMol(base_mol)
-	non_protein_id = []
-	protein_id = []
-	non_protein_residues = []
-
-	for atom in base_mol.GetAtoms():
-		if res_info(atom,'res_name') in protein_residues:
-			protein_id.append(atom.GetIdx())
-			continue
-		elif res_info(atom,'res_name') == "WAT":
-			protein_id.append(atom.GetIdx())
-			non_protein_id.append(atom.GetIdx())
-		elif res_info(atom,'res_name') == "HOH":
-			protein_id.append(atom.GetIdx())
-			non_protein_id.append(atom.GetIdx())
-		else:
-			x = '{}{}'.format(res_info(atom,'res_name'),
-				res_info(atom,'res_number'))
-			non_protein_residues.append(x)
-			non_protein_id.append(atom.GetIdx())
-
-	non_protein_residues = list(set(non_protein_residues))
-	protein_id.sort(reverse=True)
-	non_protein_id.sort(reverse=True)
-
-	for atom in protein_id:
-		non_protein_mol.RemoveAtom(atom)
-	for atom in non_protein_id:
-		protein_mol.RemoveAtom(atom)
-
-	if len(non_protein_residues) == 0:
-		print('No non protein residues found in PDB.')
-
-	if len(non_protein_residues) > 0:
-		Chem.MolToPDBFile(non_protein_mol,pdb_file.split('.')[0]
-						  +'_non_protein_residues'+'.pdb')
-		print('Non protein residue(s) found in PDB:')
-		for res in non_protein_residues:
-			print(res)
-
-	Chem.MolToPDBFile(protein_mol,pdb_file.split('.')[0]
-					  +'_protein_residues'+'.pdb')
-	return protein_mol, non_protein_mol
-
+###############################################################################
 def catalytic_center(pdb_file, catalytic_center=[],
 					 definition=['res_number','res_name','chain']):
 	if len(catalytic_center) != len(definition):
@@ -232,8 +187,11 @@ def catalytic_center(pdb_file, catalytic_center=[],
 				  .format(catalytic_center_mol.GetNumAtoms()))
 			print("Structure saved as catalytic_center.pdb")
 			Chem.MolToPDBFile(catalytic_center_mol,'catalytic_center.pdb')
+			###################################################################
 			return catalytic_center_mol, protein_mol
+			###################################################################
 
+###############################################################################
 def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 				  centroid=False,include_residues=[]):
 	'''
@@ -354,6 +312,7 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	return new_mol, res_dict
 	###########################################################################
 
+###############################################################################
 def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
 				 skip_resnumbers=[], remove_resnumbers=[], 
 				 remove_atom_ids=[], remove_sidechains=[], 
@@ -507,6 +466,7 @@ def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 	return new_mol, constrain_list
 	###########################################################################
 
+###############################################################################
 def obabel_protonate(active_site_pdb_file):
 
 	ob_conv = ob.OBConversion()
@@ -536,6 +496,7 @@ def obabel_protonate(active_site_pdb_file):
 	print("Protonated structure saved as "+ str(file_name_base)+\
 		  "_protonated"+".pdb")
 
+###############################################################################
 def show_mol(base_mol):
 	mol = Chem.RWMol(base_mol)
 	from rdkit.Chem import Draw
@@ -556,7 +517,9 @@ def show_mol(base_mol):
 	drawer.drawOptions().addStereoAnnotation = False
 	drawer.DrawMolecule(mol)
 	drawer.FinishDrawing()
+	###########################################################################
 	return SVG(drawer.GetDrawingText())
+	###########################################################################
 
 if __name__ == "__main__":
 	# Do something if this file is invoked on its own
