@@ -15,6 +15,7 @@ from rdkit.Chem import AllChem
 #from openbabel import openbabel as ob
 from urllib.request import urlopen
 from rdkit.Chem import rdMolTransforms
+import os
 
 protein_residues =	["ALA", "ARG", "ASH", "ASN", "ASP", "CYM",
 	"CYS", "CYX", "GLH", "GLN", "GLU", "GLY", "HIS", "HID", "HIE",
@@ -340,10 +341,27 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	return new_mol, res_dict
 
 ###############################################################################
-def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
+def add_H(pdb_file=None, output_file=None, remove_files=False):
+	'''
+	Uses reduce function from AmberTools to add hydrogens.
+	'''
+	if output_file is None:
+		output_file=pdb_file.split('.pdb')[0]+'_reduced.pdb'
+	cmd = "reduce -NOFLIP {} > {}".format(pdb_file,output_file)
+	os.system(cmd)
+	new_mol = Chem.MolFromPDBFile(output_file,removeHs=False,sanitize=False)
+	if remove_files is True:
+		cmd = "rm {} {}".format(pdb_file, output_file)
+		os.system(cmd)	
+
+	return new_mol
+
+###############################################################################
+def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
 				 skip_resnumbers=[], remove_resnumbers=[], 
 				 remove_atom_ids=[], remove_sidechains=[], 
-				 keep_backbones=[], constrain_atoms=[' CA '], radius=None):
+				 keep_backbones=[], constrain_atoms=[' CA '], 
+				 radius=None, add_hydrogens=False):
 	
 	'''
 	This function is called to prepare truncated enzyme models. 
@@ -354,6 +372,10 @@ def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 	### Heidi's to do: add CA capping scheme, create capping summary as a 
 	# returned item, allow capping summary to be a function input so users
 	# can specify the cap they want for each residue. 
+
+	if add_hydrogens is True:
+		Chem.MolToPDBFile(base_mol,'temp.pdb')
+		base_mol = add_H('temp.pdb',remove_files=True)
 
 	new_mol = Chem.RWMol(base_mol)
 	proline_count,bb_atom_count = 0,0
