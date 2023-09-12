@@ -13,7 +13,7 @@ git clone https://github.com/hklem/QMzyme
 
 cd QMzyme
 
-pip install -e 
+pip install -e . 
 
 ### Copyright
 
