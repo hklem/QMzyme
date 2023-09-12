@@ -11,9 +11,9 @@ dependencies:
   - rdkit
 
     # Testing
-  #- pytest
-  #- pytest-cov
-  #- codecov
+  - pytest
+  - pytest-cov
+  - codecov
 
     # Pip-only installs
   #- pip:
