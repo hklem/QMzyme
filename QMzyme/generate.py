@@ -340,7 +340,7 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	return new_mol, res_dict
 
 ###############################################################################
-def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
+def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
 				 skip_resnumbers=[], remove_resnumbers=[], 
 				 remove_atom_ids=[], remove_sidechains=[], 
 				 keep_backbones=[], constrain_atoms=[' CA '], radius=None):
