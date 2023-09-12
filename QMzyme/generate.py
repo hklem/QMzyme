@@ -20,27 +20,22 @@ protein_residues =	["ALA", "ARG", "ASH", "ASN", "ASP", "CYM",
 	"CYS", "CYX", "GLH", "GLN", "GLU", "GLY", "HIS", "HID", "HIE",
 	"HIP", "HYP", "ILE", "LEU", "LYN", "LYS", "MET", "PHE", "PRO",
 	"SER", "THR", "TRP", "TYR", "VAL"]
+
+delimeter="---------------------------------------------------------"
+
 ###############################################################################
 def res_info(atom,info='atom_name'):
 	''' 
 	Options for info are 'chain', 'res_name', 'res_number', 'atom_name'.
 	'''
 	if info == 'res_name':
-		#######################################################################
 		return atom.GetPDBResidueInfo().GetResidueName()
-		#######################################################################
 	if info == 'atom_name':
-		#######################################################################
 		return atom.GetPDBResidueInfo().GetName()
-		#######################################################################
 	if info == 'res_number':
-		#######################################################################
 		return atom.GetPDBResidueInfo().GetResidueNumber()
-		#######################################################################
 	if info == 'chain':
-		#######################################################################
 		return atom.GetPDBResidueInfo().GetChainId()
-		#######################################################################
 	else:
 		print("ERROR: Improper residue info selection. Options are 'chain',"
 			  " 'res_name', 'res_number' and 'atom_name'.")
@@ -51,16 +46,12 @@ def define_residue(atom):
 	Returns a tuple that completely defines the residue that 
 	atom belongs to: ('chain','residue name', 'residue number')
 	'''
-	##########################################################################
 	return (res_info(atom,'chain'),res_info(atom,'res_name'),
 			res_info(atom,'res_number'))
-	##########################################################################
 
 ###############################################################################
 def atom_coords(mol,atom):
-	##########################################################################
 	return np.asarray(mol.GetConformer().GetAtomPosition(atom.GetIdx()))
-	##########################################################################
 
 ###############################################################################
 def download(pdb_list):
@@ -75,9 +66,8 @@ def download(pdb_list):
 			data = response.read()
 			outFile.write(data)
 			print('Downloading {} as {}.'.format(structure[:4], outFileName))
-	##########################################################################
+	print(delimeter)
 	return(data)
-	##########################################################################
 
 ###############################################################################
 def PDB_file_info(pdb_file):
@@ -94,7 +84,7 @@ def PDB_file_info(pdb_file):
 	previous_res = None
 
 	for atom in base_mol.GetAtoms():
-		if 'H' in res_info(atom,'atom_name'):
+		if ' H' in res_info(atom,'atom_name'):
 			h_present = True
 		if res_info(atom,'chain') == ' ':
 			no_chain_info = True
@@ -132,7 +122,7 @@ def PDB_file_info(pdb_file):
 		print("Hydrogens are not present.")
 	if no_chain_info == True:
 		print("Chain IDs not defined were set to 'X'.")
-	print("----------------------------------------------")
+	print(delimeter)
 	print("Total number of atoms: {}".format(base_mol.GetNumAtoms()))
 	print("Water molecules: {}".format(wat_count))
 	if cation_count > 0:
@@ -143,54 +133,92 @@ def PDB_file_info(pdb_file):
 	if anion_count > 0:
 		print("{} ions: {}".format(anion,anion_count))
 	print("Standard amino acid residues: {}".format(protein_res_count))
-	print("----------------------------------------------")
+	print(delimeter)
 	print("The following {} ligands were detected:"
 		  .format(non_protein_res_count))
 	if non_protein_res_count > 0:
 		for i in range(non_protein_res_count):
 			print("{}:".format(i+1))
 			print("Chain: {}".format(non_protein_seq[i][0]),
-				  " Name: {}".format(non_protein_seq[i][1]),
-				  " ID: {}".format(non_protein_seq[i][2]))
-			print(".........")
-	print("----------------------------------------------")
+				  " Residue Name: {}".format(non_protein_seq[i][1]),
+				  " Residue Number: {}".format(non_protein_seq[i][2]))
+			print(".................................................")
+	print(delimeter)
 
 ###############################################################################
-def catalytic_center(pdb_file, catalytic_center=[],
-					 definition=['res_number','res_name','chain']):
-	if len(catalytic_center) != len(definition):
-		print("Catalytic center is defined by {} components: {} but {}"+ 
-			  " were given: {}".format(len(definition),definition,
-			  len(catalytic_center),catalytic_center))
-		print("Either change definition or change catalytic_center.")
-	else:
-		protein_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,
-										  sanitize=False)
-		catalytic_center_mol = Chem.RWMol(protein_mol)
-		count = 0
-		remove_ids = []
-		for atom in reversed(protein_mol.GetAtoms()):
-			for component in definition:
-				if res_info(atom,component) not in catalytic_center:
-					if atom.GetIdx() not in remove_ids:
-						remove_ids.append(atom.GetIdx())
-				else:
-					count +=1
-		if count == 0:
-			print("WARNING: No atoms found matching catalytic center "+
-				  "definition.")
-		else:
-			remove_ids.sort(reverse=True)
-			for atom in remove_ids:
-				catalytic_center_mol.RemoveAtom(atom)
-			print('Catalytic center contains {} atoms.'
-				  .format(catalytic_center_mol.GetNumAtoms()))
-			print("Structure saved as catalytic_center.pdb")
-			Chem.MolToPDBFile(catalytic_center_mol,'catalytic_center.pdb')
-			###################################################################
-			return catalytic_center_mol, protein_mol
-			###################################################################
+def catalytic_center(pdb_file, res_name=None, res_number=None, chain=None):
+	'''
+	Currently only supports definition of 1 residue (i.e., lengths 
+	of res_name, res_number, and chain inputs must not exceed 1. 
+	Future versions will adapt for this functionality. If you wish 
+	to use multiple residues right now you can bypass this by 
+	manipulating the PDB file: for example, change the residue 
+	names to LIG for all residues you want in the catalytic center, 
+	and set res_name='LIG'.)
+	'''
 
+	count = 0
+	definition, catalytic_center=[],[]
+	file_suffix = '_'
+	if chain is not None:
+		definition.append('chain')
+		catalytic_center.append(chain)
+		file_suffix=file_suffix+'chain{}_'.format(chain)
+	if res_name is not None:
+		definition.append('res_name')
+		catalytic_center.append(res_name)
+		file_suffix=file_suffix+'{}_'.format(res_name)
+	if res_number is not None:
+		definition.append('res_number')
+		catalytic_center.append(res_number)
+		file_suffix=file_suffix+'{}_'.format(res_number)
+	file_suffix = file_suffix+pdb_file.split('.pdb')[0]
+	output_file = 'catalytic_center{}.pdb'.format(file_suffix)
+	
+	protein_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
+	catalytic_center_mol = Chem.RWMol(protein_mol)
+
+	for atom in reversed(protein_mol.GetAtoms()):
+		current_res = []
+		for component in definition:
+			current_res.append(res_info(atom,component))
+		if current_res != catalytic_center:
+			catalytic_center_mol.RemoveAtom(atom.GetIdx())
+			#remove_ids.append(atom.GetIdx())
+		else:
+			count += 1
+			continue
+
+	if count==0:
+		print("WARNING: No atoms found matching catalytic center definition.")
+		print(delimeter)
+	if count!=0:
+		# sanity check
+		raise_issue = False
+		previous_res = None
+		catalytic_center_residues=[]
+		for atom in catalytic_center_mol.GetAtoms():
+			current_res = define_residue(atom)
+			if previous_res is None:
+				previous_res=current_res
+				catalytic_center_residues.append(current_res)
+			if current_res!=previous_res:
+				catalytic_center_residues.append(current_res)
+				previous_res=current_res
+				raise_issue = True
+		if raise_issue is True:
+			print("WARNING: Your catalytic center definition is not unique"+
+				  " and multiple residues were therefore included: {}."\
+				  .format(catalytic_center_residues)+" Please ensure this"+
+				  " is what you intended!")
+			
+		print('Catalytic center contains {} atoms.'
+			  .format(catalytic_center_mol.GetNumAtoms()))
+		print("Structure saved as {}".format(output_file))
+		Chem.MolToPDBFile(catalytic_center_mol,output_file)
+
+		print(delimeter)
+		return catalytic_center_mol, protein_mol
 ###############################################################################
 def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 				  centroid=False,include_residues=[]):
@@ -308,9 +336,8 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 		print("Structure saved as active_site_radius_{}.pdb".format(radius))
 		Chem.MolToPDBFile(new_mol,'active_site_radius_{}.pdb'.format(radius))
 	
-	###########################################################################
+	print(delimeter)
 	return new_mol, res_dict
-	###########################################################################
 
 ###############################################################################
 def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
@@ -456,15 +483,19 @@ def truncate_new(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 		  .format(new_mol.GetNumAtoms()))
 	print("Structure saved as truncated_active_site_radius_{}.pdb"
 		  .format(radius))
+	
+	#testing add Hs
+	#new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True)
 	Chem.MolToPDBFile(new_mol,'truncated_active_site_radius_{}.pdb'
 					  .format(radius))
 
 	if proline_count > 0:
 		print("WARNING: Active site model contains {}".format(proline_count) +\
 			  " proline(s). The N backbone atom was automatically kept.")
-	###########################################################################
+	
+
+	print(delimeter)
 	return new_mol, constrain_list
-	###########################################################################
 
 ###############################################################################
 def obabel_protonate(active_site_pdb_file):
@@ -495,6 +526,7 @@ def obabel_protonate(active_site_pdb_file):
 	conv.WriteFile(ob_mol, str(file_name_base)+'_protonated'+'.pdb')
 	print("Protonated structure saved as "+ str(file_name_base)+\
 		  "_protonated"+".pdb")
+	print(delimeter)
 
 ###############################################################################
 def show_mol(base_mol):
@@ -517,9 +549,8 @@ def show_mol(base_mol):
 	drawer.drawOptions().addStereoAnnotation = False
 	drawer.DrawMolecule(mol)
 	drawer.FinishDrawing()
-	###########################################################################
+
 	return SVG(drawer.GetDrawingText())
-	###########################################################################
 
 if __name__ == "__main__":
 	# Do something if this file is invoked on its own
