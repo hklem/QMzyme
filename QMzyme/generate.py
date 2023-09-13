@@ -16,10 +16,25 @@ from rdkit.Chem import AllChem
 from urllib.request import urlopen
 from rdkit.Chem import rdMolTransforms
 
-protein_residues =	["ALA", "ARG", "ASH", "ASN", "ASP", "CYM",
-	"CYS", "CYX", "GLH", "GLN", "GLU", "GLY", "HIS", "HID", "HIE",
-	"HIP", "HYP", "ILE", "LEU", "LYN", "LYS", "MET", "PHE", "PRO",
-	"SER", "THR", "TRP", "TYR", "VAL"]
+protein_residues =	["ALA", "ARG", "ASH", "ASN", "ASP", "CYM", "CYS", "CYX", 
+					 "GLH", "GLN", "GLU", "GLY", "HIS", "HID", "HIE", "HIP", 
+					 "HYP", "ILE", "LEU", "LYN", "LYS", "MET", "PHE", "PRO",
+					 "SER", "THR", "TRP", "TYR", "VAL"]
+
+elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
+           'Na','Mg','Al','Si','P','S','Cl','Ar','K', 'Ca',
+           'Sc', 'Ti', 'V','Cr', 'Mn', 'Fe', 'Co', 'Ni',
+           'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
+           'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru',
+           'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te',
+           'I', 'Xe','Cs', 'Ba','La', 'Ce', 'Pr', 'Nd', 'Pm',
+           'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm',
+           'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir',
+           'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn',
+           'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am',
+           'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr',
+           'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
+           'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
 delimeter="---------------------------------------------------------"
 
@@ -70,19 +85,56 @@ def download(pdb_list):
 	return(data)
 
 ###############################################################################
-def PDB_file_info(pdb_file):
+def check_pdb(pdb_file):
 	'''
 	Input: PDB file name. Prints helpful information about what is present in 
-	the structure.
+	the structure. Will identify if there are any atom type formatting issues,
+	that would cause the code to break in preceding steps. If issues are found
+	a new pdb file with the suffix "_cleaned.pdb" will be created.
 	'''
-	
-	base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
+
 	wat_count, protein_res_count, non_protein_res_count = 0,0,0 
 	anion_count, cation_count = 0, 0
-	protein_seq, non_protein_seq = [], []
+	data, protein_seq, non_protein_seq = [], [], []
 	h_present, no_chain_info = False, False
 	previous_res = None
+	edits_made = False
 
+	with open(pdb_file,'r') as f:
+		data=f.readlines()
+
+	for i,line in enumerate(data):
+		if line[0:4] in ['ATOM','HETA']:
+			atom_type = line[12:16]
+			if atom_type[0] == 'H':
+				if len(atom_type)==4:
+					continue
+			if atom_type[:2] in elements:
+				continue
+			if atom_type[1] in elements:
+				continue
+			else:
+				if atom_type[1:3] in elements:
+					print('ISSUE FOUND ON ATOM {}: Element names with two'
+						  ' letters must begin in the 13th columnspace.'\
+						  .format(line[6:11]))
+					atom_type = line[13:17]
+					data[i] = line[0:12]+atom_type+' '+line[17:]
+					edits_made = True
+				if atom_type[2] in elements:
+					print('ISSUE FOUND ON ATOM {}: Two unknown element letters'
+						  ' ({}) preceded expected element ID ({}). '\
+						  .format(line[6:11],atom_type[:2],atom_type[2]))
+					data[i] = line[0:12]+' '+atom_type[2:]+' '+line[16:]
+					edits_made = True
+	if edits_made is True:
+		print("New .pdb file with suffix _cleaned.pdb created to "
+			  "fix atom type issues.")
+		with open(pdb_file.split('.pdb')[0]+'_cleaned'+'.pdb','w+') as f:
+			f.writelines(data)	
+		pdb_file=pdb_file.split('.pdb')[0]+'_cleaned'+'.pdb'
+
+	base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
 	for atom in base_mol.GetAtoms():
 		if ' H' in res_info(atom,'atom_name'):
 			h_present = True
@@ -93,7 +145,7 @@ def PDB_file_info(pdb_file):
 		if previous_res == current_res:
 			continue
 		previous_res = current_res
-		if current_res[1] in ["WAT","HOH"]:
+		if current_res[1] in ["WAT","HOH","TIP"]:
 			wat_count += 1
 			continue
 		if "+" in current_res[1]:
@@ -134,7 +186,7 @@ def PDB_file_info(pdb_file):
 		print("{} ions: {}".format(anion,anion_count))
 	print("Standard amino acid residues: {}".format(protein_res_count))
 	print(delimeter)
-	print("The following {} ligands were detected:"
+	print("The following {} non-protein residues were detected:"
 		  .format(non_protein_res_count))
 	if non_protein_res_count > 0:
 		for i in range(non_protein_res_count):
