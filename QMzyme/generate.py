@@ -85,6 +85,10 @@ def download(pdb_list):
 	return(data)
 
 ###############################################################################
+def get_PDB_info(pdb_file):
+	print("The function 'get_PDB_info()' is deprecated. Please use "
+		  "'check_pdb()' instead.")
+
 def check_pdb(pdb_file):
 	'''
 	Input: PDB file name. Prints helpful information about what is present in 
@@ -392,6 +396,10 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	return new_mol, res_dict
 
 ###############################################################################
+def truncate_new():
+	print("The function 'truncate_new()' is deprecated. Please use "
+		  "'truncate()' instead")
+
 def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
 				 skip_resnumbers=[], remove_resnumbers=[], 
 				 remove_atom_ids=[], remove_sidechains=[], 
