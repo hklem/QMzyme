@@ -15,11 +15,12 @@ from rdkit.Chem import AllChem
 #from openbabel import openbabel as ob
 from urllib.request import urlopen
 from rdkit.Chem import rdMolTransforms
+import os
 
 protein_residues =	["ALA", "ARG", "ASH", "ASN", "ASP", "CYM", "CYS", "CYX", 
 					 "GLH", "GLN", "GLU", "GLY", "HIS", "HID", "HIE", "HIP", 
 					 "HYP", "ILE", "LEU", "LYN", "LYS", "MET", "PHE", "PRO",
-					 "SER", "THR", "TRP", "TYR", "VAL"]
+					 "SER", "THR", "TRP", "TYR", "VAL", "HSE", "HSD", "HSP" ]
 
 elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Na','Mg','Al','Si','P','S','Cl','Ar','K', 'Ca',
@@ -85,6 +86,41 @@ def download(pdb_list):
 	return(data)
 
 ###############################################################################
+def parse_pdb(line,data=''):
+    return_data = ''
+    if data=='record_type':
+        return_data=str(line[0:6]).split()[0]
+    if data in ['atom_num','atom_number','atom_serial_number','atom_id']:
+        return_data=str(line[6:11])
+    if data in ['atom','atom_name']:
+        return_data=str(line[12:16])
+    if data in ['altloc','alt_loc','alternate_location_indicator']:
+        return_data=str(line[16])
+    if data in ['residue_name','res','residue','res_name','resname']:
+        return_data=str(line[17:20])
+    if data in ['chain_identifier','chain_id','chain']:
+        return_data=str(line[21])
+    if data in ['resid','res_id','residue_id','res_num',
+				'residue_number','resnum','residue_sequence_number']:
+        return_data=str(line[22:26])
+    if data=='occupancy':
+        return_data=str(line[54:60])
+    if data=='temperature_factor':
+        return_data=str(line[60:66])
+    if data in ['segid','seg_id','segment_identifier']:
+        return_data=str(line[72:76])
+    if data in ['element_symbol','element','element_name']:
+        return_data=str(line[76:78])
+    if data=='charge':
+        return_data=str(line[78:80])
+    if return_data in ['','\n']:
+        raise ValueError('When parsing the pdb for {} nothing was found.'\
+						 .format(str(data)))
+        pass
+    return return_data
+
+
+###############################################################################
 def check_pdb(pdb_file):
 	'''
 	Input: PDB file name. Prints helpful information about what is present in 
@@ -99,41 +135,96 @@ def check_pdb(pdb_file):
 	h_present, no_chain_info = False, False
 	previous_res = None
 	edits_made = False
-
+	residue_count = 0
+	res_sequence = []
+	
 	with open(pdb_file,'r') as f:
-		data=f.readlines()
+		data = f.readlines()
 
+	res_num_previous = None
 	for i,line in enumerate(data):
-		if line[0:4] in ['ATOM','HETA']:
-			atom_type = line[12:16]
-			if atom_type[0] == 'H':
-				if len(atom_type)==4:
-					continue
+		if parse_pdb(line,data='record_type') in ['ATOM','HETATOM']:
+			atom_type = parse_pdb(line,data='atom_name')
+			res_num = parse_pdb(line,data='res_num')
+			res_name = parse_pdb(line,data='res_name')
+			if res_num != res_num_previous:
+				if res_name not in ['WAT','HOH','TIP']:
+					residue_count += 1
+					if int(res_num.split()[0]) != residue_count:
+						edits_made=True
+						if residue_count>999:
+							res_num = str(residue_count)
+						elif residue_count>99:
+							res_num = ' '+str(residue_count)
+						elif residue_count>9:
+							res_num = '  '+str(residue_count)
+						else:
+							res_num = '   '+str(residue_count)
+						data[i]=line[0:22]+res_num+line[26:]+'\n'
+						line=line[0:22]+res_num+line[26:]
+						if parse_pdb(data[i+1],data='res_name') == res_name:
+							residue_count -= 1
+			res_num_previous = res_num
+			try:
+				element = parse_pdb(line,data='element')
+			except ValueError:
+				element=None
+			if atom_type[0]!=' ':
+				if atom_type[0]=='H':
+					if len(atom_type)==4:
+						if element is None:
+							edits_made=True
+							data[i]=line[0:76]+' H'+line[78:]+'\n'
+						continue
 			if atom_type[:2] in elements:
-				continue
+				print('yes')
+				if element is None:
+					edits_made=True
+					data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
+				elif atom_type[:2] == element:
+					continue
 			if atom_type[1] in elements:
-				continue
+				if element is None:
+					edits_made=True
+					data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
+				elif atom_type[:2] == element:
+					continue
+				#else:
 			else:
-				if atom_type[1:3] in elements:
-					print('ISSUE FOUND ON ATOM {}: Element names with two'
-						  ' letters must begin in the 13th columnspace.'\
-						  .format(line[6:11]))
-					atom_type = line[13:17]
-					data[i] = line[0:12]+atom_type+' '+line[17:]
-					edits_made = True
-				if atom_type[2] in elements:
-					print('ISSUE FOUND ON ATOM {}: Two unknown element letters'
-						  ' ({}) preceded expected element ID ({}). '\
-						  .format(line[6:11],atom_type[:2],atom_type[2]))
-					data[i] = line[0:12]+' '+atom_type[2:]+' '+line[16:]
-					edits_made = True
+				if atom_type[1]+atom_type[2].lower() in elements:
+					edits_made=True
+					data[i]=line[0:12]+atom_type[1:]+' '+line[16:76]+\
+							  atom_type[1:3]+line[78:]+'\n'
+					print('SUSPECTED ISSUE FOUND ON ATOM{}: Element symbol'\
+						  .format(parse_pdb(line,data='atom_number')) + 
+						  ' with two letters ({}) must begin in the 13th'\
+						  .format(atom_type[1:3]) + ' columnspace according' +
+						  ' to PDB format.')                    
+				elif atom_type[2] in elements:
+					edits_made=True
+					unk_sym = atom_type[:2].split()[0]
+					if len(unk_sym) == 2:
+						data[i] = line[0:12]+' '+atom_type[2:]+' '+\
+								  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
+					if len(unk_sym) == 1:
+						data[i] = line[0:12]+' '+atom_type[2:]+' '+\
+								  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
+					print('SUSPECTED ISSUE FOUND ON ATOM{}'\
+						  .format(parse_pdb(line,data='atom_number')) +
+						  ': Atom type ({}) '.format(atom_type) + 
+						  'is preceeded by unknown symbols ({}). These'\
+						  .format(atom_type[:2]) +' will be removed.')
+												   
 	if edits_made is True:
-		print("New .pdb file with suffix _cleaned.pdb created to "
-			  "fix atom type issues.")
-		with open(pdb_file.split('.pdb')[0]+'_cleaned'+'.pdb','w+') as f:
-			f.writelines(data)	
-		pdb_file=pdb_file.split('.pdb')[0]+'_cleaned'+'.pdb'
-
+		new_file = pdb_file.split('.pdb')[0]+'_formatting_issue'+'.pdb'
+		cmd = "cp {} {}".format(pdb_file,new_file)
+		os.system(cmd)
+		print('Saved original pdb file as {}.'.format(new_file)+
+			  ' Suspected issue(s) have been fixed in {}.'.format(pdb_file))
+		with open(pdb_file, 'w+') as f:
+			for line in data:
+				f.writelines(line)
+	print(delimeter)	
 	base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
 	for atom in base_mol.GetAtoms():
 		if ' H' in res_info(atom,'atom_name'):
@@ -190,11 +281,11 @@ def check_pdb(pdb_file):
 		  .format(non_protein_res_count))
 	if non_protein_res_count > 0:
 		for i in range(non_protein_res_count):
-			print("{}:".format(i+1))
+			#print("{}:".format(i+1))
 			print("Chain: {}".format(non_protein_seq[i][0]),
 				  " Residue Name: {}".format(non_protein_seq[i][1]),
 				  " Residue Number: {}".format(non_protein_seq[i][2]))
-			print(".................................................")
+			#print(".................................................")
 	print(delimeter)
 
 ###############################################################################
