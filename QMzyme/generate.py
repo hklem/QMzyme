@@ -42,6 +42,7 @@ delimeter="---------------------------------------------------------"
 ###############################################################################
 def res_info(atom,info='atom_name'):
 	''' 
+	The atom input is an atom from an rdkit mol object. 
 	Options for info are 'chain', 'res_name', 'res_number', 'atom_name'.
 	'''
 	if info == 'res_name':
@@ -61,12 +62,17 @@ def define_residue(atom):
 	''' 
 	Returns a tuple that completely defines the residue that 
 	atom belongs to: ('chain','residue name', 'residue number')
+	The atom input is an atom from an rdkit mol object. 
 	'''
 	return (res_info(atom,'chain'),res_info(atom,'res_name'),
 			res_info(atom,'res_number'))
 
 ###############################################################################
 def atom_coords(mol,atom):
+	'''
+	The mol input is an rdkit mol object. 
+	The atom input is an atom from an rdkit mol object. 
+	'''
 	return np.asarray(mol.GetConformer().GetAtomPosition(atom.GetIdx()))
 
 ###############################################################################
@@ -121,7 +127,7 @@ def parse_pdb(line,data=''):
 
 
 ###############################################################################
-def check_pdb(pdb_file):
+def check_pdb(pdb_file, clean=True):
 	'''
 	Input: PDB file name. Prints helpful information about what is present in 
 	the structure. Will identify if there are any atom type formatting issues,
@@ -139,8 +145,6 @@ def check_pdb(pdb_file):
 	res_sequence = []
 	res_num_previous = None
 	
-	with open(pdb_file,'r') as f:
-		data = f.readlines()
 
 	#TO DO: run initial check over PDB to identify what sections are there and what aren't
 	# for example, some PDB files might not have chain info.  
@@ -153,93 +157,96 @@ def check_pdb(pdb_file):
 	# The correct spacing is as follows '   1', '  10', ' 100', '1000' according
 	# to the columnspace of the residue_id in PDB format (columns 23-26, 1-indexing)) 
 
-	#pdb_format_sections=['record_type', 'atom_number','atom_name','alt_loc',
-						 'residue_name','chain_id','residue_number',
-						 'occupancy','temperature_factor','segment_id',
-						 'element_symbol','charge']
-	for i,line in enumerate(data):
-		if parse_pdb(line,data='record_type') in ['ATOM','HETATOM']:
-			atom_type = parse_pdb(line,data='atom_name')
-			res_num = parse_pdb(line,data='res_num')
-			res_name = parse_pdb(line,data='res_name')
-			if res_num != res_num_previous:
-				if res_name not in ['WAT','HOH','TIP']:
-					residue_count += 1
-					if int(res_num.split()[0]) != residue_count:
-						edits_made=True
-						if residue_count>999:
-							res_num = str(residue_count)
-						elif residue_count>99:
-							res_num = ' '+str(residue_count)
-						elif residue_count>9:
-							res_num = '  '+str(residue_count)
-						else:
-							res_num = '   '+str(residue_count)
-						data[i]=line[0:22]+res_num+line[26:]+'\n'
-						line=line[0:22]+res_num+line[26:]
-						if parse_pdb(data[i+1],data='res_name') == res_name:
-							residue_count -= 1
-			res_num_previous = res_num
-			try:
-				element = parse_pdb(line,data='element')
-			except ValueError:
-				element=None
-			if atom_type[0]!=' ':
-				if atom_type[0]=='H':
-					if len(atom_type)==4:
-						if element is None:
+	pdb_format_sections=['record_type', 'atom_number','atom_name','alt_loc',
+	    				  'residue_name','chain_id','residue_number',
+						  'occupancy','temperature_factor','segment_id',
+						  'element_symbol','charge']
+	if clean==True:
+		with open(pdb_file,'r') as f:
+			data = f.readlines()
+		for i,line in enumerate(data):
+			if parse_pdb(line,data='record_type') in ['ATOM','HETATOM']:
+				atom_type = parse_pdb(line,data='atom_name')
+				res_num = parse_pdb(line,data='res_num')
+				res_name = parse_pdb(line,data='res_name')
+				if res_num != res_num_previous:
+					if res_name not in ['WAT','HOH','TIP']:
+						residue_count += 1
+						if int(res_num.split()[0]) != residue_count:
 							edits_made=True
-							data[i]=line[0:76]+' H'+line[78:]+'\n'
+							if residue_count>999:
+								res_num = str(residue_count)
+							elif residue_count>99:
+								res_num = ' '+str(residue_count)
+							elif residue_count>9:
+								res_num = '  '+str(residue_count)
+							else:
+								res_num = '   '+str(residue_count)
+							data[i]=line[0:22]+res_num+line[26:]+'\n'
+							line=line[0:22]+res_num+line[26:]
+							if parse_pdb(data[i+1],data='res_name') == res_name:
+								residue_count -= 1
+				res_num_previous = res_num
+				try:
+					element = parse_pdb(line,data='element')
+				except ValueError:
+					element=None
+				if atom_type[0]!=' ':
+					if atom_type[0]=='H':
+						if len(atom_type)==4:
+							if element is None:
+								edits_made=True
+								data[i]=line[0:76]+' H'+line[78:]+'\n'
+							continue
+				if atom_type[:2] in elements:
+					print('yes')
+					if element is None:
+						edits_made=True
+						data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
+					elif atom_type[:2] == element:
 						continue
-			if atom_type[:2] in elements:
-				print('yes')
-				if element is None:
-					edits_made=True
-					data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
-				elif atom_type[:2] == element:
-					continue
-			if atom_type[1] in elements:
-				if element is None:
-					edits_made=True
-					data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
-				elif atom_type[:2] == element:
-					continue
-				#else:
-			else:
-				if atom_type[1]+atom_type[2].lower() in elements:
-					edits_made=True
-					data[i]=line[0:12]+atom_type[1:]+' '+line[16:76]+\
-							  atom_type[1:3]+line[78:]+'\n'
-					print('SUSPECTED ISSUE FOUND ON ATOM{}: Element symbol'\
-						  .format(parse_pdb(line,data='atom_number')) + 
-						  ' with two letters ({}) must begin in the 13th'\
-						  .format(atom_type[1:3]) + ' columnspace according' +
-						  ' to PDB format.')                    
-				elif atom_type[2] in elements:
-					edits_made=True
-					unk_sym = atom_type[:2].split()[0]
-					if len(unk_sym) == 2:
-						data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-								  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
-					if len(unk_sym) == 1:
-						data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-								  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
-					print('SUSPECTED ISSUE FOUND ON ATOM{}'\
-						  .format(parse_pdb(line,data='atom_number')) +
-						  ': Atom type ({}) '.format(atom_type) + 
-						  'is preceeded by unknown symbols ({}). These'\
-						  .format(atom_type[:2]) +' will be removed.')
-												   
-	if edits_made is True:
-		new_file = pdb_file.split('.pdb')[0]+'_formatting_issue'+'.pdb'
-		cmd = "cp {} {}".format(pdb_file,new_file)
-		os.system(cmd)
-		print('Saved original pdb file as {}.'.format(new_file)+
-			  ' Suspected issue(s) have been fixed in {}.'.format(pdb_file))
-		with open(pdb_file, 'w+') as f:
-			for line in data:
-				f.writelines(line)
-	print(delimeter)	
+				if atom_type[1] in elements:
+					if element is None:
+						edits_made=True
+						data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
+					elif atom_type[:2] == element:
+						continue
+					#else:
+				else:
+					if atom_type[1]+atom_type[2].lower() in elements:
+						edits_made=True
+						data[i]=line[0:12]+atom_type[1:]+' '+line[16:76]+\
+								  atom_type[1:3]+line[78:]+'\n'
+						print('SUSPECTED ISSUE FOUND ON ATOM{}: Element symbol'\
+							  .format(parse_pdb(line,data='atom_number')) + 
+							  ' with two letters ({}) must begin in the 13th'\
+							  .format(atom_type[1:3]) + ' columnspace according' +
+							  ' to PDB format.')                    
+					elif atom_type[2] in elements:
+						edits_made=True
+						unk_sym = atom_type[:2].split()[0]
+						if len(unk_sym) == 2:
+							data[i] = line[0:12]+' '+atom_type[2:]+' '+\
+									  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
+						if len(unk_sym) == 1:
+							data[i] = line[0:12]+' '+atom_type[2:]+' '+\
+									  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
+						print('SUSPECTED ISSUE FOUND ON ATOM{}'\
+							  .format(parse_pdb(line,data='atom_number')) +
+							  ': Atom type ({}) '.format(atom_type) + 
+							  'is preceeded by unknown symbols ({}). These'\
+							  .format(atom_type[:2]) +' will be removed.')
+													   
+		if edits_made is True:
+			new_file = pdb_file.split('.pdb')[0]+'_formatting_issue'+'.pdb'
+			cmd = "cp {} {}".format(pdb_file,new_file)
+			os.system(cmd)
+			print('Saved original pdb file as {}.'.format(new_file)+
+				  ' Suspected issue(s) have been fixed in {}.'.format(pdb_file))
+			with open(pdb_file, 'w+') as f:
+				for line in data:
+					f.writelines(line)
+		print(delimeter)	
 	base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
 	for atom in base_mol.GetAtoms():
 		if ' H' in res_info(atom,'atom_name'):
