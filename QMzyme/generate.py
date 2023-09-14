@@ -137,11 +137,26 @@ def check_pdb(pdb_file):
 	edits_made = False
 	residue_count = 0
 	res_sequence = []
+	res_num_previous = None
 	
 	with open(pdb_file,'r') as f:
 		data = f.readlines()
 
-	res_num_previous = None
+	#TO DO: run initial check over PDB to identify what sections are there and what aren't
+	# for example, some PDB files might not have chain info.  
+	# once that is done, we can make sure all the included sections are formatted correctly.
+	# for example, that the section is right justified if it's supposed to be. 
+	# Ran into this issue with 4 digit residue IDs (from solvent molecules) that 
+	# were left justified instead of right justified. So RDKit thought residue
+	# ' 133' was the same as residue ' 1330'. The residue id of the 4 digit res
+	# needs to be shifted to the left (i.e., the space needs to be removed. 
+	# The correct spacing is as follows '   1', '  10', ' 100', '1000' according
+	# to the columnspace of the residue_id in PDB format (columns 23-26, 1-indexing)) 
+
+	#pdb_format_sections=['record_type', 'atom_number','atom_name','alt_loc',
+						 'residue_name','chain_id','residue_number',
+						 'occupancy','temperature_factor','segment_id',
+						 'element_symbol','charge']
 	for i,line in enumerate(data):
 		if parse_pdb(line,data='record_type') in ['ATOM','HETATOM']:
 			atom_type = parse_pdb(line,data='atom_name')
