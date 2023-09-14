@@ -92,13 +92,10 @@ def download(pdb_list):
 	return(data)
 
 ###############################################################################
-<<<<<<< HEAD
 def get_PDB_info(pdb_file):
 	print("The function 'get_PDB_info()' is deprecated. Please use "
 		  "'check_pdb()' instead.")
 
-def check_pdb(pdb_file):
-=======
 def parse_pdb(line,data=''):
     return_data = ''
     if data=='record_type':
@@ -135,7 +132,6 @@ def parse_pdb(line,data=''):
 
 ###############################################################################
 def check_pdb(pdb_file, clean=True):
->>>>>>> adding_PDB_clean_function
 	'''
 	Input: PDB file name. Prints helpful information about what is present in 
 	the structure. Will identify if there are any atom type formatting issues,
