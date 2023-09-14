@@ -394,7 +394,7 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	N_termini_interactions = []
 	side_chain_interactions = []
 	C_termini_interactions = []
-	current_res = 'nothing'
+	current_res = None
 	backbone_atoms=[' O  ',' C	',' N  ',' CA ']
 
 	if centroid == True:
@@ -406,16 +406,20 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 		radius_buffer = np.max(distances)
 
 		for atom1 in base_mol.GetAtoms():
-			if 'H' in res_info(atom1,'atom_name'):
+			if ' H' in res_info(atom1,'atom_name'):
 				continue
-			if str(res_info(atom1,'res_name'))+\
-			   str(res_info(atom1,'res_number')) in include_residues:
+			current_res=define_residue(atom1)
+			#if str(res_info(atom1,'res_name'))+\
+			#   str(res_info(atom1,'res_number')) in include_residues:
+			if current_res in include_residues:
 				atomic_distance = radius
 			else:
 				coords1 = np.asarray(base_mol.GetConformer()
 									 .GetAtomPosition(atom1.GetIdx()))
 				atomic_distance = np.linalg.norm(coords1-centroid_coords)
 			if atomic_distance < radius+radius_buffer:
+				if 'TIP' in current_res[1]:
+					print(current_res[2])
 				res_name.append(res_info(atom1,'res_name'))
 				res_number.append(res_info(atom1,'res_number'))
 				res_chain.append(res_info(atom1,'chain'))
@@ -427,8 +431,10 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	already_added = []
 	if centroid == False:
 		for i,atom1 in enumerate(base_mol.GetAtoms()):
-			if str(res_info(atom1,'res_name'))+\
-			   str(res_info(atom1,'res_number')) in include_residues:
+			current_res=define_residue(atom1)
+			#if str(res_info(atom1,'res_name'))+\
+			#   str(res_info(atom1,'res_number')) in include_residues:
+			if current_res in include_residues:
 				keep_atom = True
 			else:
 				keep_atom = False
@@ -442,15 +448,17 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 										 GetAtomPosition(atom2.GetIdx()))
 					atomic_distance = np.linalg.norm(coords1-coords2)
 				if atomic_distance < radius:
-					if str(res_info(atom1,'atom_name'))+\
-					   str(res_info(atom1,'res_number')) in already_added:
+					#if str(res_info(atom1,'atom_name'))+\
+					#   str(res_info(atom1,'res_number')) in already_added:
+					if current_res in already_added:
 						continue
-					res_name.append(res_info(atom1,'res_name'))
-					res_number.append(res_info(atom1,'res_number'))
-					res_chain.append(res_info(atom1,'chain'))
+					res_name.append(current_res[1])
+					res_number.append(current_res[2])
+					res_chain.append(current_res[0])
 					res_atom.append(res_info(atom1,'atom_name'))
-					already_added.append(str(res_info(atom1,'atom_name'))+\
-										 str(res_info(atom1,'res_number')))
+					#already_added.append(str(res_info(atom1,'atom_name'))+\
+					#					 str(res_info(atom1,'res_number')))
+					already_added.append(current_res)
 					if res_info(atom1,'atom_name') in backbone_atoms:
 						atom_type.append('Backbone')
 					else:
@@ -460,12 +468,14 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	res_dict = {'Residue Name':res_name,'Residue Number':res_number,
 				'Residue Atom':res_atom,'Atom Type':atom_type,
 				'Residue Chain':res_chain}
-
 	for atom in reversed(base_mol.GetAtoms()):
-		if res_info(atom,'res_number') in res_number:
-			if res_info(atom,'chain') == \
-			   res_chain[res_number.index(res_info(atom,'res_number'))]:
+		current_res = define_residue(atom)
+		if current_res[2] in res_number:
+			if current_res[1] == res_name[res_number.index(current_res[2])]:
 				continue
+			#if res_info(atom,'chain') == \
+			#   res_chain[res_number.index(res_info(atom,'res_number'))]:
+			#	continue
 			else:
 				new_mol.RemoveAtom(atom.GetIdx())
 		else:
