@@ -251,8 +251,8 @@ def check_pdb(pdb_file, clean=True):
 				for line in data:
 					f.writelines(line)
 		print(delimeter)	
-	base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
-	for atom in base_mol.GetAtoms():
+	mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
+	for atom in mol.GetAtoms():
 		if ' H' in res_info(atom,'atom_name'):
 			h_present = True
 		if res_info(atom,'chain') == ' ':
@@ -292,7 +292,7 @@ def check_pdb(pdb_file, clean=True):
 	if no_chain_info == True:
 		print("Chain IDs not defined were set to 'X'.")
 	print(delimeter)
-	print("Total number of atoms: {}".format(base_mol.GetNumAtoms()))
+	print("Total number of atoms: {}".format(mol.GetNumAtoms()))
 	print("Water molecules: {}".format(wat_count))
 	if cation_count > 0:
 		print("{} ions: {}".format(cation,cation_count))
@@ -389,11 +389,12 @@ def catalytic_center(pdb_file, res_name=None, res_number=None, chain=None):
 		print(delimeter)
 		return catalytic_center_mol, protein_mol
 ###############################################################################
-def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
+def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
+				  distance_cutoff=0, extended_pdb=None, extended_mol=None,
 				  centroid=False,include_residues=[]):
 	'''
 	Selects all residues that have at least one atom within the 
-	cutoff radius from the predefined center_mol object. The radius 
+	cutoff distance from the predefined center_mol object. The distance 
 	can be calculated from the center_mol centroid (by setting 
 	centroid=True), or from all center_mol atoms (by setting 
 	centroid=False). Calculating from all center_mol atoms requires 
@@ -404,17 +405,30 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 	If centroid=False is selected, the code will add a buffer 
 	distance equal to the largest distance between the center_mol 
 	centroid and a center_mol atom. This will ensure that all atoms 
-	within the cutoff radius will be included in this initial pass. 
+	within the cutoff distance will be included in this initial pass. 
 	You will get the same shell of residues either way, but doing it 
 	in this two-stage manner saves time, especially depending on the 
-	size of your center_mol.  
+	size of your catalytic_center_mol.  
 	'''
+	if distance_cutoff==0:
+		raise ValueError('Please specify a distance cutoff by distance_cutoff=int')	
 
-	if base_mol == None:
-		if pdb_file == None:
-			print("Error: Must define on of the following:" +
-				  " pdb_file or base_mol")
-		base_mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
+	if catalytic_center_mol == None:
+		if catalytic_center_pdb == None:
+			raise ValueError(' Must define on of the following:' +
+							 'catalytic_center_pdb or catalytic_center_mol.')
+		else:
+			catalytic_center_mol = Chem.MolFromPDBFile(extended_pdb,
+													   removeHs=False,
+													   sanitize=False)
+
+	if extended_mol == None:
+		if extended_pdb == None:
+			raise ValueError("Must define on of the following:" +
+							 " pdb_file or extended_mol")
+		extended_mol = Chem.MolFromPDBFile(extended_pdb,
+										   removeHs=False,
+										   sanitize=False)
 
 	res_name, res_number, res_chain, res_atom, atom_type = [], [], [], [], []
 	N_termini_interactions = []
@@ -425,25 +439,25 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 
 	if centroid == True:
 		centroid_coords = np.asarray(Chem.rdMolTransforms.\
-			ComputeCentroid((center_mol.GetConformer())))
-		distances = [np.linalg.norm(np.asarray(center_mol.GetConformer().\
+			ComputeCentroid((catalytic_center_mol.GetConformer())))
+		distances = [np.linalg.norm(np.asarray(catalytic_center_mol.GetConformer().\
 			GetAtomPosition(atom.GetIdx()))-centroid_coords) for atom in \
-			center_mol.GetAtoms()]
-		radius_buffer = np.max(distances)
+			catalytic_center_mol.GetAtoms()]
+		distance_buffer = np.max(distances)
 
-		for atom1 in base_mol.GetAtoms():
+		for atom1 in extended_mol.GetAtoms():
 			if ' H' in res_info(atom1,'atom_name'):
 				continue
 			current_res=define_residue(atom1)
 			#if str(res_info(atom1,'res_name'))+\
 			#   str(res_info(atom1,'res_number')) in include_residues:
 			if current_res in include_residues:
-				atomic_distance = radius
+				atomic_distance = distance_cutoff
 			else:
-				coords1 = np.asarray(base_mol.GetConformer()
+				coords1 = np.asarray(extended_mol.GetConformer()
 									 .GetAtomPosition(atom1.GetIdx()))
 				atomic_distance = np.linalg.norm(coords1-centroid_coords)
-			if atomic_distance < radius+radius_buffer:
+			if atomic_distance < distance_cutoff+distance_buffer:
 				if 'TIP' in current_res[1]:
 					print(current_res[2])
 				res_name.append(res_info(atom1,'res_name'))
@@ -456,7 +470,7 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 					atom_type.append('Sidechain')
 	already_added = []
 	if centroid == False:
-		for i,atom1 in enumerate(base_mol.GetAtoms()):
+		for i,atom1 in enumerate(extended_mol.GetAtoms()):
 			current_res=define_residue(atom1)
 			#if str(res_info(atom1,'res_name'))+\
 			#   str(res_info(atom1,'res_number')) in include_residues:
@@ -464,16 +478,16 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 				keep_atom = True
 			else:
 				keep_atom = False
-				coords1 = np.asarray(base_mol.GetConformer().
+				coords1 = np.asarray(extended_mol.GetConformer().
 									 GetAtomPosition(atom1.GetIdx()))
-			for j,atom2 in enumerate(center_mol.GetAtoms()):
+			for j,atom2 in enumerate(catalytic_center_mol.GetAtoms()):
 				if keep_atom == True:
-					atomic_distance = radius-1
+					atomic_distance = distance_cutoff-1
 				if keep_atom == False:
-					coords2 = np.asarray(center_mol.GetConformer().
+					coords2 = np.asarray(catalytic_center_mol.GetConformer().
 										 GetAtomPosition(atom2.GetIdx()))
 					atomic_distance = np.linalg.norm(coords1-coords2)
-				if atomic_distance < radius:
+				if atomic_distance < distance_cutoff:
 					#if str(res_info(atom1,'atom_name'))+\
 					#   str(res_info(atom1,'res_number')) in already_added:
 					if current_res in already_added:
@@ -489,12 +503,12 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 						atom_type.append('Backbone')
 					else:
 						atom_type.append('Sidechain')
-	new_mol = Chem.RWMol(base_mol)
-
+	new_mol = Chem.RWMol(extended_mol)
+	
 	res_dict = {'Residue Name':res_name,'Residue Number':res_number,
 				'Residue Atom':res_atom,'Atom Type':atom_type,
 				'Residue Chain':res_chain}
-	for atom in reversed(base_mol.GetAtoms()):
+	for atom in reversed(extended_mol.GetAtoms()):
 		current_res = define_residue(atom)
 		if current_res[2] in res_number:
 			if current_res[1] == res_name[res_number.index(current_res[2])]:
@@ -512,16 +526,16 @@ def residue_shell(center_mol,radius,pdb_file=None,base_mol=None,
 
 	if centroid is False:
 		print('Final pass results in {} atoms.'.format(new_mol.GetNumAtoms()))
-		print("Structure saved as active_site_radius_{}.pdb".format(radius))
-		Chem.MolToPDBFile(new_mol,'active_site_radius_{}.pdb'.format(radius))
+		print("Structure saved as active_site_cutoff_{}.pdb".format(distance_cutoff))
+		Chem.MolToPDBFile(new_mol,'active_site_cutoff_{}.pdb'.format(distance_cutoff))
 	
 	print(delimeter)
 	return new_mol, res_dict
 
 ###############################################################################
 def truncate_new():
-	print("The function 'truncate_new()' is deprecated. Please use "
-		  "'truncate()' instead")
+	raise Exception("The function 'truncate_new()' is deprecated. Please use "
+				 	"'truncate()' instead")
 
 ###############################################################################
 def add_H(pdb_file=None, output_file=None, remove_files=False):
@@ -540,12 +554,10 @@ def add_H(pdb_file=None, output_file=None, remove_files=False):
 	return new_mol
 
 ###############################################################################
-def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'], 
-				 skip_resnumbers=[], remove_resnumbers=[], 
-				 remove_atom_ids=[], remove_sidechains=[], 
-				 keep_backbones=[], constrain_atoms=[' CA '], 
-				 radius=None, add_hydrogens=False):
-	
+def truncate(mol=None, pdb_file=None, scheme='CA_terminal', 
+			 skip_residues=['HOH','WAT'], skip_resnumbers=[], 
+			 remove_resnumbers=[], remove_atom_ids=[], remove_sidechains=[], 
+			 keep_backbones=[], constrain_atoms=[' CA '], add_hydrogens=False):
 	'''
 	This function is called to prepare truncated enzyme models. 
 	It will remove atoms based on the defined scheme and any other 
@@ -555,18 +567,25 @@ def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 	### Heidi's to do: add CA capping scheme, create capping summary as a 
 	# returned item, allow capping summary to be a function input so users
 	# can specify the cap they want for each residue. 
+	
+	if mol is None:
+		if pdb_file is None:
+			raise ValueError('You must specify at least one of the following:'
+							 ' mol={rdkit mol object), or pdb_file={str}.')
+		else:
+			mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)	
 
 	if add_hydrogens is True:
-		Chem.MolToPDBFile(base_mol,'temp.pdb')
-		base_mol = add_H('temp.pdb',remove_files=True)
+		Chem.MolToPDBFile(mol,'temp.pdb')
+		mol = add_H('temp.pdb',remove_files=True)
 
-	new_mol = Chem.RWMol(base_mol)
+	new_mol = Chem.RWMol(mol)
 	proline_count,bb_atom_count = 0,0
 	constrain_list,res_num,res_name,N_terminus,C_terminus=[],[],[],[],[]
 	previous_res = None
 	remove_ids = []
 
-	for atom in reversed(base_mol.GetAtoms()):
+	for atom in reversed(mol.GetAtoms()):
 		current_res = define_residue(atom)
 		if atom.GetIdx() in remove_atom_ids:
 			remove_ids.append(atom.GetIdx())
@@ -589,8 +608,8 @@ def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 				bb_atom_count += 1
 				N_id = atom.GetIdx()
 			if bb_atom_count == 3:
-				C_atom = base_mol.GetAtomWithIdx(C_id)
-				N_atom = base_mol.GetAtomWithIdx(N_id)
+				C_atom = mol.GetAtomWithIdx(C_id)
+				N_atom = mol.GetAtomWithIdx(N_id)
 				C_bonds = [res_info(x,'atom_name') \
 						   for x in C_atom.GetNeighbors()]
 				C_bonds_atoms = [x for x in C_atom.GetNeighbors()]
@@ -636,7 +655,7 @@ def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 			previous_res = current_res
 
 	if len(remove_sidechains) > 0:
-		for atom in reversed(base_mol.GetAtoms()):
+		for atom in reversed(mol.GetAtoms()):
 			current_res = define_residue(atom)
 			if current_res[2] in remove_sidechains:
 				atom_name = res_info(atom, 'atom_name')
@@ -686,13 +705,11 @@ def truncate(base_mol, scheme='CA_terminal', skip_residues=['HOH','WAT'],
 
 	print('Final active site model contains {} atoms.'
 		  .format(new_mol.GetNumAtoms()))
-	print("Structure saved as truncated_active_site_radius_{}.pdb"
-		  .format(radius))
+	print("Structure saved as truncated_active_site.pdb")
 	
 	#testing add Hs
 	#new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True)
-	Chem.MolToPDBFile(new_mol,'truncated_active_site_radius_{}.pdb'
-					  .format(radius))
+	Chem.MolToPDBFile(new_mol,'truncated_active_site.pdb')
 
 	if proline_count > 0:
 		print("WARNING: Active site model contains {}".format(proline_count) +\
@@ -734,8 +751,8 @@ def obabel_protonate(active_site_pdb_file):
 	print(delimeter)
 
 ###############################################################################
-def show_mol(base_mol):
-	mol = Chem.RWMol(base_mol)
+def show_mol(mol):
+	mol = Chem.RWMol(mol)
 	from rdkit.Chem import Draw
 	from rdkit.Chem.Draw import rdMolDraw2D
 	from rdkit.Chem import rdDepictor
