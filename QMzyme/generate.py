@@ -89,7 +89,7 @@ def download(pdb_list):
 			outFile.write(data)
 			print('Downloading {} as {}.'.format(structure[:4], outFileName))
 	print(delimeter)
-	return(data)
+	#return(data)
 
 ###############################################################################
 def get_PDB_info(pdb_file):
@@ -165,6 +165,7 @@ def check_pdb(pdb_file, clean=True):
 	    				  'residue_name','chain_id','residue_number',
 						  'occupancy','temperature_factor','segment_id',
 						  'element_symbol','charge']
+	residues_reordered=False
 	if clean==True:
 		with open(pdb_file,'r') as f:
 			data = f.readlines()
@@ -177,6 +178,7 @@ def check_pdb(pdb_file, clean=True):
 					if res_name not in ['WAT','HOH','TIP']:
 						residue_count += 1
 						if int(res_num.split()[0]) != residue_count:
+							residues_reordered = True
 							edits_made=True
 							if residue_count>999:
 								res_num = str(residue_count)
@@ -186,7 +188,7 @@ def check_pdb(pdb_file, clean=True):
 								res_num = '  '+str(residue_count)
 							else:
 								res_num = '   '+str(residue_count)
-							data[i]=line[0:22]+res_num+line[26:]+'\n'
+							data[i]=line[0:22]+res_num+line[26:]
 							line=line[0:22]+res_num+line[26:]
 							if parse_pdb(data[i+1],data='res_name') == res_name:
 								residue_count -= 1
@@ -200,19 +202,19 @@ def check_pdb(pdb_file, clean=True):
 						if len(atom_type)==4:
 							if element is None:
 								edits_made=True
-								data[i]=line[0:76]+' H'+line[78:]+'\n'
+								data[i]=line[0:76]+' H'+line[78:]
 							continue
 				if atom_type[:2] in elements:
 					print('yes')
 					if element is None:
 						edits_made=True
-						data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
+						data[i]=line[0:76]+atom_type[:2]+line[78:]
 					elif atom_type[:2] == element:
 						continue
 				if atom_type[1] in elements:
 					if element is None:
 						edits_made=True
-						data[i]=line[0:76]+atom_type[:2]+line[78:]+'\n'
+						data[i]=line[0:76]+atom_type[:2]+line[78:]
 					elif atom_type[:2] == element:
 						continue
 					#else:
@@ -220,7 +222,7 @@ def check_pdb(pdb_file, clean=True):
 					if atom_type[1]+atom_type[2].lower() in elements:
 						edits_made=True
 						data[i]=line[0:12]+atom_type[1:]+' '+line[16:76]+\
-								  atom_type[1:3]+line[78:]+'\n'
+								  atom_type[1:3]+line[78:]
 						print('SUSPECTED ISSUE FOUND ON ATOM{}: Element symbol'\
 							  .format(parse_pdb(line,data='atom_number')) + 
 							  ' with two letters ({}) must begin in the 13th'\
@@ -231,25 +233,27 @@ def check_pdb(pdb_file, clean=True):
 						unk_sym = atom_type[:2].split()[0]
 						if len(unk_sym) == 2:
 							data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-									  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
+									  line[16:76]+' '+atom_type[2]+line[78:]
 						if len(unk_sym) == 1:
 							data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-									  line[16:76]+' '+atom_type[2]+line[78:]+'\n'
+									  line[16:76]+' '+atom_type[2]+line[78:]
 						print('SUSPECTED ISSUE FOUND ON ATOM{}'\
 							  .format(parse_pdb(line,data='atom_number')) +
 							  ': Atom type ({}) '.format(atom_type) + 
 							  'is preceeded by unknown symbols ({}). These'\
 							  .format(atom_type[:2]) +' will be removed.')
-													   
+												   
+		if residues_reordered==True:
+			print('WARNING: Some residues were renumbered.')
 		if edits_made is True:
-			new_file = pdb_file.split('.pdb')[0]+'_formatting_issue'+'.pdb'
+			new_file = pdb_file.split('.pdb')[0]+'_original'+'.pdb'
 			cmd = "cp {} {}".format(pdb_file,new_file)
 			os.system(cmd)
 			print('Saved original pdb file as {}.'.format(new_file)+
 				  ' Suspected issue(s) have been fixed in {}.'.format(pdb_file))
-			with open(pdb_file, 'w+') as f:
-				for line in data:
-					f.writelines(line)
+			with open(pdb_file, 'w+') as g:
+				for i,line in enumerate(data):
+					g.writelines(data[i])
 		print(delimeter)	
 	mol = Chem.MolFromPDBFile(pdb_file,removeHs=False,sanitize=False)
 	for atom in mol.GetAtoms():
