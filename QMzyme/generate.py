@@ -484,7 +484,6 @@ def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
 				res_number.append(current_res[2])
 				keep_residue.append(current_res)
 
-	print(keep_residue)
 	for atom in reversed(extended_mol.GetAtoms()):
 		current_res=define_residue(atom)
 		if current_res not in keep_residue:
