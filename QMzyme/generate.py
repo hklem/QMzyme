@@ -395,25 +395,17 @@ def catalytic_center(pdb_file, res_name=None, res_number=None, chain=None):
 ###############################################################################
 def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
 				  distance_cutoff=0, extended_pdb=None, extended_mol=None,
-				  centroid=False,include_residues=[]):
+				  include_residues=[], file_suffix=''):
 	'''
 	Selects all residues that have at least one atom within the 
-	cutoff distance from the predefined center_mol object. The distance 
-	can be calculated from the center_mol centroid (by setting 
-	centroid=True), or from all center_mol atoms (by setting 
-	centroid=False). Calculating from all center_mol atoms requires 
-	X more loops in the code where X is the number of center_mol 
-	atoms. It is recommended to first run a centroid=True pass to 
-	initially reduce the total number of atoms, then run a 
-	centroid=False pass on the reduced mol object for efficiency. 
-	If centroid=False is selected, the code will add a buffer 
-	distance equal to the largest distance between the center_mol 
-	centroid and a center_mol atom. This will ensure that all atoms 
-	within the cutoff distance will be included in this initial pass. 
-	You will get the same shell of residues either way, but doing it 
-	in this two-stage manner saves time, especially depending on the 
-	size of your catalytic_center_mol.  
+	cutoff distance from the predefined catalytic center atoms.
+	If there are residues you want to include that may not be 
+	within the distance cutoff you can specify that in 
+	include_residues=[], where the format needs to be 
+	(str(chain),str(res_name),int(res_number)). I.e., 
+	include_residues=[('A','GLY',101),('A','ASP',20)]. 
 	'''
+
 	if distance_cutoff==0:
 		raise ValueError('Please specify a distance cutoff by distance_cutoff=int')	
 
@@ -438,100 +430,77 @@ def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
 	N_termini_interactions = []
 	side_chain_interactions = []
 	C_termini_interactions = []
-	current_res = None
+	previous_res = None
 	backbone_atoms=[' O  ',' C	',' N  ',' CA ']
-
-	if centroid == True:
-		centroid_coords = np.asarray(Chem.rdMolTransforms.\
-			ComputeCentroid((catalytic_center_mol.GetConformer())))
-		distances = [np.linalg.norm(np.asarray(catalytic_center_mol.GetConformer().\
-			GetAtomPosition(atom.GetIdx()))-centroid_coords) for atom in \
-			catalytic_center_mol.GetAtoms()]
-		distance_buffer = np.max(distances)
-
-		for atom1 in extended_mol.GetAtoms():
-			if ' H' in res_info(atom1,'atom_name'):
-				continue
-			current_res=define_residue(atom1)
-			#if str(res_info(atom1,'res_name'))+\
-			#   str(res_info(atom1,'res_number')) in include_residues:
-			if current_res in include_residues:
-				atomic_distance = distance_cutoff
-			else:
-				coords1 = np.asarray(extended_mol.GetConformer()
-									 .GetAtomPosition(atom1.GetIdx()))
-				atomic_distance = np.linalg.norm(coords1-centroid_coords)
-			if atomic_distance < distance_cutoff+distance_buffer:
-				if 'TIP' in current_res[1]:
-					print(current_res[2])
-				res_name.append(res_info(atom1,'res_name'))
-				res_number.append(res_info(atom1,'res_number'))
-				res_chain.append(res_info(atom1,'chain'))
-				res_atom.append(res_info(atom1,'atom_name'))
-				if res_info(atom1,'atom_name') in backbone_atoms:
-					atom_type.append('Backbone')
-				else:
-					atom_type.append('Sidechain')
-	already_added = []
-	if centroid == False:
-		for i,atom1 in enumerate(extended_mol.GetAtoms()):
-			current_res=define_residue(atom1)
-			#if str(res_info(atom1,'res_name'))+\
-			#   str(res_info(atom1,'res_number')) in include_residues:
-			if current_res in include_residues:
-				keep_atom = True
-			else:
-				keep_atom = False
-				coords1 = np.asarray(extended_mol.GetConformer().
-									 GetAtomPosition(atom1.GetIdx()))
-			for j,atom2 in enumerate(catalytic_center_mol.GetAtoms()):
-				if keep_atom == True:
-					atomic_distance = distance_cutoff-1
-				if keep_atom == False:
-					coords2 = np.asarray(catalytic_center_mol.GetConformer().
-										 GetAtomPosition(atom2.GetIdx()))
-					atomic_distance = np.linalg.norm(coords1-coords2)
-				if atomic_distance < distance_cutoff:
-					#if str(res_info(atom1,'atom_name'))+\
-					#   str(res_info(atom1,'res_number')) in already_added:
-					if current_res in already_added:
-						continue
-					res_name.append(current_res[1])
-					res_number.append(current_res[2])
-					res_chain.append(current_res[0])
-					res_atom.append(res_info(atom1,'atom_name'))
-					#already_added.append(str(res_info(atom1,'atom_name'))+\
-					#					 str(res_info(atom1,'res_number')))
-					already_added.append(current_res)
-					if res_info(atom1,'atom_name') in backbone_atoms:
-						atom_type.append('Backbone')
-					else:
-						atom_type.append('Sidechain')
+	add_residue=[]
+	temp_mol = Chem.RWMol(extended_mol)
 	new_mol = Chem.RWMol(extended_mol)
-	
-	res_dict = {'Residue Name':res_name,'Residue Number':res_number,
-				'Residue Atom':res_atom,'Atom Type':atom_type,
-				'Residue Chain':res_chain}
-	for atom in reversed(extended_mol.GetAtoms()):
-		current_res = define_residue(atom)
-		if current_res[2] in res_number:
-			if current_res[1] == res_name[res_number.index(current_res[2])]:
-				continue
-			#if res_info(atom,'chain') == \
-			#   res_chain[res_number.index(res_info(atom,'res_number'))]:
-			#	continue
-			else:
-				new_mol.RemoveAtom(atom.GetIdx())
-		else:
-			new_mol.RemoveAtom(atom.GetIdx())
-	if centroid is True:
-		print('Initial pass results in {} atoms.'
-			  .format(new_mol.GetNumAtoms()))
 
-	if centroid is False:
-		print('Final pass results in {} atoms.'.format(new_mol.GetNumAtoms()))
-		print("Structure saved as active_site_cutoff_{}.pdb".format(distance_cutoff))
-		Chem.MolToPDBFile(new_mol,'active_site_cutoff_{}.pdb'.format(distance_cutoff))
+	centroid_coords = np.asarray(Chem.rdMolTransforms.\
+		ComputeCentroid((catalytic_center_mol.GetConformer())))
+	distances = [np.linalg.norm(np.asarray(catalytic_center_mol.GetConformer().\
+		GetAtomPosition(atom.GetIdx()))-centroid_coords) for atom in \
+		catalytic_center_mol.GetAtoms()]
+	distance_buffer = np.max(distances)
+
+	for atom in reversed(extended_mol.GetAtoms()):
+		if ' H' in res_info(atom,'atom_name'):
+			continue
+		current_res=define_residue(atom)
+		if current_res in include_residues:
+			continue
+		if current_res in add_residue:
+			continue
+		else:
+			coords = np.asarray(extended_mol.GetConformer()
+								 .GetAtomPosition(atom.GetIdx()))
+			atomic_distance = np.linalg.norm(coords-centroid_coords)
+			if atomic_distance < distance_cutoff+distance_buffer:
+				add_residue.append(current_res)
+			else:
+				temp_mol.RemoveAtom(atom.GetIdx())
+
+	# second pass: goes over all atoms in catalytic center
+	keep_residue=[] #this is different than add_residue and include_residues.
+	for atom1 in reversed(temp_mol.GetAtoms()):
+		current_res=define_residue(atom1)
+		if current_res in include_residues:
+			keep_residue.append(current_res)
+			continue
+		if current_res in keep_residue:
+			continue
+		else:
+			coords1 = np.asarray(temp_mol.GetConformer().
+								 GetAtomPosition(atom1.GetIdx()))
+		for atom2 in catalytic_center_mol.GetAtoms():
+			if current_res in keep_residue:
+				continue
+			coords2 = np.asarray(catalytic_center_mol.GetConformer().
+								 GetAtomPosition(atom2.GetIdx()))
+			atomic_distance = np.linalg.norm(coords1-coords2)
+			if atomic_distance < distance_cutoff:
+				res_chain.append(current_res[0])
+				res_name.append(current_res[1])
+				res_number.append(current_res[2])
+				keep_residue.append(current_res)
+
+	print(keep_residue)
+	for atom in reversed(extended_mol.GetAtoms()):
+		current_res=define_residue(atom)
+		if current_res not in keep_residue:
+			new_mol.RemoveAtom(atom.GetIdx())
+	
+	res_dict = {'Residue Chain':res_chain,
+				'Residue Name':res_name,
+				'Residue Number':res_number}
+	
+	if file_suffix != '':
+		file_suffix = '_'+file_suffix
+	output_file = 'active_site_cutoff_{}{}.pdb'\
+				  .format(distance_cutoff,file_suffix)
+	print('Active site contains {} atoms.'.format(new_mol.GetNumAtoms()))
+	print("Structure saved as {}".format(output_file))
+	Chem.MolToPDBFile(new_mol,output_file)
 	
 	print(delimeter)
 	return new_mol, res_dict
