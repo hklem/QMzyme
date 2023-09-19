@@ -11,7 +11,6 @@
 
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from urllib.request import urlopen
 from rdkit.Chem import rdMolTransforms
 import os
@@ -197,13 +196,8 @@ class generate_model:
 		previous_res = None
 		edits_made = False
 		residue_count = 0
-		res_sequence = []
 		res_num_previous = None
 
-		pdb_format_sections=['record_type', 'atom_number','atom_name','alt_loc',
-							  'residue_name','chain_id','residue_number',
-							  'occupancy','temperature_factor','segment_id',
-							  'element_symbol','charge']
 		residues_reordered=False
 		if clean==True:
 			with open(self.protein_file,'r') as f:
@@ -427,7 +421,8 @@ class generate_model:
 				continue
 
 		if count==0:
-			print("WARNING: No atoms found matching catalytic center definition.")
+			print("WARNING: No atoms found matching"+
+                  " catalytic center definition.")
 			print(delimeter)
 		if count!=0:
 			# sanity check
@@ -444,7 +439,7 @@ class generate_model:
 					previous_res=current_res
 					raise_issue = True
 			if raise_issue is True:
-				print("WARNING: Your catalytic center definition is not unique"+
+				print("WARNING: Catalytic center definition is not unique"+
 					  " and multiple residues were therefore included: {}."\
 					  .format(catalytic_center_residues)+" Please ensure this"+
 					  " is what you intended!")
@@ -479,23 +474,19 @@ class generate_model:
 		'''
 
 		if distance_cutoff==0:
-			raise ValueError("Please specify a distance cutoff by 'distance_cutoff={int}'.")
+			raise ValueError("Please specify a distance cutoff by"
+                             " 'distance_cutoff={int}'.")
 
-		res_name, res_number, res_chain, res_atom, atom_type = [], [], [], [], []
-		N_termini_interactions = []
-		side_chain_interactions = []
-		C_termini_interactions = []
-		previous_res = None
-		backbone_atoms=[' O  ',' C  ',' N  ',' CA ']
+		res_name, res_number, res_chain = [], [], []
 		add_residue=[]
 		temp_mol = Chem.RWMol(self.protein_mol)
 		new_mol = Chem.RWMol(self.protein_mol)
 
 		centroid_coords = np.asarray(Chem.rdMolTransforms.\
 			ComputeCentroid((self.catalytic_center_mol.GetConformer())))
-		distances = [np.linalg.norm(np.asarray(self.catalytic_center_mol.GetConformer().\
-			GetAtomPosition(atom.GetIdx()))-centroid_coords) for atom in \
-			self.catalytic_center_mol.GetAtoms()]
+		distances = [np.linalg.norm(np.asarray(self.catalytic_center_mol.\
+            GetConformer().GetAtomPosition(atom.GetIdx()))-centroid_coords)\
+            for atom in self.catalytic_center_mol.GetAtoms()]
 		distance_buffer = np.max(distances)
 
 		for atom in reversed(self.protein_mol.GetAtoms()):
@@ -517,7 +508,7 @@ class generate_model:
 					temp_mol.RemoveAtom(atom.GetIdx())
 
 		# second pass: goes over all atoms in catalytic center
-		keep_residue=[] #this is different than add_residue and include_residues.
+		keep_residue=[] 
 		for atom1 in reversed(temp_mol.GetAtoms()):
 			current_res=self.define_residue(atom1)
 			if current_res in include_residues:
@@ -582,7 +573,9 @@ class generate_model:
 			output_file=pdb_file.split('.pdb')[0]+'_reduced.pdb'
 		cmd = "reduce -NOFLIP -Quiet {} > {}".format(pdb_file,output_file)
 		os.system(cmd)
-		new_mol = Chem.MolFromPDBFile(output_file,removeHs=False,sanitize=False)
+		new_mol = Chem.MolFromPDBFile(output_file,
+                                      removeHs=False,
+                                      sanitize=False)
 
 		return new_mol
 
@@ -612,19 +605,20 @@ class generate_model:
 		remove_atom_ids		- list containing integers of atom IDs you want
 					completed removed from the model.
 		remove_sidechains	- list containing strings of residue names you
-					want the sidechains removed of. This can be useful if its a 
-					bulky residue pointing away from the active site, and only its 
-					backbone is important to consider in the model. 
+					want the sidechains removed of. This can be useful if its 
+					a bulky residue pointing away from the active site, and  
+                    only its backbone is important to consider in the model. 
 		keep_backbones		- list containing strings of residue names that
-					you want to keep backbone atoms of, regardless of the capping 
-					scheme.
+					you want to keep backbone atoms of, regardless of the 
+                    capping scheme.
 		constrain_atoms		- list containing strings of the atom names 
 					(according to PDB format) that you want to constrain in the 
 					calculation. 
 		add_hydrogens		- boolean, default=False. If True, hydrogens will
-					be added to your model with the reduce package. Recommdended 
-					if you started with a .pdb file that did not contain 
-					hydrogens, but you should still evaluate the final structure.
+					be added to your model with the reduce package. 
+                    Recommdended if you started with a .pdb file that did not 
+                    contain hydrogens, but you should still evaluate the 
+                    final structure.
 
 		Generates the truncated_active_site_mol and constrain_atom_list
 		attributes, and saves new .pdb file. 
@@ -640,7 +634,7 @@ class generate_model:
 			
 		new_mol = Chem.RWMol(self.active_site_mol)
 		proline_count,bb_atom_count = 0,0
-		constrain_list,res_num,res_name,N_terminus,C_terminus=[],[],[],[],[]
+		constrain_list, N_terminus, C_terminus=[],[],[]
 		previous_res = None
 		remove_ids = []
 
@@ -700,7 +694,8 @@ class generate_model:
 						cap_atom.SetAtomicNum(1)
 						cap_atom.GetPDBResidueInfo().SetName(' H* ')
 						for a in range(len(N_bonds)):
-							if 'H' in self.res_info(N_bonds_atoms[a],'atom_name'):
+							if 'H' in self.res_info(N_bonds_atoms[a],\
+                                          'atom_name'):
 								remove_ids.append(N_bonds_atoms[a].GetIdx())
 				if ' N  ' in C_bonds:
 					C_terminus.append('Keep')
@@ -754,7 +749,13 @@ class generate_model:
 			new_mol.RemoveAtom(int(a))
 
 		new_mol.UpdatePropertyCache(strict=False)
-		Chem.SanitizeMol(new_mol,Chem.SanitizeFlags.SANITIZE_FINDRADICALS|Chem.SanitizeFlags.SANITIZE_KEKULIZE|Chem.SanitizeFlags.SANITIZE_SETAROMATICITY|Chem.SanitizeFlags.SANITIZE_SETCONJUGATION|Chem.SanitizeFlags.SANITIZE_SETHYBRIDIZATION|Chem.SanitizeFlags.SANITIZE_SYMMRINGS,catchErrors=True)
+		Chem.SanitizeMol(new_mol,Chem.SanitizeFlags.SANITIZE_FINDRADICALS\
+                         |Chem.SanitizeFlags.SANITIZE_KEKULIZE\
+                         |Chem.SanitizeFlags.SANITIZE_SETAROMATICITY\
+                         |Chem.SanitizeFlags.SANITIZE_SETCONJUGATION\
+                         |Chem.SanitizeFlags.SANITIZE_SETHYBRIDIZATION\
+                         |Chem.SanitizeFlags.SANITIZE_SYMMRINGS,\
+                         catchErrors=True)
 		for atom in reversed(new_mol.GetAtoms()):
 			if ' H* ' in self.res_info(atom,'atom_name'):
 				if rdMolTransforms.GetBondLength(new_mol.GetConformer(),
@@ -777,8 +778,9 @@ class generate_model:
 		Chem.MolToPDBFile(new_mol,output_file)
 
 		if proline_count > 0:
-			print("WARNING: Active site model contains {}".format(proline_count) +\
-				  " proline(s). The N backbone atom was automatically kept.")
+			print("WARNING: Active site model contains {}".\
+                  format(proline_count)+" proline(s). The N backbone"
+                  " atom was automatically kept.")
 
 		self.truncated_active_site_mol = new_mol
 		self.constrain_atom_list = constrain_list
@@ -788,11 +790,9 @@ class generate_model:
 ###############################################################################
 	def show_mol(self,mol=None):
 		mol = Chem.RWMol(mol)
-		from rdkit.Chem import Draw
 		from rdkit.Chem.Draw import rdMolDraw2D
 		from rdkit.Chem import rdDepictor
 		rdDepictor.SetPreferCoordGen(True)
-		from rdkit.Chem.Draw import IPythonConsole
 		from IPython.display import SVG
 		from rdkit.Chem import rdCoordGen
 
