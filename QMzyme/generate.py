@@ -414,7 +414,7 @@ def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
 			raise ValueError(' Must define on of the following:' +
 							 'catalytic_center_pdb or catalytic_center_mol.')
 		else:
-			catalytic_center_mol = Chem.MolFromPDBFile(extended_pdb,
+			catalytic_center_mol = Chem.MolFromPDBFile(catalytic_center_pdb,
 													   removeHs=False,
 													   sanitize=False)
 
@@ -452,8 +452,9 @@ def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
 		if current_res in add_residue:
 			continue
 		else:
-			coords = np.asarray(extended_mol.GetConformer()
-								 .GetAtomPosition(atom.GetIdx()))
+			coords = atom_coords(extended_mol,atom)
+			#coords = np.asarray(extended_mol.GetConformer()
+			#					 .GetAtomPosition(atom.GetIdx()))
 			atomic_distance = np.linalg.norm(coords-centroid_coords)
 			if atomic_distance < distance_cutoff+distance_buffer:
 				add_residue.append(current_res)
@@ -470,13 +471,15 @@ def residue_shell(catalytic_center_mol=None, catalytic_center_pdb=None,
 		if current_res in keep_residue:
 			continue
 		else:
-			coords1 = np.asarray(temp_mol.GetConformer().
-								 GetAtomPosition(atom1.GetIdx()))
+			coords1 = atom_coords(temp_mol,atom1)
+			#coords1 = np.asarray(temp_mol.GetConformer().
+			#					 GetAtomPosition(atom1.GetIdx()))
 		for atom2 in catalytic_center_mol.GetAtoms():
 			if current_res in keep_residue:
 				continue
-			coords2 = np.asarray(catalytic_center_mol.GetConformer().
-								 GetAtomPosition(atom2.GetIdx()))
+			coords2 = atom_coords(catalytic_center_mol,atom2)
+			#coords2 = np.asarray(catalytic_center_mol.GetConformer().
+			#					 GetAtomPosition(atom2.GetIdx()))
 			atomic_distance = np.linalg.norm(coords1-coords2)
 			if atomic_distance < distance_cutoff:
 				res_chain.append(current_res[0])
@@ -663,7 +666,8 @@ def truncate(mol=None, pdb_file=None, scheme='CA_terminal',
 	for a in reversed(np.unique(remove_ids)):
 		new_mol.RemoveAtom(int(a))
 
-	Chem.SanitizeMol(new_mol)
+	new_mol.UpdatePropertyCache(strict=False)
+	Chem.SanitizeMol(new_mol,Chem.SanitizeFlags.SANITIZE_FINDRADICALS|Chem.SanitizeFlags.SANITIZE_KEKULIZE|Chem.SanitizeFlags.SANITIZE_SETAROMATICITY|Chem.SanitizeFlags.SANITIZE_SETCONJUGATION|Chem.SanitizeFlags.SANITIZE_SETHYBRIDIZATION|Chem.SanitizeFlags.SANITIZE_SYMMRINGS,catchErrors=True)
 	for atom in reversed(new_mol.GetAtoms()):
 		if ' H* ' in res_info(atom,'atom_name'):
 			if rdMolTransforms.GetBondLength(new_mol.GetConformer(), 
