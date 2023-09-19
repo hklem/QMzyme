@@ -15,6 +15,12 @@ cd QMzyme
 
 pip install -e . 
 
+### Dependencies:
+
+rdkit
+
+reduce (comes with ambertools)
+
 ### Copyright
 
 Copyright (c) 2023, Heidi Klem
