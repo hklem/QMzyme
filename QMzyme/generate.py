@@ -176,6 +176,10 @@ class generate_model:
 			pass
 		return return_info
 ###############################################################################
+	def get_atoms(self):
+		return self.protein_mol.GetAtoms()
+
+###############################################################################
 	def check_pdb(self,clean=True):
 		'''
 		Function to assess PDB format, fix any issues that might break 
@@ -190,13 +194,29 @@ class generate_model:
 		'''
 
 		wat_count, protein_res_count, non_protein_res_count = 0,0,0
-		anion_count, cation_count = 0, 0	
 		data, protein_seq, non_protein_seq = [], [], []
 		h_present, no_chain_info = False, False
 		previous_res = None
 		edits_made = False
 		residue_count = 0
 		res_num_previous = None
+		non_protein_residues = {}
+		non_protein_residues['Chain'] = []
+		non_protein_residues['Name'] = []
+		non_protein_residues['Number'] = []
+		non_protein_chemical_name = {}
+
+		with open(self.protein_file,'r') as f:
+			data = f.readlines()
+		for line in data:
+			if 'HET   ' in line:
+				non_protein_res_count += 1
+				chain, name, number = line[12], line[7:10], line[13:17]
+				non_protein_residues['Chain'].append(chain)
+				non_protein_residues['Name'].append(name)
+				non_protein_residues['Number'].append(number)
+			if 'HETNAM' in line:
+				non_protein_chemical_name[line[11:14]]=line[15:].split('  ')[0]
 
 		residues_reordered=False
 		if clean==True:
@@ -305,24 +325,14 @@ class generate_model:
 			if current_res[1] in ['WAT','HOH','TIP']:
 				wat_count += 1
 				continue
-			if '+' in current_res[1]:
-				cation_count += 1
-				cation = current_res[1]
-				continue
-			if '-' in current_res[1]:
-				anion_count += 1
-				anion = current_res[1]
-				continue
 			if atom.GetPDBResidueInfo().GetIsHeteroAtom() is True:
 				non_protein_seq.append(current_res)
-				non_protein_res_count += 1
 				continue
 			if current_res[1] in protein_residues:
 				protein_seq.append(current_res)
 				protein_res_count += 1
 			else:
 				non_protein_seq.append(current_res)
-				non_protein_res_count += 1
 	
 		print("Information on PDB file: {}".format(self.protein_file))
 		if h_present == True:
@@ -334,25 +344,27 @@ class generate_model:
 		print(delimeter)
 		print("Total number of atoms: {}".format(self.protein_mol.GetNumAtoms()))
 		print("Water molecules: {}".format(wat_count))
-		if cation_count > 0:
-			print("{} ions: {}".format(cation,cation_count))
-		if cation_count == 0:
-			if anion_count == 0:
-				print("Ions: 0")
-		if anion_count > 0:
-			print("{} ions: {}".format(anion,anion_count))
 		print("Standard amino acid residues: {}".format(protein_res_count))
 		print(delimeter)
 		print("The following {} non-protein residues were detected:"
 			  .format(non_protein_res_count))
 		if non_protein_res_count > 0:
+			chain = non_protein_residues['Chain']
+			name = non_protein_residues['Name']
+			number = non_protein_residues['Number']
 			for i in range(non_protein_res_count):
-				print("Chain: {}".format(non_protein_seq[i][0]),
-					  " Residue Name: {}".format(non_protein_seq[i][1]),
-					  " Residue Number: {}".format(non_protein_seq[i][2]))
+				chemical_name = non_protein_chemical_name[name[i]]
+				print("Chain: {}".format(chain[i]),
+					  " Residue Name: {}".format(name[i]),
+					  " Chemical Name: {}".format(chemical_name),
+					  " Residue Number: {}".format(number[i]))
+			
 		print(delimeter)
 		self.protein_res_count = protein_res_count
 		self.h_present = h_present
+		self.non_protein_residues = non_protein_residues
+		self.non_protein_residue_count = non_protein_res_count
+		self.non_protein_chemical_names = non_protein_chemical_name
 		
 ###############################################################################
 	def atom_coords(self,mol,atom):
@@ -406,7 +418,7 @@ class generate_model:
 		if output_file is None:
 			output_file = '{}_catalytic_center{}.pdb'\
 						  .format(self.protein_prefix,file_suffix[:-1])
-
+		self.cat_center = 'catalytic_center{}'.format(file_suffix[:-1])
 		catalytic_center_mol = Chem.RWMol(self.protein_mol)
 
 		for atom in reversed(self.protein_mol.GetAtoms()):
@@ -456,7 +468,7 @@ class generate_model:
 
 ###############################################################################
 	def active_site(self, distance_cutoff=0, include_residues=[],
-					output_file=None):
+					output_file=None, save_file=True):
 		'''
 		Function that selects all residues that have at least 
 		one atom within the cutoff distance from the predefined catalytic 
@@ -543,11 +555,12 @@ class generate_model:
 					'Residue Number':res_number}
 
 		if output_file is None:
-			output_file = '{}_active_site_distance_cutoff_{}.pdb'\
-					  	  .format(self.protein_prefix,distance_cutoff)
+			output_file = '{}_{}_active_site_distance_cutoff_{}.pdb'\
+					  	  .format(self.protein_prefix,self.cat_center,distance_cutoff)
 		print("Active site contains {} atoms.".format(new_mol.GetNumAtoms()))
 		print("Structure saved as {}".format(output_file))
-		Chem.MolToPDBFile(new_mol,output_file)
+		if save_file is True:
+			Chem.MolToPDBFile(new_mol,output_file)
 		self.distance_cutoff=distance_cutoff	
 		self.active_site_mol = new_mol
 		self.active_site_residues = res_dict
@@ -637,6 +650,7 @@ class generate_model:
 		constrain_list, N_terminus, C_terminus=[],[],[]
 		previous_res = None
 		remove_ids = []
+		residues = []
 
 		for atom in reversed(self.active_site_mol.GetAtoms()):
 			current_res = self.define_residue(atom)
@@ -711,6 +725,7 @@ class generate_model:
 				bb_atom_count = 0
 				previous_res = current_res
 
+#TO DO: automate code to remove unecessary side chains
 		if len(remove_sidechains) > 0:
 			for atom in reversed(self.active_site_mol.GetAtoms()):
 				current_res = self.define_residue(atom)
@@ -756,7 +771,7 @@ class generate_model:
                          |Chem.SanitizeFlags.SANITIZE_SETHYBRIDIZATION\
                          |Chem.SanitizeFlags.SANITIZE_SYMMRINGS,\
                          catchErrors=True)
-		for atom in reversed(new_mol.GetAtoms()):
+		for atom in new_mol.GetAtoms():
 			if ' H* ' in self.res_info(atom,'atom_name'):
 				if rdMolTransforms.GetBondLength(new_mol.GetConformer(),
 				   atom.GetNeighbors()[0].GetIdx(), atom.GetIdx()) > 1.01:
@@ -766,13 +781,14 @@ class generate_model:
 			# Record atom ids to add to constrain list
 			if self.res_info(atom,'atom_name') in constrain_atoms:
 				constrain_list.append(atom.GetIdx()+1)
+			residues.append(self.define_residue(atom))
 
 		print("Final active site model contains {} atoms."
 			  .format(new_mol.GetNumAtoms()))
 
 		if output_file is None:
-			output_file = '{}_truncated_active_site_distance_cutoff_{}.pdb'\
-						  .format(self.protein_prefix,self.distance_cutoff)
+			output_file = '{}_{}_truncated_active_site_distance_cutoff_{}.pdb'\
+						  .format(self.protein_prefix,self.cat_center,self.distance_cutoff)
 		print("Structure saved as {}".format(output_file))
 
 		Chem.MolToPDBFile(new_mol,output_file)
@@ -782,13 +798,17 @@ class generate_model:
                   format(proline_count)+" proline(s). The N backbone"
                   " atom was automatically kept.")
 
+		self.model_atom_count = new_mol.GetNumAtoms()
 		self.truncated_active_site_mol = new_mol
 		self.constrain_atom_list = constrain_list
+		self.model_residues = np.unique(residues)
 		print(delimeter)
 		#return new_mol, constrain_list
 
 ###############################################################################
 	def show_mol(self,mol=None):
+		if mol is None:
+			mol = self.catalytic_center_mol
 		mol = Chem.RWMol(mol)
 		from rdkit.Chem.Draw import rdMolDraw2D
 		from rdkit.Chem import rdDepictor
