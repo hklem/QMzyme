@@ -772,7 +772,7 @@ class generate_model:
                          |Chem.SanitizeFlags.SANITIZE_SYMMRINGS,\
                          catchErrors=True)
 		for atom in new_mol.GetAtoms():
-			current_res = define_residue(atom)
+			current_res = self.define_residue(atom)
 			if current_res not in residues:
 				residues.append(current_res)
 			if ' H* ' in self.res_info(atom,'atom_name'):
