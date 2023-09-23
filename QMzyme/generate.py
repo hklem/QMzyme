@@ -803,7 +803,7 @@ class generate_model:
 		self.model_atom_count = new_mol.GetNumAtoms()
 		self.truncated_active_site_mol = new_mol
 		self.constrain_atom_list = constrain_list
-		self.model_residues = np.unique(residues)
+		self.model_residues = residues
 		print(delimeter)
 		#return new_mol, constrain_list
 
