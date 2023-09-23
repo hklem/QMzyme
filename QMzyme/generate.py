@@ -772,6 +772,9 @@ class generate_model:
                          |Chem.SanitizeFlags.SANITIZE_SYMMRINGS,\
                          catchErrors=True)
 		for atom in new_mol.GetAtoms():
+			current_res = define_residue(atom)
+			if current_res not in residues:
+				residues.append(current_res)
 			if ' H* ' in self.res_info(atom,'atom_name'):
 				if rdMolTransforms.GetBondLength(new_mol.GetConformer(),
 				   atom.GetNeighbors()[0].GetIdx(), atom.GetIdx()) > 1.01:
@@ -781,7 +784,6 @@ class generate_model:
 			# Record atom ids to add to constrain list
 			if self.res_info(atom,'atom_name') in constrain_atoms:
 				constrain_list.append(atom.GetIdx()+1)
-			residues.append(self.define_residue(atom))
 
 		print("Final active site model contains {} atoms."
 			  .format(new_mol.GetNumAtoms()))
