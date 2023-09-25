@@ -105,7 +105,7 @@ class generate_model:
 		'''
 
 		if info == 'res_name':
-			return atom.GetPDBResidueInfo().GetResidueName()
+			return atom.GetPDBResidueInfo().GetResidueName().split()[0]
 		if info == 'atom_name':
 			return atom.GetPDBResidueInfo().GetName()
 		if info == 'res_number':
@@ -125,7 +125,7 @@ class generate_model:
 		Returns tuple of format: ('chain','residue name', 'residue number')
 		'''
 
-		return (self.res_info(atom,'chain'),self.res_info(atom,'res_name'),
+		return (self.res_info(atom,'chain'),self.res_info(atom,'res_name').split()[0],
 				self.res_info(atom,'res_number'))
 
 
