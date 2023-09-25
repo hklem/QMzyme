@@ -651,6 +651,7 @@ class generate_model:
 		previous_res = None
 		remove_ids = []
 		residues = []
+		fix_N = []
 
 		for atom in reversed(self.active_site_mol.GetAtoms()):
 			current_res = self.define_residue(atom)
@@ -775,16 +776,21 @@ class generate_model:
 			current_res = self.define_residue(atom)
 			if current_res not in residues:
 				residues.append(current_res)
-			if ' H* ' in self.res_info(atom,'atom_name'):
+			if ' H* ' in self.res_info(atom,info='atom_name'):
 				if rdMolTransforms.GetBondLength(new_mol.GetConformer(),
 				   atom.GetNeighbors()[0].GetIdx(), atom.GetIdx()) > 1.01:
 					# This changes cap H bond length to something more physical
 					rdMolTransforms.SetBondLength(new_mol.GetConformer(),
 					atom.GetNeighbors()[0].GetIdx(),atom.GetIdx(), 0.970)
+			if current_res[1] == 'PRO':
+				if self.res_info(atom,info='atom_name') == ' N  ':
+					atom.SetHybridization(Chem.HybridizationType.SP2)
+					fix_N.append(atom.GetIdx())
 			# Record atom ids to add to constrain list
 			if self.res_info(atom,'atom_name') in constrain_atoms:
 				constrain_list.append(atom.GetIdx()+1)
 
+		new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True,onlyOnAtoms=fix_N)
 		print("Final active site model contains {} atoms."
 			  .format(new_mol.GetNumAtoms()))
 
