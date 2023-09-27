@@ -564,12 +564,12 @@ class generate_model:
 					'Residue Name':res_name,
 					'Residue Number':res_number}
 
-		if output_file is None:
-			output_file = '{}_{}_active_site_distance_cutoff_{}.pdb'\
-					  	  .format(self.protein_prefix,self.cat_center,distance_cutoff)
 		print("Active site contains {} atoms.".format(new_mol.GetNumAtoms()))
-		print("Structure saved as {}".format(output_file))
 		if save_file is True:
+			if output_file is None:
+				output_file = '{}_{}_active_site_distance_cutoff_{}.pdb'\
+						  	  .format(self.protein_prefix,self.cat_center,distance_cutoff)
+			print("Structure saved as {}".format(output_file))
 			Chem.MolToPDBFile(new_mol,output_file)
 		self.distance_cutoff=distance_cutoff	
 		self.active_site_mol = new_mol
