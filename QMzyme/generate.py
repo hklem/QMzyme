@@ -14,7 +14,7 @@ from rdkit import Chem
 from urllib.request import urlopen
 from rdkit.Chem import rdMolTransforms
 import os
-
+from rdkit.Chem import rdDistGeom
 
 
 delimeter='---------------------------------------------------------'
@@ -22,6 +22,8 @@ protein_residues =  ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
 					 'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
 					 'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
 					 'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP' ]
+
+solvent_list=['HOH','WAT','T3P','SOL'] 
 
 elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
 		   'Na','Mg','Al','Si','P','S','Cl','Ar','K', 'Ca',
@@ -228,7 +230,7 @@ class generate_model:
 					res_num = self.parse_pdb(line,info='res_num')
 					res_name = self.parse_pdb(line,info='res_name')
 					if res_num != res_num_previous:
-						if res_name not in ['WAT','HOH','TIP']:
+						if res_name not in solvent_list:
 							residue_count += 1
 							if int(res_num.split()[0]) != residue_count:
 								residues_reordered = True
@@ -322,7 +324,7 @@ class generate_model:
 			if previous_res == current_res:
 				continue
 			previous_res = current_res
-			if current_res[1] in ['WAT','HOH','TIP']:
+			if current_res[1] in solvent_list:
 				wat_count += 1
 				continue
 			if atom.GetPDBResidueInfo().GetIsHeteroAtom() is True:
@@ -468,7 +470,8 @@ class generate_model:
 
 ###############################################################################
 	def active_site(self, distance_cutoff=0, include_residues=[],
-					output_file=None, save_file=True):
+					output_file=None, save_file=True,
+					solvent=solvent_list, intermediate_mol=None):
 		'''
 		Function that selects all residues that have at least 
 		one atom within the cutoff distance from the predefined catalytic 
@@ -481,6 +484,12 @@ class generate_model:
 					I.e., include_residues=[('A','GLY',101),('A','ASP',20)].
 					It follows the define_residue() format.
 		output_file		- string defining the .pdb output file name.
+		intermediate_mol	- rdkit mol object to be used instead of the 
+			protein mol that was created during model initialization. This is
+			useful if, for example, you are creating multiple active sites 
+			from the same initial PDB with varying cutoff distances, in 
+			which case the intermediate_mol object must have been generated
+			with a larger cutoff distance than what is currently specified.
 
 		Generates active_site_mol attribute, and creates .pdb file. 
 		'''
@@ -491,8 +500,13 @@ class generate_model:
 
 		res_name, res_number, res_chain = [], [], []
 		add_residue=[]
-		temp_mol = Chem.RWMol(self.protein_mol)
-		new_mol = Chem.RWMol(self.protein_mol)
+		if intermediate_mol is not None:
+			mol = intermediate_mol
+		else:
+			mol = self.protein_mol
+
+		temp_mol = Chem.RWMol(mol)
+		new_mol = Chem.RWMol(mol)
 
 		centroid_coords = np.asarray(Chem.rdMolTransforms.\
 			ComputeCentroid((self.catalytic_center_mol.GetConformer())))
@@ -501,7 +515,7 @@ class generate_model:
             for atom in self.catalytic_center_mol.GetAtoms()]
 		distance_buffer = np.max(distances)
 
-		for atom in reversed(self.protein_mol.GetAtoms()):
+		for atom in reversed(mol.GetAtoms()):
 			if ' H' in self.res_info(atom,'atom_name'):
 				continue
 			current_res=self.define_residue(atom)
@@ -510,9 +524,7 @@ class generate_model:
 			if current_res in add_residue:
 				continue
 			else:
-				coords = self.atom_coords(self.protein_mol,atom)
-				#coords = np.asarray(self.protein_mol.GetConformer()
-				#                    .GetAtomPosition(atom.GetIdx()))
+				coords = self.atom_coords(mol,atom)
 				atomic_distance = np.linalg.norm(coords-centroid_coords)
 				if atomic_distance < distance_cutoff+distance_buffer:
 					add_residue.append(current_res)
@@ -530,8 +542,6 @@ class generate_model:
 				continue
 			else:
 				coords1 = self.atom_coords(temp_mol,atom1)
-				#coords1 = np.asarray(temp_mol.GetConformer().
-				#                    GetAtomPosition(atom1.GetIdx()))
 			for atom2 in self.catalytic_center_mol.GetAtoms():
 				if current_res in keep_residue:
 					continue
@@ -545,7 +555,7 @@ class generate_model:
 					res_number.append(current_res[2])
 					keep_residue.append(current_res)
 
-		for atom in reversed(self.protein_mol.GetAtoms()):
+		for atom in reversed(mol.GetAtoms()):
 			current_res=self.define_residue(atom)
 			if current_res not in keep_residue:
 				new_mol.RemoveAtom(atom.GetIdx())
@@ -593,11 +603,57 @@ class generate_model:
 		return new_mol
 
 ###############################################################################
+	def protonate_solvent(self,mol=None,solvent=solvent_list):
+		'''
+		Function to add hydrogens to water molecules because reduce does not
+		recognize all water residue names. I found that for some weird 
+		reason you cannot do rdkit's Chem.rdmolops.AddHs and include 
+		PDB residue information when Hs are already present, so we can't
+		simply add Hs to the relevant water oxygen atoms because then
+		the PDB information cannot be included if any other Hs are present
+		in the structure. To avoid that situation, this function separates
+		water molecules from the mol object, protonates them, adds coordinate
+		information back, and then combines with final mol object. Note: if 
+		any solvent molecules already have bound H, they will be skipped. 
+		
+		mol : rdkit mol object, must be defined.
+		solvent : List of strings containing names of solvent residues in PDB.
+			default is solvent=['HOH','WAT','T3P','SOL'] 
+		
+		Returns mol object. 
+		'''
+		solvent_mol = Chem.RWMol()
+		no_solvent_mol = Chem.RWMol(mol)
+		pos = []
+		for atom in reversed(mol.GetAtoms()):
+			if self.define_residue(atom)[1] in solvent:
+				if self.res_info(atom,info='atom_name') == ' O  ':
+					if len(atom.GetNeighbors()) != 2:
+						pos.append(self.atom_coords(mol,atom))
+						no_solvent_mol.RemoveAtom(atom.GetIdx())
+						solvent_mol.AddAtom(atom)
+		if solvent_mol.GetNumAtoms() > 0:
+			rdDistGeom.EmbedMolecule(solvent_mol)
+			for i,atom in enumerate(reversed(solvent_mol.GetAtoms())):
+				solvent_mol.GetConformer().SetAtomPosition(atom.GetIdx(),pos[i])
+				atom.SetHybridization(Chem.HybridizationType.SP3)
+		
+			solvent_mol = Chem.rdmolops.AddHs(solvent_mol,
+											  addCoords=True,
+											  addResidueInfo=True)
+
+			combined_mol = Chem.CombineMols(no_solvent_mol,solvent_mol)
+			return combined_mol
+		else:
+			return mol
+
+###############################################################################
 	def truncate(self, scheme='CA_terminal', output_file=None,
-				 skip_residues=['HOH','WAT', 'TIP'], skip_resnumbers=[],
+				 skip_residues=solvent_list, skip_resnumbers=[],
 				 remove_resnumbers=[], remove_atom_ids=[], 
 				 remove_sidechains=[], keep_backbones=[], 
-				 constrain_atoms=[' CA '], add_hydrogens=False):
+				 constrain_atoms=[' CA '], add_hydrogens=False, 
+				 exclude_solvent=False):
 		'''
 		Function to prepare truncated QMzyme model.
 		scheme			- string to define what truncation scheme to use.
@@ -632,6 +688,8 @@ class generate_model:
                     Recommdended if you started with a .pdb file that did not 
                     contain hydrogens, but you should still evaluate the 
                     final structure.
+		exclude_solvent		- boolean, default=False. If True, solvent 
+					molecules will be removed from the model.
 
 		Generates the truncated_active_site_mol and constrain_atom_list
 		attributes, and saves new .pdb file. 
@@ -644,7 +702,8 @@ class generate_model:
 		if add_hydrogens is True:
 			Chem.MolToPDBFile(self.active_site_mol,'temp.pdb')
 			self.active_site_mol = self.add_H(pdb_file='temp.pdb')
-			
+			self.active_site_mol = self.protonate_solvent(mol=self.active_site_mol)
+
 		new_mol = Chem.RWMol(self.active_site_mol)
 		proline_count,bb_atom_count = 0,0
 		constrain_list, N_terminus, C_terminus=[],[],[]
@@ -759,6 +818,9 @@ class generate_model:
 					remove_ids.append(atom.GetIdx())
 					for a in bound_atoms:
 						remove_ids.append(a)
+			if exclude_solvent is True:
+				if self.define_residue(atom)[1] in solvent_list:
+					remove_ids.append(atom.GetIdx())
 
 		# Now actually create the truncated and capped mol object
 		for a in reversed(np.unique(remove_ids)):
@@ -790,7 +852,8 @@ class generate_model:
 			if self.res_info(atom,'atom_name') in constrain_atoms:
 				constrain_list.append(atom.GetIdx()+1)
 
-		new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True,onlyOnAtoms=fix_N)
+		if len(fix_N) > 0:
+			new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True,onlyOnAtoms=fix_N)
 		print("Final active site model contains {} atoms."
 			  .format(new_mol.GetNumAtoms()))
 
