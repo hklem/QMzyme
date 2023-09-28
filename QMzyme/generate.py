@@ -471,7 +471,7 @@ class generate_model:
 ###############################################################################
 	def active_site(self, distance_cutoff=0, include_residues=[],
 					output_file=None, save_file=True,
-					solvent=solvent_list, intermediate_mol=None):
+					solvent=solvent_list, intermediate_mol=None, center=None):
 		'''
 		Function that selects all residues that have at least 
 		one atom within the cutoff distance from the predefined catalytic 
@@ -490,6 +490,12 @@ class generate_model:
 			from the same initial PDB with varying cutoff distances, in 
 			which case the intermediate_mol object must have been generated
 			with a larger cutoff distance than what is currently specified.
+		center		- (Work in progress) string defining the .pdb file 
+			of your catalytic center. Default is None. This is helpful to 
+			use if you want to alter the ligand in any way, for example, 
+			add hydrogens to certain atoms. Please not the coordinates of 
+			the molecule need to be consistent with the coordinates of 
+			the protein.
 
 		Generates active_site_mol attribute, and creates .pdb file. 
 		'''
@@ -507,6 +513,8 @@ class generate_model:
 
 		temp_mol = Chem.RWMol(mol)
 		new_mol = Chem.RWMol(mol)
+		if center is not None:
+			self.catalytic_center_mol = Chem.MolFromPDBFile(center)
 
 		centroid_coords = np.asarray(Chem.rdMolTransforms.\
 			ComputeCentroid((self.catalytic_center_mol.GetConformer())))
