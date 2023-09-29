@@ -381,7 +381,7 @@ class generate_model:
 
 ###############################################################################
 	def catalytic_center(self, res_name=None, res_number=None, chain=None, 
-						 output_file=None):
+						 output_file=None, save_file=True):
 		'''
 		Function to define the center of the QMzyme model. This is 
 		typically the ligand/substrate. Currently only supports the 
@@ -460,8 +460,11 @@ class generate_model:
 
 			print("Catalytic center contains {} atoms."
 				  .format(catalytic_center_mol.GetNumAtoms()))
-			print("Structure saved as {}".format(output_file))
-			Chem.MolToPDBFile(catalytic_center_mol,output_file)
+			if save_file is True:
+				print("Structure saved as {}".format(output_file))
+				Chem.MolToPDBFile(catalytic_center_mol,output_file)
+			if save_file is False:
+				self.catalytic_center_pdb = Chem.MolToPDBFile(catalytic_center_mol,output_file)
 
 			self.catalytic_center_definition = current_res
 			self.catalytic_center_mol = catalytic_center_mol
