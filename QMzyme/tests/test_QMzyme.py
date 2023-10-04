@@ -9,7 +9,7 @@ import sys
 import pytest
 import QMzyme
 import os
-from QMzyme.pdb_utils import collect_pdb_data
+from QMzyme.utils import collect_pdb_data
 
 path = os.path.join(os.getcwd(),'etc')
 

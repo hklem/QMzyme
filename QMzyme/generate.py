@@ -11,11 +11,11 @@
 
 import numpy as np
 from rdkit import Chem
-from urllib.request import urlopen
 from rdkit.Chem import rdMolTransforms
 import os
 from rdkit.Chem import rdDistGeom
-from QMzyme.pdb_utils import pdb_info
+from QMzyme.utils import pdb_info
+from QMzyme import utils
 from QMzyme.rdkit_wrapper import (
     res_info,
     res_name,
@@ -26,7 +26,6 @@ from QMzyme.rdkit_wrapper import (
     check_pdb_rdkit)
 
 
-delimeter='---------------------------------------------------------\n'
 protein_residues =  ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                      'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
                      'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
@@ -77,7 +76,7 @@ class generate_model:
                                  " use the pdb_code argument to automatically"+
                                  " download the file from the PDB server.")
             else:
-                protein_file = self.download(pdb_code)                    
+                protein_file = utils.download(pdb_code)                    
 
         
         self.protein_file=protein_file
@@ -100,165 +99,7 @@ class generate_model:
                       " rdkit was unable to create mol object."+
                       " This may mean the file does not follow proper PDB"+
                       " formatting. Run self.check_pdb() function to clean.")
-        
-###############################################################################
-    def write_log(self,text):
-        file_name = self.protein_prefix+'_QMzyme.log'
-        self.log = open(file_name,'w')
-        self.log.write("{}\n".format(text))
-        self.log.write(delimeter)
-        self.log.close()
-
-###############################################################################
-    def download(self, pdb_code):
-        base_url = 'http://www.pdb.org/pdb/download/downloadFile.do?fileFormat'+\
-         '=pdb&compression=NO&structureId='
-        for structure in pdb_code.split():
-            pdb_url = base_url + structure[:4]
-            output_file = structure[:4] + '.pdb'
-
-            with urlopen(pdb_url) as response, open(output_file, 'wb') as outfile:
-                data = response.read()
-                outfile.write(data)
-                self.write_log("Downloading {} as {}.".format(structure[:4], output_file))
-                self.write_log(pdb_url)
-                
-        return output_file
-
-###############################################################################
-    def check_pdb(self,clean=True):
-        '''
-        Function to assess PDB format, fix any issues that might break 
-        the QMzyme code, and gather useful basic information.
-        clean            - boolean, default=True. If False, the PDB format will 
-                    not be checked. Usually not a problem when downloading 
-                    straight from rcsb.org.
-
-        Prints out basic information of the pdb file, and  if 
-        issues are found the PDB file will be fixed, and the original 
-        will be copied to a new file with the suffix '_original.pdb'.
-        '''
-
-        wat_count, protein_res_count, non_protein_res_count = 0,0,0
-        data, protein_seq, non_protein_seq = [], [], []
-        h_present, no_chain_info = False, False
-        previous_res = None
-        edits_made = False
-        residue_count = 0
-        res_num_previous = None
-        non_protein_residues = {}
-        non_protein_residues['Chain'] = []
-        non_protein_residues['Name'] = []
-        non_protein_residues['Number'] = []
-        non_protein_chemical_name = {}
-
-        with open(self.protein_file,'r') as f:
-            data = f.readlines()
-        for line in data:
-            if 'HET   ' in line:
-                non_protein_res_count += 1
-                chain, name, number = line[12], line[7:10], line[13:17]
-                non_protein_residues['Chain'].append(chain)
-                non_protein_residues['Name'].append(name)
-                non_protein_residues['Number'].append(number)
-            if 'HETNAM' in line:
-                non_protein_chemical_name[line[11:14]]=line[15:].split('  ')[0]
-
-        residues_reordered=False
-        if clean==True:
-            with open(self.protein_file,'r') as f:
-                data = f.readlines()
-            for i,line in enumerate(data):
-                if pdb_info('record_type',line) in ['ATOM','HETATM']:
-                    atom_type = pdb_info('atom_name',line)
-                    res_num = pdb_info('res_number',line)
-                    res_name = pdb_info('res_name',line)
-                    if res_num != res_num_previous:
-                        if res_name not in solvent_list:
-                            residue_count += 1
-                            if int(res_num.split()[0]) != residue_count:
-                                residues_reordered = True
-                                edits_made=True
-                                if residue_count>999:
-                                    res_num = str(residue_count)
-                                elif residue_count>99:
-                                    res_num = ' '+str(residue_count)
-                                elif residue_count>9:
-                                    res_num = '  '+str(residue_count)
-                                else:
-                                    res_num = '   '+str(residue_count)
-                                data[i]=line[0:22]+res_num+line[26:]
-                                line=line[0:22]+res_num+line[26:]
-                                if pdb_info('res_name', data[i+1]) == res_name:
-                                    residue_count -= 1
-                    res_num_previous = res_num
-                    try:
-                        element = pdb_info('element_symbol', line)
-                    except ValueError:
-                        element=None
-
-                    if atom_type[0]!=' ':
-                        if atom_type[0]=='H':
-                            if len(atom_type)==4:
-                                if element is None:
-                                    edits_made=True
-                                    data[i]=line[0:76]+' H'+line[78:]
-                                continue
-                    if atom_type[:2] in elements:
-                        print('yes')
-                        if element is None:
-                            edits_made=True
-                            data[i]=line[0:76]+atom_type[:2]+line[78:]
-                        elif atom_type[:2] == element:
-                            continue
-                    if atom_type[1] in elements:
-                        if element is None:
-                            edits_made=True
-                            data[i]=line[0:76]+atom_type[:2]+line[78:]
-                        elif atom_type[:2] == element:
-                            continue
-                        #else:
-                    else:
-                        if atom_type[1]+atom_type[2].lower() in elements:
-                            edits_made=True
-                            data[i]=line[0:12]+atom_type[1:]+' '+line[16:76]+\
-                                      atom_type[1:3]+line[78:]
-                            print("SUSPECTED ISSUE FOUND ON ATOM{}: Element symbol"\
-                                  .format(pdb_info('atom_number',line))+
-                                  " with two letters ({}) must begin in the 13th"\
-                                  .format(atom_type[1:3])+" columnspace according"+
-                                  " to PDB format.")
-
-                        elif atom_type[2] in elements:
-                            edits_made=True
-                            unk_sym = atom_type[:2].split()[0]
-                            if len(unk_sym) == 2:
-                                data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-                                          line[16:76]+' '+atom_type[2]+line[78:]
-                            if len(unk_sym) == 1:
-                                data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-                                          line[16:76]+' '+atom_type[2]+line[78:]
-                            print("SUSPECTED ISSUE FOUND ON ATOM{}"\
-                                  .format(pdb_info('atom_number',line)) +
-                                  ": Atom type ({}) ".format(atom_type) +
-                                  "is preceeded by unknown symbols ({}). These"\
-                                  .format(atom_type[:2])+" will be removed.")
-
-            if residues_reordered==True:
-                print("WARNING: Some residues were renumbered.")
-            if edits_made is True:
-                new_file = self.protein_prefix+'_original.pdb'
-                cmd = 'cp {} {}'.format(self.protein_file,new_file)
-                os.system(cmd)
-                print("Saved original pdb file as {}.".format(new_file)+
-                      " Suspected issue(s)/warning(s) have been resolved in {}."\
-                      .format(self.protein_file))
-                with open(self.protein_file, 'w+') as g:
-                    for i,line in enumerate(data):
-                        g.writelines(data[i])
-                print(delimeter)
-                
-            self.protein_res_count,self.h_present,self.non_protein_residues,self.non_protein_residue_count,self.non_protein_chemical_names = check_pdb_rdkit(self.protein_file)
+        self.log_file = self.protein_prefix+'_QMzyme.log'
 
 ###############################################################################
     def catalytic_center(self, res_name=None, res_number=None, chain=None, 
@@ -308,65 +149,50 @@ class generate_model:
                           
         self.cat_center = 'catalytic_center{}'.format(file_suffix[:-1])
         catalytic_center_mol = Chem.RWMol(self.protein_mol)
-
         previous_res = None
         catalytic_center_residues = []
         for atom in reversed(self.protein_mol.GetAtoms()):
+            remove=False
             for key,value in cat_center_def.items():
                 if res_info(atom,key) != value[0]:
-                    catalytic_center_mol.RemoveAtom(atom.GetIdx())
-                    break
+                    remove=True
+            if remove is True:
+                catalytic_center_mol.RemoveAtom(atom.GetIdx())
+                continue
             count += 1
             current_res = define_residue(atom)
-            if previous_res != current_res:
-                
-                
-                raise_issue=True
-                
+            if current_res != previous_res:
+                catalytic_center_residues.append(current_res)
             previous_res=current_res
-            
-
-
         if count==0:
-            if verbose is True:
-                print("WARNING: No atoms found matching"+
-                        " catalytic center definition.")
-                print(delimeter)
-        if count!=0:
-            # sanity check
-            raise_issue = False
-            previous_res = None
-            catalytic_center_residues=[]
-            for atom in catalytic_center_mol.GetAtoms():
-                current_res = define_residue(atom)
-                if previous_res is None:
-                    previous_res=current_res
-                    catalytic_center_residues.append(current_res)
-                if current_res!=previous_res:
-                    catalytic_center_residues.append(current_res)
-                    previous_res=current_res
-                    raise_issue = True
-            if raise_issue is True and verbose is True:
-                print("WARNING: Catalytic center definition is not unique"+
+            raise ValueError("WARNING: No atoms found matching"+
+                    " catalytic center definition.")
+
+        if len(catalytic_center_residues)>1:
+            raise Warning("Catalytic center definition is not unique"+
                       " and multiple residues were therefore included: {}."\
                       .format(catalytic_center_residues)+" Please ensure this"+
-                      " is what you intended!")
-
-            if verbose is True:
-                print("Catalytic center contains {} atoms."
-                        .format(catalytic_center_mol.GetNumAtoms()))
-            if save_file is True:
-                Chem.MolToPDBFile(catalytic_center_mol,output_file)
-                if verbose is True:
-                    print("Structure saved as {}".format(output_file))
-            if save_file is False:
-                Chem.MolToPDBFile(catalytic_center_mol,'temp.pdb')
-                with open('temp.pdb') as f:
-                    self.catalytic_center_pdb = f.readlines()
-                os.remove('temp.pdb')
-
-            self.catalytic_center_definition = current_res
-            self.catalytic_center_mol = catalytic_center_mol
+                      " is what is intended!")
+                
+        verbose_str=''
+        verbose_str += "Catalytic center contains {} atoms \n."\
+                       .format(catalytic_center_mol.GetNumAtoms())
+            
+        if save_file is True:
+            Chem.MolToPDBFile(catalytic_center_mol,output_file)
+            verbose_str += "Structure saved as {}\n".format(output_file)
+            
+        if save_file is False:
+            Chem.MolToPDBFile(catalytic_center_mol,'temp.pdb')
+            with open('temp.pdb') as f:
+                self.catalytic_center_pdb = f.readlines()
+            os.remove('temp.pdb')
+        
+        if verbose is True:
+            print(verbose_str)
+        
+        self.catalytic_center_definition = current_res
+        self.catalytic_center_mol = catalytic_center_mol
 
 ###############################################################################
     def active_site(self, distance_cutoff=0, include_residues=[],
@@ -482,30 +308,6 @@ class generate_model:
         self.active_site_mol = new_mol
         self.active_site_residues = res_dict
 
-###############################################################################
-    def add_H(self, pdb_file=None, output_file=None):
-        '''
-        Function that calls the reduce function from AmberTools 
-        to add hydrogens.
-        pdb_file        - string defining the .pdb file to be reduced.
-        output_file        - string defining the reduced .pdb file name.
-
-        Returns new rdkit mol object that has been reduced and saves 
-        the reduced .pdb. 
-        '''
-        
-        if pdb_file is None:
-            raise ValueError("PDB file must be defined.")
-        
-        if output_file is None:
-            output_file=pdb_file.split('.pdb')[0]+'_reduced.pdb'
-        cmd = "reduce -NOFLIP -Quiet {} > {}".format(pdb_file,output_file)
-        os.system(cmd)
-        new_mol = Chem.MolFromPDBFile(output_file,
-                                      removeHs=False,
-                                      sanitize=False)
-
-        return new_mol
 
 ###############################################################################
     def protonate_solvent(self,mol=None,solvent=solvent_list):
@@ -606,7 +408,8 @@ class generate_model:
 
         if add_hydrogens is True:
             Chem.MolToPDBFile(self.active_site_mol,'temp.pdb')
-            self.active_site_mol = self.add_H(pdb_file='temp.pdb')
+            self.active_site_mol = utils.add_H(pdb_file='temp.pdb',remove_file=True)
+            os.remove('temp.pdb')
             self.active_site_mol = self.protonate_solvent(mol=self.active_site_mol)
 
         new_mol = Chem.RWMol(self.active_site_mol)
@@ -781,26 +584,4 @@ class generate_model:
         self.constrain_atom_list = constrain_list
         self.model_residues = residues
 
-###############################################################################
-    def show_mol(self,mol=None):
-        if mol is None:
-            mol = self.catalytic_center_mol
-        mol = Chem.RWMol(mol)
-        from rdkit.Chem.Draw import rdMolDraw2D
-        from rdkit.Chem import rdDepictor
-        rdDepictor.SetPreferCoordGen(True)
-        from IPython.display import SVG
-        from rdkit.Chem import rdCoordGen
 
-        rdCoordGen.AddCoords(mol)
-
-        for atom in mol.GetAtoms():
-            if atom.GetSymbol() != 'C':
-                atom.SetProp("atomLabel",atom.GetSymbol())
-
-        drawer = rdMolDraw2D.MolDraw2DSVG(400,400)
-        drawer.drawOptions().addStereoAnnotation = False
-        drawer.DrawMolecule(mol)
-        drawer.FinishDrawing()
-
-        return SVG(drawer.GetDrawingText())
