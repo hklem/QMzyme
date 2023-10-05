@@ -19,6 +19,7 @@ SOURCE   8 EXPRESSION_SYSTEM_VECTOR_TYPE: PLASMID
 KEYWDS    ENZYME, ISOMERASE                                                     
 EXPDTA    X-RAY DIFFRACTION                                                     
 AUTHOR    F.YABUKARSKI,M.PINNEY,D.HERSCHLAG                                     
+REVDAT   5   04-OCT-23 6C17    1       REMARK                                   
 REVDAT   4   27-NOV-19 6C17    1       REMARK                                   
 REVDAT   3   20-FEB-19 6C17    1       REMARK                                   
 REVDAT   2   22-AUG-18 6C17    1       JRNL                                     
