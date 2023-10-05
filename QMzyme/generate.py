@@ -17,10 +17,11 @@ from rdkit.Chem import rdDistGeom
 from QMzyme.utils import pdb_info
 from QMzyme import utils
 from QMzyme.rdkit_wrapper import (
-    res_info,
-    res_name,
-    atom_name,
+    rdkit_info,
+    h_cap,
     atom_coords,
+    remove_atoms,
+    fix_h_bond,
     centroid_coords,
     define_residue,
     check_pdb_rdkit)
@@ -48,7 +49,7 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-class generate_model:
+class GenerateModel:
     
     def __init__(self, calculation='QM-only', protein_file=None, pdb_code=None):
         '''
@@ -154,7 +155,7 @@ class generate_model:
         for atom in reversed(self.protein_mol.GetAtoms()):
             remove=False
             for key,value in cat_center_def.items():
-                if res_info(atom,key) != value[0]:
+                if rdkit_info(atom,key) != value[0]:
                     remove=True
             if remove is True:
                 catalytic_center_mol.RemoveAtom(atom.GetIdx())
@@ -180,6 +181,8 @@ class generate_model:
             
         if save_file is True:
             Chem.MolToPDBFile(catalytic_center_mol,output_file)
+            with open(output_file) as f:
+                self.catalytic_center_pdb = f.readlines()
             verbose_str += "Structure saved as {}\n".format(output_file)
             
         if save_file is False:
@@ -248,7 +251,7 @@ class generate_model:
         distance_buffer = np.max(distances)
         
         for atom in reversed(mol.GetAtoms()):
-            if ' H' in atom_name(atom):
+            if rdkit_info(atom).startswith('H'):
                 continue
             current_res=define_residue(atom)
             if current_res in (include_residues or add_residue):
@@ -299,6 +302,8 @@ class generate_model:
                                 .format(self.protein_prefix,self.cat_center,distance_cutoff)
             print("Structure saved as {}".format(output_file))
             Chem.MolToPDBFile(new_mol,output_file)
+            with open(output_file) as f:
+                self.active_site_pdb = f.readlines()
         else:
             Chem.MolToPDBFile(new_mol,'temp.pdb')
             with open('temp.pdb') as f:
@@ -333,8 +338,8 @@ class generate_model:
         no_solvent_mol = Chem.RWMol(mol)
         pos = []
         for atom in reversed(mol.GetAtoms()):
-            if res_name(atom) in solvent:
-                if atom_name(atom) == ' O  ':
+            if rdkit_info(atom,'res_name') in solvent:
+                if rdkit_info(atom) == 'O':
                     if len(atom.GetNeighbors()) != 2:
                         pos.append(atom_coords(mol,atom))
                         no_solvent_mol.RemoveAtom(atom.GetIdx())
@@ -356,10 +361,10 @@ class generate_model:
 
 ###############################################################################
     def truncate(self, scheme='CA_terminal', output_file=None,
-                 skip_residues=solvent_list, skip_resnumbers=[],
-                 remove_resnumbers=[], remove_atom_ids=[], 
+                 skip_res_names=solvent_list, skip_res_numbers=[],
+                 remove_res_numbers=[], remove_atom_ids=[], 
                  remove_sidechains=[], keep_backbones=[], 
-                 constrain_atoms=[' CA '], add_hydrogens=False, 
+                 constrain_atoms=['CA'], add_hydrogens=False, 
                  exclude_solvent=False, save_file=True):
         '''
         Function to prepare truncated QMzyme model.
@@ -372,11 +377,11 @@ class generate_model:
                     be removed, and both termini will be removed from ASP 
                     200 like a typical methyl-capping scheme. 
         output_file         - string to define the output .pdb file name. 
-        skip_residues        - list containing strings of residue names you 
+        skip_res_names        - list containing strings of residue names you 
                     do not want to truncate at all.
-        skip_resnumbers     - list containing integers of residue numbers you
+        skip_res_numbers     - list containing integers of residue numbers you
                     do not want to truncate.
-        remove_resnumbers    - list containing integers of residue numbers you
+        remove_res_numbers    - list containing integers of residue numbers you
                     want completely removed from the model.
         remove_atom_ids        - list containing integers of atom IDs you want
                     completed removed from the model.
@@ -427,109 +432,185 @@ class generate_model:
             if atom.GetIdx() in remove_atom_ids:
                 remove_ids.append(atom.GetIdx())
                 continue
-            if current_res['res_name'] in skip_residues:
+            if current_res['res_name'] in skip_res_names:
                 continue
-            if current_res['res_number'] in skip_resnumbers:
+            if current_res['res_number'] in skip_res_numbers:
                 continue
-            if current_res['res_number'] in remove_resnumbers:
+            if current_res['res_number'] in remove_res_numbers:
                 remove_ids.append(atom.GetIdx())
                 continue
+            if exclude_solvent is True:
+                if current_res['res_name'] in solvent_list:
+                    remove_ids.append(atom.GetIdx())
+                    
+            name = rdkit_info(atom)
             if current_res != previous_res:
-                name = atom_name(atom)
-                if name == ' C  ':
-                    bb_atom_count += 1
+                if name == 'C':
                     C_id = atom.GetIdx()
-                elif name == ' O  ':
+                    C_atom = atom
                     bb_atom_count += 1
+                elif name == 'O':
                     O_id = atom.GetIdx()
-                elif name == ' N  ':
                     bb_atom_count += 1
+                elif name == 'N':
+                    N_atom = atom
                     N_id = atom.GetIdx()
-                if bb_atom_count == 3:
-                    C_atom = self.active_site_mol.GetAtomWithIdx(C_id)
-                    N_atom = self.active_site_mol.GetAtomWithIdx(N_id)
-                    C_bonds = [atom_name(x) for x in C_atom.GetNeighbors()]
-                    C_bonds_atoms = [x for x in C_atom.GetNeighbors()]
-                    N_bonds = [atom_name(x) for x in N_atom.GetNeighbors()]
-                    N_bonds_atoms = [x for x in N_atom.GetNeighbors()]
-                if bb_atom_count !=3:
+                    bb_atom_count +=1
+                elif name == 'CA':
+                    CA_atom = atom
+                    CA_id = atom.GetIdx()
+                    bb_atom_count +=1
+                if bb_atom_count != 4:
                     continue
-
+                #C_bonds = [x.GetIdx() for x in C_atom.GetNeighbors()]
+                #N_bonds = [x.GetIdx() for x in N_atom.GetNeighbors()]
+                #CA_bonds = [x.GetIdx() for x in CA_atom.GetNeighbors()]
+                C_bonds = C_atom.GetNeighbors()
+                N_bonds = N_atom.GetNeighbors()
+                CA_bonds = CA_atom.GetNeighbors()
+                previous_res = current_res
+                bb_atom_count = 0
+            #if current_res != previous_res:
+            #    name = rdkit_info(atom)
+            #    if name == 'C':
+            #        bb_atom_count += 1
+            #        C_id = atom.GetIdx()
+            #    elif name == 'O':
+            #        bb_atom_count += 1
+            #        O_id = atom.GetIdx()
+            #    elif name == ' N  ':
+            #        bb_atom_count += 1
+            #        N_id = atom.GetIdx()
+            #    if bb_atom_count == 3:
+            #        C_atom = self.active_site_mol.GetAtomWithIdx(C_id)
+            #        N_atom = self.active_site_mol.GetAtomWithIdx(N_id)
+            #        C_bonds = [(rdkit_info(x), x.GetIdx()) for x in C_atom.GetNeighbors()]
+            #        N_bonds = [(rdkit_info(x), x.GetIdx()) for x in N_atom.GetNeighbors()]
+            #    if bb_atom_count !=3:
+            #        continue
+            if scheme == 'CA_terminal':
+                if 'C' not in rdkit_info(list(N_bonds)):
+                    if current_res['res_name'] == 'PRO':
+                        fix_N.append(N_id)
+                    else:
+                        new_mol = h_cap(new_mol, N_id)
+                        for i in N_bonds:
+                            if rdkit_info(i) != 'CA':
+                                remove_ids.append(i.GetIdx())
+                if 'N' not in rdkit_info(list(C_bonds)):
+                    #print('C:',C_bonds)
+                    remove_ids.append(O_id)
+                    new_mol = h_cap(new_mol, C_id)
+                    for i in C_bonds:
+                        if rdkit_info(i) != 'CA':
+                            remove_ids.append(i.GetIdx())
+            #if scheme == 'CA_terminal':
+            #    if current_res['res_name']  == 'PRO':
+            #        N_terminus.append('Keep')
+            #        proline_count += 1
+            #    else:
+            #        if 'C' in N_bonds:
+            #            N_terminus.append('Keep')
+            #        else:
+            #            N_terminus.append('Remove')
+            #            #cap_atom = new_mol.GetAtomWithIdx(N_id)
+            #            #cap_atom.SetAtomicNum(1)
+            #            #cap_atom.GetPDBResidueInfo().SetName(' H* ')
+            #            new_mol = h_cap(new_mol, N_id)
+            #            for a in range(len(N_bonds)):
+            #                if 'H' in rdkit_info(N_bonds_atoms[a]):
+            #                    remove_ids.append(N_bonds_atoms[a].GetIdx())
+            #    if 'N' in C_bonds:
+            #        C_terminus.append('Keep')
+            #    else:
+            #        C_terminus.append('Remove')
+            #        remove_ids.append(O_id)
+            #        #cap_atom = new_mol.GetAtomWithIdx(C_id)
+            #        #cap_atom.SetAtomicNum(1)
+            #        #cap_atom.GetPDBResidueInfo().SetName(' H* ')
+            #        new_mol = h_cap(new_mol, C_id)
+            #        for a in range(len(C_bonds)):
+            #            if 'H' in rdkit_info(C_bonds_atoms[a]):
+            #                remove_ids.append(C_bonds_atoms[a].GetIdx())
+            #    bb_atom_count = 0
+            #    previous_res = current_res
+            
             # CA_all capping scheme
             if scheme == 'CA_all':
-                print("The C-alpha only capping scheme is currently"+\
-                      " under development.")
+                remove_ids.append(C_id)
+                remove_ids.append(O_id)
+                new_mol = h_cap(new_mol,C_id)
+                if current_res['res_name'] != 'PRO':
+                    remove_ids.append(N_id)
+                    new_mol = h_cap(new_mol,N_id)
+                elif 'C' not in rdkit_info(list(N_bonds)):
+                    fix_N.append(N_id)
+                #print("The C-alpha only capping scheme is currently"+\
+                #      " under development.")
 
-            # CA_terminal capping scheme
-            if scheme == 'CA_terminal':
-                if current_res['res_name']  == 'PRO':
-                    N_terminus.append('Keep')
-                    proline_count += 1
-                else:
-                    if ' C  ' in N_bonds:
-                        N_terminus.append('Keep')
-                    else:
-                        N_terminus.append('Remove')
-                        cap_atom = new_mol.GetAtomWithIdx(N_id)
-                        cap_atom.SetAtomicNum(1)
-                        cap_atom.GetPDBResidueInfo().SetName(' H* ')
-                        for a in range(len(N_bonds)):
-                            if 'H' in atom_name(N_bonds_atoms[a]):
-                                remove_ids.append(N_bonds_atoms[a].GetIdx())
-                if ' N  ' in C_bonds:
-                    C_terminus.append('Keep')
-                else:
-                    C_terminus.append('Remove')
-                    remove_ids.append(O_id)
-                    cap_atom = new_mol.GetAtomWithIdx(C_id)
-                    cap_atom.SetAtomicNum(1)
-                    cap_atom.GetPDBResidueInfo().SetName(' H* ')
-                    for a in range(len(C_bonds)):
-                        if 'H' in atom_name(C_bonds_atoms[a]):
-                            remove_ids.append(C_bonds_atoms[a].GetIdx())
-                bb_atom_count = 0
-                previous_res = current_res
+            # How should free GLY be treated? floating methyl, or keep backbone?
+            if current_res['res_name'] == 'GLY':
+                if (C_id and N_id) in remove_ids:
+                    remove_ids.append(CA_id)
+                    for i in CA_bonds:
+                        remove_ids.append(i.GetIdx())
+                        
+
+                    
+
 
 #TO DO: automate code to remove unecessary side chains
+# still need to test
         if len(remove_sidechains) > 0:
+            print("NEED TO TEST THIS FUNCTION.")
             for atom in reversed(self.active_site_mol.GetAtoms()):
                 current_res = define_residue(atom)
                 if current_res['res_name'] in remove_sidechains:
-                    name = atom_name(atom)
-                    if name in (' CA ',' C  ',' O  ',' N  '):
+                    name = rdkit_info(atom)
+                    #if name in ('CA','C','O','N'):
+                    if name in ('CA','C','O','N','H'):
                         continue
-                    if name == ' CB ':
-                        cap_atom = new_mol.GetAtomWithIdx(atom.GetIdx())
-                        cap_atom.SetAtomicNum(1)
-                        cap_atom.GetPDBResidueInfo().SetName(' H* ')
+                    elif name == 'CB':
+                        #cap_atom = new_mol.GetAtomWithIdx(atom.GetIdx())
+                        #cap_atom.SetAtomicNum(1)
+                        #cap_atom.GetPDBResidueInfo().SetName(' H* ')
+                        new_mol = h_cap(new_mol, atom.GetIdx())
                         continue
-                    if name == ' H  ':
-                        continue
-                    elif ' CA ' not in [atom_name(x) for x in atom.GetNeighbors()]:
+                    #if name == ' H  ':
+                    #    continue
+                    elif 'CA' not in [rdkit_info(x) for x in atom.GetNeighbors()]:
                         remove_ids.append(atom.GetIdx())
-                else:
-                    continue
 
-        for atom in reversed(new_mol.GetAtoms()):
-            if atom_name(atom) == ' CA ':
-                bound_atoms = []
-                lone_methyl = True
-                for x in atom.GetNeighbors():
-                    bound_atoms.append(x.GetIdx())
-                    if 'H' not in atom_name(x):
-                        lone_methyl = False
-                if lone_methyl is True:
-                    remove_ids.append(atom.GetIdx())
-                    for a in bound_atoms:
-                        remove_ids.append(a)
-            if exclude_solvent is True:
-                if define_residue(atom)[1] in solvent_list:
-                    remove_ids.append(atom.GetIdx())
+        #for atom in reversed(new_mol.GetAtoms()):
+        #    #lone_methyl = True
+        #    if rdkit_info(atom) == 'CA':
+        #        bound_atoms = [(rdkit_info(x),x.GetIdx()) for x in atom.GetNeighbors()]
+        #        if ('N' or 'C') not in bound_atoms:
+        #            for i in range(len(bound_atoms)):
+        #                remove_ids.append(bound_atoms[i][1])
+        #    elif exclude_solvent is True:
+        #        if rdkit_info(atom,'res_name') in solvent_list:
+        #            remove_ids.append(atom.GetIdx())
+                
+                #for x in atom.GetNeighbors():
+                #    bound_atoms.append(x.GetIdx())
+                    #if 'H' not in rdkit_info(x):
+                    #    lone_methyl = False
+                #if lone_methyl is True:
+                #    remove_ids.append(atom.GetIdx())
+                    #for a in bound_atoms:
+                        #remove_ids.append(a)
+            #if exclude_solvent is True:
+            #    if define_residue(atom)[1] in solvent_list:
+            #        remove_ids.append(atom.GetIdx())
 
         # Now actually create the truncated and capped mol object
-        for a in reversed(np.unique(remove_ids)):
-            new_mol.RemoveAtom(int(a))
+        #for a in reversed(np.unique(remove_ids)):
+        #    new_mol.RemoveAtom(int(a))
+        self.remove_ids = remove_ids
+        new_mol = remove_atoms(new_mol,remove_ids)
 
+        #Fix cap atom bond lengths
         new_mol.UpdatePropertyCache(strict=False)
         Chem.SanitizeMol(new_mol,Chem.SanitizeFlags.SANITIZE_FINDRADICALS\
                          |Chem.SanitizeFlags.SANITIZE_KEKULIZE\
@@ -540,25 +621,26 @@ class generate_model:
                          catchErrors=True)
         for atom in new_mol.GetAtoms():
             current_res = define_residue(atom)
-            name = atom_name(atom)
+            name = rdkit_info(atom)
             if current_res not in residues:
                 residues.append(current_res)
-            if ' H* ' in name:
-                if rdMolTransforms.GetBondLength(new_mol.GetConformer(),
-                   atom.GetNeighbors()[0].GetIdx(), atom.GetIdx()) > 1.01:
-                    # This changes cap H bond length to something more physical
-                    rdMolTransforms.SetBondLength(new_mol.GetConformer(),
-                    atom.GetNeighbors()[0].GetIdx(),atom.GetIdx(), 0.970)
+            if name == 'H*':
+                new_mol = fix_h_bond(new_mol, atom)
+                #rdMolTransforms.SetBondLength(new_mol.GetConformer(),
+                #                              atom.GetNeighbors()[0].GetIdx(),
+                #                              atom.GetIdx(), 0.970)
             if current_res['res_name'] == 'PRO':
-                if name == ' N  ':
-                    atom.SetHybridization(Chem.HybridizationType.SP2)
-                    fix_N.append(atom.GetIdx())
+                if name == 'N':
+                    if 'C' not in rdkit_info(list(atom.GetNeighbors())):
+                        atom.SetHybridization(Chem.HybridizationType.SP2)
+                        fix_N.append(atom.GetIdx())
             # Record atom ids to add to constrain list
             if name in constrain_atoms:
                 constrain_list.append(atom.GetIdx()+1)
-
+        print(fix_N)
         if len(fix_N) > 0:
             new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True,onlyOnAtoms=fix_N)
+            
         print("Final active site model contains {} atoms."
               .format(new_mol.GetNumAtoms()))
         
@@ -568,6 +650,8 @@ class generate_model:
                               .format(self.protein_prefix,self.cat_center,self.distance_cutoff)
             print("Structure saved as {}".format(output_file))
             Chem.MolToPDBFile(new_mol,output_file)
+            with open(output_file) as f:
+                self.truncated_active_site_pdb = f.readlines()
         else:
             Chem.MolToPDBFile(new_mol,'temp.pdb')
             with open('temp.pdb') as f:
