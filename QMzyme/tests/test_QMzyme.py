@@ -29,8 +29,8 @@ active_site_exp = 'test_end_catalytic_center_chainA_DNX_202_active_site_distance
 truncated_active_site_exp = 'test_end_catalytic_center_chainA_DNX_202_truncated_active_site_distance_cutoff_4.pdb'
 
 def collect_test_data(test_inp,test_exp):
-    data_exp = collect_pdb_data(file=os.path.join(path,test_exp),coords=False)
-    data_inp = collect_pdb_data(data=test_inp,coords=False)
+    data_exp = collect_pdb_data(file=os.path.join(path,test_exp),coords=True)
+    data_inp = collect_pdb_data(data=test_inp,coords=True)
     #coord_diff = coord_diff_test(data_inp, data_exp)
     return [(data_inp[key],data_exp[key],key) for key in data_exp.keys()]
 
