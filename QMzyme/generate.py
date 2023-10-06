@@ -27,12 +27,12 @@ from QMzyme.rdkit_wrapper import (
     check_pdb_rdkit)
 
 
-protein_residues =  ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
-                     'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
-                     'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
-                     'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP' ]
+protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
+                    'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
+                    'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
+                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP']
 
-solvent_list=['HOH','WAT','T3P','SOL'] 
+solvent_list = ['HOH', 'WAT', 'T3P', 'SOL']
 
 elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Na','Mg','Al','Si','P','S','Cl','Ar','K', 'Ca',
@@ -49,9 +49,13 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
+
 class GenerateModel:
-    
-    def __init__(self, calculation='QM-only', protein_file=None, pdb_code=None):
+
+
+    def __init__(self, calculation='QM-only',
+                 protein_file=None,
+                 pdb_code=None):
         '''
         Initialize QMzyme model. 
         calculation        - string defining the type of calculation this 
