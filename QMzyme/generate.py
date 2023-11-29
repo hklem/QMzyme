@@ -10,13 +10,12 @@
 '''Generate QM-based enzyme model.'''
 
 import numpy as np
+from datetime import datetime
 from rdkit import Chem
-from rdkit.Chem import rdMolTransforms
 import os
 from rdkit.Chem import rdDistGeom
-from QMzyme.utils import pdb_info
 from QMzyme import utils
-from QMzyme.rdkit_wrapper import (
+from QMzyme.rdkit_wrapper import(
     rdkit_info,
     h_cap,
     atom_coords,
@@ -24,14 +23,16 @@ from QMzyme.rdkit_wrapper import (
     fix_h_bond,
     centroid_coords,
     define_residue,
-    check_pdb_rdkit)
+    )
 
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                     'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
                     'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
-                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP']
-
+                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP',
+                    'SEC', 'PYL']
+positive_residues = ['HIP', 'LYS', 'ARG']
+negative_residues = ['ASP', 'GLU']
 solvent_list = ['HOH', 'WAT', 'T3P', 'SOL']
 
 elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
@@ -49,13 +50,14 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
+section_spacer = '#############################################################'
 
 class GenerateModel:
 
-
     def __init__(self, calculation='QM-only',
                  protein_file=None,
-                 pdb_code=None):
+                 pdb_code=None, 
+                 log_progress=True):
         '''
         Initialize QMzyme model. 
         calculation        - string defining the type of calculation this 
@@ -83,7 +85,6 @@ class GenerateModel:
             else:
                 protein_file = utils.download(pdb_code)                    
 
-        
         self.protein_file=protein_file
         self.protein_prefix = protein_file.split('.pdb')[0]
         self.calculation = calculation
@@ -103,7 +104,41 @@ class GenerateModel:
                       " rdkit was unable to create mol object."+
                       " This may mean the file does not follow proper PDB"+
                       " formatting. Run self.check_pdb() function to clean.")
-        self.log_file = self.protein_prefix+'_QMzyme.log'
+        self.log_progress=False
+        if log_progress is True:
+            self.log_progress=True
+            self.log_file = self.protein_prefix+'_QMzyme_1.log'
+            while self.log_file in os.listdir():
+                a = int(self.log_file.split('QMzyme_')[1].split('.')[0])
+                self.log_file = self.protein_prefix
+                self.log_file += '_QMzyme_{}.log'.format(a+1)
+            string = "INITIALIZING... QMZYME OBJECT: "
+            string += "{}\n".format(self.protein_prefix)
+            timestamp = str(datetime.now())
+            string += "TIMESTAMP: {}\n".format(timestamp)
+            self.log(string)
+
+###############################################################################
+    def name_output(self, name=None,suffix='.out'):
+        if name.endswith(suffix):
+            return name
+        else:
+            return name+suffix
+
+###############################################################################
+    def store_mol_pdb(self, mol):
+        Chem.MolToPDBFile(mol,'temp2.pdb')
+        with open('temp2.pdb') as f:
+            data = f.readlines()
+        os.remove('temp2.pdb')
+        return data
+
+###############################################################################
+    def log(self,string):
+        with open(self.log_file, 'a') as f:
+            string += section_spacer
+            string += '\n' 
+            f.writelines(string)
 
 ###############################################################################
     def catalytic_center(self, res_name=None, res_number=None, chain=None, 
@@ -126,6 +161,9 @@ class GenerateModel:
                     catalytic_center_mol rdkit mol object, catalytic_center_definition, 
                     and creates a .pdb file containing onlt the catalytic center atoms. 
         '''
+        verbose_str = "INITIALIZING... CATALYTIC CENTER\n"
+        timestamp = str(datetime.now())
+        verbose_str += "TIMESTAMP: {}\n".format(timestamp)
 
         count = 0
         definition, catalytic_center=[],[]
@@ -135,22 +173,18 @@ class GenerateModel:
             cat_center_def['chain'] = [chain]
             definition.append('chain')
             catalytic_center.append(chain)
-            file_suffix=file_suffix+'chain{}_'.format(chain)
+            file_suffix += 'chain{}_'.format(chain)
         if res_name is not None:
             cat_center_def['res_name'] = [res_name]
             definition.append('res_name')
             catalytic_center.append(res_name)
-            file_suffix=file_suffix+'{}_'.format(res_name)
+            file_suffix += '{}_'.format(res_name)
         if res_number is not None:
             cat_center_def['res_number'] = [res_number]
             definition.append('res_number')
             catalytic_center.append(res_number)
-            file_suffix=file_suffix+'{}_'.format(res_number)
+            file_suffix += '{}_'.format(res_number)
 
-        if output_file is None:
-            output_file = '{}_catalytic_center{}.pdb'\
-                          .format(self.protein_prefix,file_suffix[:-1])
-                          
         self.cat_center = 'catalytic_center{}'.format(file_suffix[:-1])
         catalytic_center_mol = Chem.RWMol(self.protein_mol)
         previous_res = None
@@ -177,33 +211,41 @@ class GenerateModel:
                       " and multiple residues were therefore included: {}."\
                       .format(catalytic_center_residues)+" Please ensure this"+
                       " is what is intended!")
-                
-        verbose_str=''
-        verbose_str += "Catalytic center contains {} atoms \n."\
-                       .format(catalytic_center_mol.GetNumAtoms())
-            
+        
+        verbose_str += "DEFINITION: {}\n".format(file_suffix[1:-1])        
+        verbose_str += "N_ATOMS: {}\n".format(catalytic_center_mol.GetNumAtoms())
+        
         if save_file is True:
-            Chem.MolToPDBFile(catalytic_center_mol,output_file)
-            with open(output_file) as f:
+            if output_file is None:
+                output_file = self.cat_center
+            outfile = self.name_output(name=output_file,suffix='.pdb')
+            Chem.MolToPDBFile(catalytic_center_mol,outfile)
+            verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
+            with open(outfile) as f:
                 self.catalytic_center_pdb = f.readlines()
-            verbose_str += "Structure saved as {}\n".format(output_file)
             
         if save_file is False:
-            Chem.MolToPDBFile(catalytic_center_mol,'temp.pdb')
-            with open('temp.pdb') as f:
-                self.catalytic_center_pdb = f.readlines()
-            os.remove('temp.pdb')
+            self.catalytic_center_pdb = self.store_mol_pdb(catalytic_center_mol)
+
+        if self.log_progress is True:
+            self.log(verbose_str)
         
+        verbose_str += "The following object attributes are now available:\n"
+        verbose_str += "\tself.catalytic_center_definition\n" 
+        verbose_str += "\tself.catalytic_center_mol\n" 
+        verbose_str += "\tself.catalytic_center_pdb" 
+
         if verbose is True:
             print(verbose_str)
-        
+
         self.catalytic_center_definition = current_res
         self.catalytic_center_mol = catalytic_center_mol
 
 ###############################################################################
     def active_site(self, distance_cutoff=0, include_residues=[],
                     output_file=None, save_file=True,
-                    solvent=solvent_list, intermediate_mol=None, center=None):
+                    solvent=solvent_list, intermediate_mol=None, 
+                    center=None, verbose=True):
         '''
         Function that selects all residues that have at least 
         one atom within the cutoff distance from the predefined catalytic 
@@ -231,7 +273,10 @@ class GenerateModel:
 
         Generates active_site_mol attribute, and creates .pdb file. 
         '''
-
+        verbose_str = "INITIALIZING... ACTIVE SITE SELECTION\n"
+        timestamp = str(datetime.now())
+        verbose_str += "TIMESTAMP: {}\n".format(timestamp)
+        verbose_str += "CUTOFF: {}\n".format(distance_cutoff)
         if distance_cutoff==0:
             raise ValueError("Please specify a distance cutoff by"
                              " 'distance_cutoff={int}'.")
@@ -299,24 +344,36 @@ class GenerateModel:
             if current_res not in keep_residue:
                 new_mol.RemoveAtom(atom.GetIdx())
 
-        print("Active site contains {} atoms.".format(new_mol.GetNumAtoms()))
         if save_file is True:
             if output_file is None:
-                output_file = '{}_{}_active_site_distance_cutoff_{}.pdb'\
-                                .format(self.protein_prefix,self.cat_center,distance_cutoff)
-            print("Structure saved as {}".format(output_file))
-            Chem.MolToPDBFile(new_mol,output_file)
-            with open(output_file) as f:
+                output_file = '{}_'.format(self.protein_prefix)
+                output_file += '{}_'.format(self.cat_center)
+                output_file += 'active_site_distance_cutoff'
+                output_file += '{}.pdb'.format(self.distance_cutoff)
+            outfile = self.name_output(name=output_file,suffix='.pdb')
+            Chem.MolToPDBFile(new_mol,outfile)
+            verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
+            with open(outfile) as f:
                 self.active_site_pdb = f.readlines()
-        else:
-            Chem.MolToPDBFile(new_mol,'temp.pdb')
-            with open('temp.pdb') as f:
-                self.active_site_pdb = f.readlines()
-            os.remove('temp.pdb')
+        if save_file is False:
+            self.active_site_pdb = self.store_mol_pdb(new_mol)
+
+        verbose_str += "N_ATOMS: {}\n".format(new_mol.GetNumAtoms())
+
+        if self.log_progress is True:
+            self.log(verbose_str)
+       
+        verbose_str += "The following object attributes have been generated:\n"
+        verbose_str += "\tself.distance_cutoff\n" 
+        verbose_str += "\tself.active_site_mol\n" 
+        verbose_str += "\tself.active_site_pdb\n" 
+        verbose_str += "\tself.active_site_residues\n" 
+		
+        if verbose is True:
+            print(verbose_str)
         self.distance_cutoff=distance_cutoff    
         self.active_site_mol = new_mol
         self.active_site_residues = res_dict
-
 
 ###############################################################################
     def protonate_solvent(self,mol=None,solvent=solvent_list):
@@ -363,13 +420,44 @@ class GenerateModel:
         else:
             return mol
 
+
+###############################################################################
+    def size_scan(self, threshold=1000, starting_cutoff=6, 
+                     output_file=None, verbose=True):
+        cutoff = starting_cutoff-1
+        pass_verbose = verbose
+        verbose_str = "PERFORMING... SIZE SCAN\n"
+        verbose_str += "Scanning distance cutoffs starting from "
+        verbose_str += "{} Angstroms until minimal ".format(starting_cutoff)
+        verbose_str += "model size of {} atoms is met.".format(threshold)
+        if verbose is True:
+            print(verbose_str)
+        if self.log_progress is True:
+            self.log(verbose_str) 
+        n_atoms = 0
+        while n_atoms<threshold:
+            cutoff+=1
+            self.active_site(distance_cutoff=cutoff,
+                             save_file=False,verbose=pass_verbose)
+            self.truncate(save_file=False,verbose=pass_verbose)
+            n_atoms = self.model_atom_count
+        if output_file is None:
+            output_file = '{}_'.format(self.protein_prefix)
+            output_file += '{}_'.format(self.cat_center)
+            output_file += 'truncated_active_site_distance_cutoff'
+            output_file += '{}_'.format(self.distance_cutoff)
+            output_file += '{}atoms.pdb'.format(self.model_atom_count)
+        self.truncate(save_file=True,
+                      output_file=output_file, 
+                      verbose=pass_verbose)    
+        
 ###############################################################################
     def truncate(self, scheme='CA_terminal', output_file=None,
                  skip_res_names=solvent_list, skip_res_numbers=[],
                  remove_res_numbers=[], remove_atom_ids=[], 
                  remove_sidechains=[], keep_backbones=[], 
                  constrain_atoms=['CA'], add_hydrogens=False, 
-                 exclude_solvent=False, save_file=True):
+                 exclude_solvent=False, save_file=True, verbose=True):
         '''
         Function to prepare truncated QMzyme model.
         scheme            - string to define what truncation scheme to use.
@@ -410,15 +498,20 @@ class GenerateModel:
         Generates the truncated_active_site_mol and constrain_atom_list
         attributes, and saves new .pdb file. 
         '''
+        verbose_str = "INITIALIZING... ACTIVE SITE TRUNCATION\n" 
+        timestamp = str(datetime.now())
+        verbose_str += "TIMESTAMP: {}\n".format(timestamp)
+        verbose_str += "SCHEME: {}\n".format(scheme)
+        verbose_str += "CUTOFF: {}\n".format(self.distance_cutoff)
 
         ### Heidi's to do: add CA capping scheme, create capping summary as a
         # returned item, allow capping summary to be a function input so users
         # can specify the cap they want for each residue.
 
         if add_hydrogens is True:
-            Chem.MolToPDBFile(self.active_site_mol,'temp.pdb')
-            self.active_site_mol = utils.add_H(pdb_file='temp.pdb',remove_file=True)
-            os.remove('temp.pdb')
+            Chem.MolToPDBFile(self.active_site_mol,'temp0.pdb')
+            self.active_site_mol = utils.add_H(pdb_file='temp0.pdb',remove_file=True)
+            os.remove('temp0.pdb')
             self.active_site_mol = self.protonate_solvent(mol=self.active_site_mol)
 
         new_mol = Chem.RWMol(self.active_site_mol)
@@ -552,35 +645,61 @@ class GenerateModel:
             # Record atom ids to add to constrain list
             if name in constrain_atoms:
                 constrain_list.append(atom.GetIdx()+1)
-        print(fix_N)
         if len(fix_N) > 0:
             new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True,onlyOnAtoms=fix_N)
             
-        print("Final active site model contains {} atoms."
-              .format(new_mol.GetNumAtoms()))
-        
         if save_file is True:
             if output_file is None:
-                output_file = '{}_{}_truncated_active_site_distance_cutoff_{}.pdb'\
-                              .format(self.protein_prefix,self.cat_center,self.distance_cutoff)
-            print("Structure saved as {}".format(output_file))
-            Chem.MolToPDBFile(new_mol,output_file)
-            with open(output_file) as f:
+                output_file = '{}_'.format(self.protein_prefix)
+                output_file += '{}_'.format(self.cat_center)
+                output_file += 'truncated_active_site_distance_cutoff'
+                output_file += '{}.pdb'.format(self.distance_cutoff)
+            outfile = self.name_output(name=output_file,suffix='.pdb')
+            Chem.MolToPDBFile(new_mol,outfile)
+            verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
+            with open(outfile) as f:
                 self.truncated_active_site_pdb = f.readlines()
-        else:
-            Chem.MolToPDBFile(new_mol,'temp.pdb')
-            with open('temp.pdb') as f:
+        if save_file is False:
+            Chem.MolToPDBFile(new_mol,'temp1.pdb')
+            with open('temp1.pdb') as f:
                 self.truncated_active_site_pdb = f.readlines()
-            os.remove('temp.pdb')
+            os.remove('temp1.pdb')
             
         if proline_count > 0:
             print("WARNING: Active site model contains {}".\
                   format(proline_count)+" proline(s). The N backbone"
                   " atom was automatically kept.")
+        active_site_charge = 0
+        res_list = ''
+        for res in residues:
+            res_list += res['res_name']+str(res['res_number'])+','
+            if res['res_name'] in positive_residues:
+                active_site_charge+=1
+            if res['res_name'] in negative_residues:
+                active_site_charge-=1
 
+        verbose_str += "N_ATOMS: {}\n".format(new_mol.GetNumAtoms())
+        verbose_str += "CHARGE: {}\n".format(active_site_charge) 
+        verbose_str += "NOTE: charge does NOT include the catalytic center"
+        verbose_str += "and is based on AMBER amino acid naming conventions.\n "
+        verbose_str += "MODEL_COMPONENTS: {}\n".format(res_list[:-1])
+        if self.log_progress is True:
+            self.log(verbose_str)
+        verbose_str += "The following object attributes are now available:\n"
+        verbose_str += "\tself.active_site_charge\n" 
+        verbose_str += "\tself.model_atom_count\n" 
+        verbose_str += "\tself.truncated_active_site_mol\n" 
+        verbose_str += "\tself.truncated_active_site_pdb\n" 
+        verbose_str += "\tself.constrain_atom_list\n" 
+        verbose_str += "\tself.residues\n" 
+        if verbose is True:
+            print(verbose_str)
+
+        self.active_site_charge = active_site_charge
         self.model_atom_count = new_mol.GetNumAtoms()
         self.truncated_active_site_mol = new_mol
         self.constrain_atom_list = constrain_list
         self.model_residues = residues
+        self.residues = residues
 
 

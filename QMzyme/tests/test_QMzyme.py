@@ -9,7 +9,7 @@ import sys
 import pytest
 import QMzyme
 import os
-from QMzyme.protein_parser import collect_pdb_data, collect_coords
+from QMzyme.protein_parser import collect_pdb_data
 
 path = os.path.join(os.getcwd(),'etc')
 test_start_file='test.pdb'
@@ -28,21 +28,13 @@ catalytic_center_exp = 'test_end_catalytic_center_chainA_DNX_202.pdb'
 active_site_exp = 'test_end_catalytic_center_chainA_DNX_202_active_site_distance_cutoff_4.pdb'
 truncated_active_site_exp = 'test_end_catalytic_center_chainA_DNX_202_truncated_active_site_distance_cutoff_4.pdb'
 
-def collect_test_data(test_inp,test_exp):
-    data_exp = collect_pdb_data(file=os.path.join(path,test_exp),coords=True)
-    data_inp = collect_pdb_data(data=test_inp,coords=True)
-    #coord_diff = coord_diff_test(data_inp, data_exp)
-    return [(data_inp[key],data_exp[key],key) for key in data_exp.keys()]
+info = ['res_name', 'res_number', 'atom_name']
+#info = ['res_name', 'res_number', 'atom_name', 'atom_coords']
 
-#def coord_diff_test(inp,exp):
-#    a = collect_coords(data=exp)
-#    b = collect_coords(data=inp)
-#    c = []
-#    for i in range(len(a)):
-#        if 
-#        c.append([a[i][j]-b[i][j] for j in range(3)])
-#    return c
-        
+def collect_test_data(test_inp,test_exp):
+    data_exp = collect_pdb_data(file=os.path.join(path,test_exp),info=info)
+    data_inp = collect_pdb_data(data=test_inp,info=info)
+    return [(data_inp[key],data_exp[key],key) for key in data_exp.keys()]
 
 def test_QMzyme_imported():
     """
