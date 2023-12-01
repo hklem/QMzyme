@@ -16,6 +16,7 @@ import os
 from rdkit.Chem import rdDistGeom
 from aqme.qprep import qprep
 from QMzyme import utils
+from QMzyme.mdanalysis_wrapper import res_selection
 from QMzyme.rdkit_wrapper import(
     rdkit_info,
     h_cap,
@@ -121,6 +122,13 @@ class GenerateModel:
         # initialize dict for json file
         self.to_dict(dict={'Starting structure': self.protein_file})
 
+        available_pks = []
+        try:
+            import MDAnalysis
+            self.mdanalysis = True
+        except:
+            self.mdanalysis = False
+
 ###############################################################################
     def name_output(self, name=None, suffix='.out'):
         if name.endswith(suffix):
@@ -149,7 +157,7 @@ class GenerateModel:
         if section is None:
             self.data = dict
         elif section in self.data.keys():
-            for key in dict.keys():
+            for key in self.data[section].keys():
                 if type(dict[key]) is not list:
                     if type(self.data[section][key]) is not list:
                         self.data[section][key] = [self.data[section][key]]
@@ -163,7 +171,7 @@ class GenerateModel:
             json.dump(self.data, f)
 
 ###############################################################################
-    def catalytic_center(self, res_name=None, res_number=None, chain=None,
+    def catalytic_center(self, sel='', res_name=None, res_number=None, chain=None,
                          output_file=None, save_file=True, verbose=True):
         '''
         Function to define the center of the QMzyme model. This is
@@ -191,30 +199,31 @@ class GenerateModel:
         definition, catalytic_center=[],[]
         cat_center_def = {}
         file_suffix = '_'
-        if chain is not None:
-            cat_center_def['chain'] = [chain]
-            definition.append('chain')
-            catalytic_center.append(chain)
-            file_suffix += 'chain{}_'.format(chain)
-        if res_name is not None:
-            cat_center_def['res_name'] = [res_name]
-            definition.append('res_name')
-            catalytic_center.append(res_name)
-            file_suffix += '{}_'.format(res_name)
-        if res_number is not None:
-            cat_center_def['res_number'] = [res_number]
-            definition.append('res_number')
-            catalytic_center.append(res_number)
-            file_suffix += '{}_'.format(res_number)
 
-        self.cat_center = 'catalytic_center{}'.format(file_suffix[:-1])
+        if self.mdanalysis is True and sel != '':
+            cat_center_def = res_selection(self.protein_file,sel=sel)
+
+        else:
+            if chain is not None:
+                cat_center_def['Chain'] = chain
+                definition.append('Chain')
+                catalytic_center.append(chain)
+            if res_name is not None:
+                cat_center_def['Residue name'] = res_name
+                definition.append('res_name')
+                catalytic_center.append(res_name)
+            if res_number is not None:
+                cat_center_def['Residue number'] = res_number
+                definition.append('res_number')
+                catalytic_center.append(res_number)
+
         catalytic_center_mol = Chem.RWMol(self.protein_mol)
         previous_res = None
         catalytic_center_residues = []
         for atom in reversed(self.protein_mol.GetAtoms()):
             remove=False
             for key,value in cat_center_def.items():
-                if rdkit_info(atom,key) != value[0]:
+                if rdkit_info(atom,key) != value:
                     remove=True
             if remove is True:
                 catalytic_center_mol.RemoveAtom(atom.GetIdx())
@@ -224,6 +233,7 @@ class GenerateModel:
             if current_res != previous_res:
                 catalytic_center_residues.append(current_res)
             previous_res=current_res
+
         if count==0:
             raise ValueError("WARNING: No atoms found matching"+
                     " catalytic center definition.")
@@ -240,7 +250,7 @@ class GenerateModel:
 
         if save_file is True:
             if output_file is None:
-                output_file = self.cat_center
+                output_file = self.protein_prefix+'_catalytic_center.pdb'
             outfile = self.name_output(name=output_file,suffix='.pdb')
             Chem.MolToPDBFile(catalytic_center_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
@@ -262,10 +272,11 @@ class GenerateModel:
         self.catalytic_center_mol = catalytic_center_mol
 
         #write json
-        for key in cat_center_def.keys():
-            if len(cat_center_def[key]) == 1:
-                if type(cat_center_def[key]) is list:
-                    cat_center_def[key] = cat_center_def[key][0]
+        print(cat_center_def)
+        #for key in cat_center_def.keys():
+        #    if len(cat_center_def[key]) == 1:
+        #        if type(cat_center_def[key]) is list:
+        #            cat_center_def[key] = cat_center_def[key][0]
         info = cat_center_def
         info['Number of atoms'] = n_atoms
         try:
@@ -348,7 +359,7 @@ class GenerateModel:
 
         # Second pass: goes over all atoms in catalytic center
         keep_residue=[]
-        res_dict = {'Residue Chain':[],
+        res_dict = {'Chain':[],
                     'Residue Name':[],
                     'Residue Number':[]}
 
@@ -367,9 +378,9 @@ class GenerateModel:
                 coords2 = atom_coords(self.catalytic_center_mol,atom2)
                 atomic_distance = np.linalg.norm(coords1-coords2)
                 if atomic_distance < distance_cutoff:
-                    res_dict['Residue Chain'].append(current_res['chain'])
-                    res_dict['Residue Name'].append(current_res['res_name'])
-                    res_dict['Residue Number'].append(current_res['res_number'])
+                    res_dict['Chain'].append(current_res['Chain'])
+                    res_dict['Residue Name'].append(current_res['Residue name'])
+                    res_dict['Residue Number'].append(current_res['Residue number'])
                     keep_residue.append(current_res)
 
         for atom in reversed(mol.GetAtoms()):
@@ -380,7 +391,6 @@ class GenerateModel:
         if save_file is True:
             if output_file is None:
                 output_file = '{}_'.format(self.protein_prefix)
-                output_file += '{}_'.format(self.cat_center)
                 output_file += 'active_site_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
             outfile = self.name_output(name=output_file,suffix='.pdb')
@@ -442,7 +452,7 @@ class GenerateModel:
         no_solvent_mol = Chem.RWMol(mol)
         pos = []
         for atom in reversed(mol.GetAtoms()):
-            if rdkit_info(atom,'res_name') in solvent:
+            if rdkit_info(atom,'Residue name') in solvent:
                 if rdkit_info(atom) == 'O':
                     if len(atom.GetNeighbors()) != 2:
                         pos.append(atom_coords(mol,atom))
@@ -485,7 +495,6 @@ class GenerateModel:
             n_atoms = self.model_atom_count
         if output_file is None:
             output_file = '{}_'.format(self.protein_prefix)
-            output_file += '{}_'.format(self.cat_center)
             output_file += 'truncated_active_site_distance_cutoff'
             output_file += '{}_'.format(self.distance_cutoff)
             output_file += '{}atoms.pdb'.format(self.model_atom_count)
@@ -571,15 +580,15 @@ class GenerateModel:
             if atom.GetIdx() in remove_atom_ids:
                 remove_ids.append(atom.GetIdx())
                 continue
-            if current_res['res_name'] in skip_res_names:
+            if current_res['Residue name'] in skip_res_names:
                 continue
-            if current_res['res_number'] in skip_res_numbers:
+            if current_res['Residue number'] in skip_res_numbers:
                 continue
-            if current_res['res_number'] in remove_res_numbers:
+            if current_res['Residue number'] in remove_res_numbers:
                 remove_ids.append(atom.GetIdx())
                 continue
             if exclude_solvent is True:
-                if current_res['res_name'] in solvent_list:
+                if current_res['Residue name'] in solvent_list:
                     remove_ids.append(atom.GetIdx())
 
             name = rdkit_info(atom)
@@ -608,7 +617,7 @@ class GenerateModel:
                 bb_atom_count = 0
             if scheme == 'CA_terminal':
                 if 'C' not in rdkit_info(list(N_bonds)):
-                    if current_res['res_name'] == 'PRO':
+                    if current_res['Residue name'] == 'PRO':
                         fix_N.append(N_id)
                     else:
                         new_mol = h_cap(new_mol, N_id)
@@ -625,14 +634,14 @@ class GenerateModel:
                 remove_ids.append(C_id)
                 remove_ids.append(O_id)
                 new_mol = h_cap(new_mol,C_id)
-                if current_res['res_name'] != 'PRO':
+                if current_res['Residue name'] != 'PRO':
                     remove_ids.append(N_id)
                     new_mol = h_cap(new_mol,N_id)
                 elif 'C' not in rdkit_info(list(N_bonds)):
                     fix_N.append(N_id)
 
             # How should free GLY be treated? floating methyl, or keep backbone?
-            if current_res['res_name'] == 'GLY':
+            if current_res['Residue name'] == 'GLY':
                 if (C_id and N_id) in remove_ids:
                     remove_ids.append(CA_id)
                     for i in CA_bonds:
@@ -644,7 +653,7 @@ class GenerateModel:
             print("NEED TO TEST THIS FUNCTION.")
             #for atom in reversed(self.active_site_mol.GetAtoms()):
             #    current_res = define_residue(atom)
-            #    if current_res['res_name'] in remove_sidechains:
+            #    if current_res['Residue name'] in remove_sidechains:
             #        name = rdkit_info(atom)
             #        #if name in ('CA','C','O','N'):
             #        if name in ('CA','C','O','N','H'):
@@ -678,7 +687,7 @@ class GenerateModel:
                 residues.append(current_res)
             if name == 'H*':
                 new_mol = fix_h_bond(new_mol, atom)
-            if current_res['res_name'] == 'PRO':
+            if current_res['Residue name'] == 'PRO':
                 if name == 'N':
                     if 'C' not in rdkit_info(list(atom.GetNeighbors())):
                         atom.SetHybridization(Chem.HybridizationType.SP2)
@@ -693,7 +702,6 @@ class GenerateModel:
         if save_file is True:
             if output_file is None:
                 output_file = '{}_'.format(self.protein_prefix)
-                output_file += '{}_'.format(self.cat_center)
                 output_file += 'truncated_active_site_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
             outfile = self.name_output(name=output_file,suffix='.pdb')
@@ -715,10 +723,10 @@ class GenerateModel:
         active_site_charge = 0
         res_list = ''
         for res in residues:
-            res_list += res['res_name']+str(res['res_number'])+','
-            if res['res_name'] in positive_residues:
+            res_list += res['Residue name']+str(res['Residue number'])+','
+            if res['Residue name'] in positive_residues:
                 active_site_charge+=1
-            if res['res_name'] in negative_residues:
+            if res['Residue name'] in negative_residues:
                 active_site_charge-=1
 
         verbose_str += "N_ATOMS: {}\n".format(new_mol.GetNumAtoms())
