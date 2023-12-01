@@ -57,23 +57,22 @@ class GenerateModel:
 
     def __init__(self, calculation='QM-only',
                  protein_file=None,
-                 pdb_code=None, 
-                 log_progress=True):
+                 pdb_code=None):
         '''
-        Initialize QMzyme model. 
-        calculation        - string defining the type of calculation this 
-                    model will be used for. Only option currently is 
-                    'QM-only'. 'QM/MM' will be supported in the near future. 
-        protein_file        - string defining the protein or system .pdb 
-                    file. This can be preprocessed, or a fresh download 
-                    from rcsb.org. 
-        pdb_code        - string defining the PDB ID code. This option is 
-                    required if you do not currently have a protein pdb 
+        Initialize QMzyme model.
+        calculation -- string defining the type of calculation this
+                    model will be used for. Only option currently is
+                    'QM-only'. 'QM/MM' will be supported in the near future.
+        protein_file -- string defining the protein or system .pdb
+                    file. This can be preprocessed, or a fresh download
+                    from rcsb.org.
+        pdb_code -- string defining the PDB ID code. This option is
+                    required if you do not currently have a protein pdb
                     file for your system of interest. Defining the
-                    4-letter PDB code here will automatically download 
-                    it from the Protein Data Bank. It is highly recommended 
-                    that you double check the downloaded file and become 
-                    acquainted with it. 
+                    4-letter PDB code here will automatically download
+                    it from the Protein Data Bank. It is highly recommended
+                    that you double check the downloaded file and become
+                    acquainted with it.
         '''
 
         if protein_file is None:
@@ -84,12 +83,12 @@ class GenerateModel:
                                  " use the pdb_code argument to automatically"+
                                  " download the file from the PDB server.")
             else:
-                protein_file = utils.download(pdb_code)                    
+                protein_file = utils.download(pdb_code)
 
         self.protein_file=protein_file
         self.protein_prefix = protein_file.split('.pdb')[0]
         self.calculation = calculation
-        
+
         try:
             x = open(protein_file)
         except FileNotFoundError as e:
@@ -105,22 +104,25 @@ class GenerateModel:
                       " rdkit was unable to create mol object."+
                       " This may mean the file does not follow proper PDB"+
                       " formatting. Run self.check_pdb() function to clean.")
-        self.log_progress=False
-        if log_progress is True:
-            self.log_progress=True
-            self.log_file = self.protein_prefix+'_QMzyme_1.log'
-            while self.log_file in os.listdir():
-                a = int(self.log_file.split('QMzyme_')[1].split('.')[0])
-                self.log_file = self.protein_prefix
-                self.log_file += '_QMzyme_{}.log'.format(a+1)
-            string = "INITIALIZING... QMZYME OBJECT: "
-            string += "{}\n".format(self.protein_prefix)
-            timestamp = str(datetime.now())
-            string += "TIMESTAMP: {}\n".format(timestamp)
-            self.log(string)
+        # begin storing information
+        file = self.protein_prefix+'_QMzyme_1'
+        while file+'.log' in os.listdir():
+            a = int(file.split('QMzyme_')[1].split('.')[0])
+            file = self.protein_prefix
+            file += '_QMzyme_{}'.format(a+1)
+        self.log_file = file+'.log'
+        self.json_file = file+'.json'
+        string = "INITIALIZING... QMZYME OBJECT: "
+        string += "{}\n".format(self.protein_prefix)
+        timestamp = str(datetime.now())
+        string += "TIMESTAMP: {}\n".format(timestamp)
+        self.log(string)
+
+        # initialize dict for json file
+        self.to_dict(dict={'Starting structure': self.protein_file})
 
 ###############################################################################
-    def name_output(self, name=None,suffix='.out'):
+    def name_output(self, name=None, suffix='.out'):
         if name.endswith(suffix):
             return name
         else:
@@ -135,21 +137,40 @@ class GenerateModel:
         return data
 
 ###############################################################################
-    def log(self,string):
+    def log(self, string):
         with open(self.log_file, 'a') as f:
             string += section_spacer
-            string += '\n' 
+            string += '\n'
             f.writelines(string)
 
 ###############################################################################
-    def catalytic_center(self, res_name=None, res_number=None, chain=None, 
+    def to_dict(self, section=None, dict={}):
+        import json
+        if section is None:
+            self.data = dict
+        elif section in self.data.keys():
+            for key in dict.keys():
+                if type(dict[key]) is not list:
+                    if type(self.data[section][key]) is not list:
+                        self.data[section][key] = [self.data[section][key]]
+                else:
+                    if type(self.data[section][key][0]) is not list:
+                        self.data[section][key] = [self.data[section][key]]
+                self.data[section][key].append(dict[key])
+        else:
+            self.data[section] = dict
+        with open(self.json_file, "w") as f:
+            json.dump(self.data, f)
+
+###############################################################################
+    def catalytic_center(self, res_name=None, res_number=None, chain=None,
                          output_file=None, save_file=True, verbose=True):
         '''
-        Function to define the center of the QMzyme model. This is 
-        typically the ligand/substrate. Currently only supports the 
-        definition of 1 residue (i.e., lengths of res_name,     
-        res_number, and chain inputs must not exceed 1. Future 
-        versions will adapt for this functionality. If you wish to 
+        Function to define the center of the QMzyme model. This is
+        typically the ligand/substrate. Currently only supports the
+        definition of 1 residue (i.e., lengths of res_name,
+        res_number, and chain inputs must not exceed 1. Future
+        versions will adapt for this functionality. If you wish to
         use multiple residues right now you can bypass this by
         manipulating the PDB file: for example, change the residue
         names to LIG for all residues you want in the catalytic center,
@@ -158,9 +179,9 @@ class GenerateModel:
         res_number        - integer of the residue number.
         chain            - string of the chain the residue of interest is in.
         output_file        - string to define the name of the output .pdb file.
-                    Generates the following attributes of the class object: a 
-                    catalytic_center_mol rdkit mol object, catalytic_center_definition, 
-                    and creates a .pdb file containing onlt the catalytic center atoms. 
+                    Generates the following attributes of the class object: a
+                    catalytic_center_mol rdkit mol object, catalytic_center_definition,
+                    and creates a .pdb file containing onlt the catalytic center atoms.
         '''
         verbose_str = "INITIALIZING... CATALYTIC CENTER\n"
         timestamp = str(datetime.now())
@@ -212,10 +233,11 @@ class GenerateModel:
                       " and multiple residues were therefore included: {}."\
                       .format(catalytic_center_residues)+" Please ensure this"+
                       " is what is intended!")
-        
-        verbose_str += "DEFINITION: {}\n".format(file_suffix[1:-1])        
-        verbose_str += "N_ATOMS: {}\n".format(catalytic_center_mol.GetNumAtoms())
-        
+
+        verbose_str += "DEFINITION: {}\n".format(file_suffix[1:-1])
+        n_atoms = catalytic_center_mol.GetNumAtoms()
+        verbose_str += "N_ATOMS: {}\n".format(n_atoms)
+
         if save_file is True:
             if output_file is None:
                 output_file = self.cat_center
@@ -224,17 +246,14 @@ class GenerateModel:
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
             with open(outfile) as f:
                 self.catalytic_center_pdb = f.readlines()
-            
         if save_file is False:
             self.catalytic_center_pdb = self.store_mol_pdb(catalytic_center_mol)
+        self.log(verbose_str)
 
-        if self.log_progress is True:
-            self.log(verbose_str)
-        
         verbose_str += "The following object attributes are now available:\n"
-        verbose_str += "\tself.catalytic_center_definition\n" 
-        verbose_str += "\tself.catalytic_center_mol\n" 
-        verbose_str += "\tself.catalytic_center_pdb" 
+        verbose_str += "\tself.catalytic_center_definition\n"
+        verbose_str += "\tself.catalytic_center_mol\n"
+        verbose_str += "\tself.catalytic_center_pdb"
 
         if verbose is True:
             print(verbose_str)
@@ -242,37 +261,50 @@ class GenerateModel:
         self.catalytic_center_definition = current_res
         self.catalytic_center_mol = catalytic_center_mol
 
+        #write json
+        for key in cat_center_def.keys():
+            if len(cat_center_def[key]) == 1:
+                if type(cat_center_def[key]) is list:
+                    cat_center_def[key] = cat_center_def[key][0]
+        info = cat_center_def
+        info['Number of atoms'] = n_atoms
+        try:
+            info['Output file'] = outfile
+        except:
+            pass
+        self.to_dict(section='Catalytic center', dict=info)
+
 ###############################################################################
     def active_site(self, distance_cutoff=0, include_residues=[],
                     output_file=None, save_file=True,
-                    solvent=solvent_list, intermediate_mol=None, 
+                    solvent=solvent_list, intermediate_mol=None,
                     center=None, verbose=True):
         '''
-        Function that selects all residues that have at least 
-        one atom within the cutoff distance from the predefined catalytic 
-        center atoms. If there are residues you want to include that may 
-        not be within the distance cutoff you can specify that in 
+        Function that selects all residues that have at least
+        one atom within the cutoff distance from the predefined catalytic
+        center atoms. If there are residues you want to include that may
+        not be within the distance cutoff you can specify that in
         include_residues=[].
         distance_cutoff        - integer
         include_residues    - list of a tuple of strings:
-                    (str(chain),str(res_name),int(res_number)). 
+                    (str(chain),str(res_name),int(res_number)).
                     I.e., include_residues=[('A','GLY',101),('A','ASP',20)].
                     It follows the define_residue() format.
         output_file        - string defining the .pdb output file name.
-        intermediate_mol    - rdkit mol object to be used instead of the 
+        intermediate_mol    - rdkit mol object to be used instead of the
             protein mol that was created during model initialization. This is
-            useful if, for example, you are creating multiple active sites 
-            from the same initial PDB with varying cutoff distances, in 
+            useful if, for example, you are creating multiple active sites
+            from the same initial PDB with varying cutoff distances, in
             which case the intermediate_mol object must have been generated
             with a larger cutoff distance than what is currently specified.
-        center        - (Work in progress) string defining the .pdb file 
-            of your catalytic center. Default is None. This is helpful to 
-            use if you want to alter the ligand in any way, for example, 
-            add hydrogens to certain atoms. Please not the coordinates of 
-            the molecule need to be consistent with the coordinates of 
+        center        - (Work in progress) string defining the .pdb file
+            of your catalytic center. Default is None. This is helpful to
+            use if you want to alter the ligand in any way, for example,
+            add hydrogens to certain atoms. Please not the coordinates of
+            the molecule need to be consistent with the coordinates of
             the protein.
 
-        Generates active_site_mol attribute, and creates .pdb file. 
+        Generates active_site_mol attribute, and creates .pdb file.
         '''
         verbose_str = "INITIALIZING... ACTIVE SITE SELECTION\n"
         timestamp = str(datetime.now())
@@ -298,7 +330,7 @@ class GenerateModel:
         distances = [np.linalg.norm(atom_coords(mol, atom)-centroid)\
             for atom in self.catalytic_center_mol.GetAtoms()]
         distance_buffer = np.max(distances)
-        
+
         # First pass: goes over all atoms in protein and cat. centroid
         for atom in reversed(mol.GetAtoms()):
             if rdkit_info(atom).startswith('H'):
@@ -315,11 +347,11 @@ class GenerateModel:
                     temp_mol.RemoveAtom(atom.GetIdx())
 
         # Second pass: goes over all atoms in catalytic center
-        keep_residue=[] 
+        keep_residue=[]
         res_dict = {'Residue Chain':[],
                     'Residue Name':[],
                     'Residue Number':[]}
-        
+
         for atom1 in reversed(temp_mol.GetAtoms()):
             current_res=define_residue(atom1)
             if current_res in include_residues:
@@ -359,42 +391,52 @@ class GenerateModel:
         if save_file is False:
             self.active_site_pdb = self.store_mol_pdb(new_mol)
 
-        verbose_str += "N_ATOMS: {}\n".format(new_mol.GetNumAtoms())
+        n_atoms = new_mol.GetNumAtoms()
+        verbose_str += "N_ATOMS: {}\n".format(n_atoms)
+        self.log(verbose_str)
 
-        if self.log_progress is True:
-            self.log(verbose_str)
-       
         verbose_str += "The following object attributes have been generated:\n"
-        verbose_str += "\tself.distance_cutoff\n" 
-        verbose_str += "\tself.active_site_mol\n" 
-        verbose_str += "\tself.active_site_pdb\n" 
-        verbose_str += "\tself.active_site_residues\n" 
-		
+        verbose_str += "\tself.distance_cutoff\n"
+        verbose_str += "\tself.active_site_mol\n"
+        verbose_str += "\tself.active_site_pdb\n"
+        verbose_str += "\tself.active_site_residues\n"
+
         if verbose is True:
             print(verbose_str)
-        self.distance_cutoff=distance_cutoff    
+        self.distance_cutoff=distance_cutoff
         self.active_site_mol = new_mol
         self.active_site_residues = res_dict
+
+        # write json
+        info = {
+            'Number of atoms': n_atoms,
+            'Distance cutoff': self.distance_cutoff,
+            }
+        try:
+            info['Output file'] = outfile
+        except:
+            pass
+        self.to_dict(section='Active site selection',dict=info)
 
 ###############################################################################
     def protonate_solvent(self,mol=None,solvent=solvent_list):
         '''
         Function to add hydrogens to water molecules because reduce does not
-        recognize all water residue names. I found that for some weird 
-        reason you cannot do rdkit's Chem.rdmolops.AddHs and include 
+        recognize all water residue names. I found that for some weird
+        reason you cannot do rdkit's Chem.rdmolops.AddHs and include
         PDB residue information when Hs are already present, so we can't
         simply add Hs to the relevant water oxygen atoms because then
         the PDB information cannot be included if any other Hs are present
         in the structure. To avoid that situation, this function separates
         water molecules from the mol object, protonates them, adds coordinate
-        information back, and then combines with final mol object. Note: if 
-        any solvent molecules already have bound H, they will be skipped. 
-        
+        information back, and then combines with final mol object. Note: if
+        any solvent molecules already have bound H, they will be skipped.
+
         mol : rdkit mol object, must be defined.
         solvent : List of strings containing names of solvent residues in PDB.
-            default is solvent=['HOH','WAT','T3P','SOL'] 
-        
-        Returns mol object. 
+            default is solvent=['HOH','WAT','T3P','SOL']
+
+        Returns mol object.
         '''
         solvent_mol = Chem.RWMol()
         no_solvent_mol = Chem.RWMol(mol)
@@ -411,7 +453,7 @@ class GenerateModel:
             for i,atom in enumerate(reversed(solvent_mol.GetAtoms())):
                 solvent_mol.GetConformer().SetAtomPosition(atom.GetIdx(),pos[i])
                 atom.SetHybridization(Chem.HybridizationType.SP3)
-        
+
             solvent_mol = Chem.rdmolops.AddHs(solvent_mol,
                                               addCoords=True,
                                               addResidueInfo=True)
@@ -423,7 +465,7 @@ class GenerateModel:
 
 
 ###############################################################################
-    def size_scan(self, threshold=1000, starting_cutoff=6, 
+    def size_scan(self, threshold=1000, starting_cutoff=6,
                      output_file=None, verbose=True):
         cutoff = starting_cutoff-1
         pass_verbose = verbose
@@ -433,8 +475,7 @@ class GenerateModel:
         verbose_str += "model size of {} atoms is met.".format(threshold)
         if verbose is True:
             print(verbose_str)
-        if self.log_progress is True:
-            self.log(verbose_str) 
+        self.log(verbose_str)
         n_atoms = 0
         while n_atoms<threshold:
             cutoff+=1
@@ -449,28 +490,28 @@ class GenerateModel:
             output_file += '{}_'.format(self.distance_cutoff)
             output_file += '{}atoms.pdb'.format(self.model_atom_count)
         self.truncate(save_file=True,
-                      output_file=output_file, 
-                      verbose=pass_verbose)    
-        
+                      output_file=output_file,
+                      verbose=pass_verbose)
+
 ###############################################################################
     def truncate(self, scheme='CA_terminal', output_file=None,
                  skip_res_names=solvent_list, skip_res_numbers=[],
-                 remove_res_numbers=[], remove_atom_ids=[], 
-                 remove_sidechains=[], keep_backbones=[], 
-                 constrain_atoms=['CA'], add_hydrogens=False, 
+                 remove_res_numbers=[], remove_atom_ids=[],
+                 remove_sidechains=[], keep_backbones=[],
+                 constrain_atoms=['CA'], add_hydrogens=False,
                  exclude_solvent=False, save_file=True, verbose=True):
         '''
         Function to prepare truncated QMzyme model.
         scheme            - string to define what truncation scheme to use.
-                    Currently only option is 'CA_terminal'. This will remove 
-                    backbone atoms of residues that are not bondedto other 
-                    residues. I.e., if you have the following residues in 
-                    the active site (ALA120, GLY121, ASP200), the N-terminus 
-                    of ALA120 will be removed, the C-terminus of GLY121 will 
-                    be removed, and both termini will be removed from ASP 
-                    200 like a typical methyl-capping scheme. 
-        output_file         - string to define the output .pdb file name. 
-        skip_res_names        - list containing strings of residue names you 
+                    Currently only option is 'CA_terminal'. This will remove
+                    backbone atoms of residues that are not bondedto other
+                    residues. I.e., if you have the following residues in
+                    the active site (ALA120, GLY121, ASP200), the N-terminus
+                    of ALA120 will be removed, the C-terminus of GLY121 will
+                    be removed, and both termini will be removed from ASP
+                    200 like a typical methyl-capping scheme.
+        output_file         - string to define the output .pdb file name.
+        skip_res_names        - list containing strings of residue names you
                     do not want to truncate at all.
         skip_res_numbers     - list containing integers of residue numbers you
                     do not want to truncate.
@@ -479,27 +520,27 @@ class GenerateModel:
         remove_atom_ids        - list containing integers of atom IDs you want
                     completed removed from the model.
         remove_sidechains    - list containing strings of residue names you
-                    want the sidechains removed of. This can be useful if its 
-                    a bulky residue pointing away from the active site, and  
-                    only its backbone is important to consider in the model. 
+                    want the sidechains removed of. This can be useful if its
+                    a bulky residue pointing away from the active site, and
+                    only its backbone is important to consider in the model.
         keep_backbones        - list containing strings of residue names that
-                    you want to keep backbone atoms of, regardless of the 
+                    you want to keep backbone atoms of, regardless of the
                     capping scheme.
-        constrain_atoms        - list containing strings of the atom names 
-                    (according to PDB format) that you want to constrain in the 
-                    calculation. 
+        constrain_atoms        - list containing strings of the atom names
+                    (according to PDB format) that you want to constrain in the
+                    calculation.
         add_hydrogens        - boolean, default=False. If True, hydrogens will
-                    be added to your model with the reduce package. 
-                    Recommdended if you started with a .pdb file that did not 
-                    contain hydrogens, but you should still evaluate the 
+                    be added to your model with the reduce package.
+                    Recommdended if you started with a .pdb file that did not
+                    contain hydrogens, but you should still evaluate the
                     final structure.
-        exclude_solvent        - boolean, default=False. If True, solvent 
+        exclude_solvent        - boolean, default=False. If True, solvent
                     molecules will be removed from the model.
 
         Generates the truncated_active_site_mol and constrain_atom_list
-        attributes, and saves new .pdb file. 
+        attributes, and saves new .pdb file.
         '''
-        verbose_str = "INITIALIZING... ACTIVE SITE TRUNCATION\n" 
+        verbose_str = "INITIALIZING... ACTIVE SITE TRUNCATION\n"
         timestamp = str(datetime.now())
         verbose_str += "TIMESTAMP: {}\n".format(timestamp)
         verbose_str += "SCHEME: {}\n".format(scheme)
@@ -540,7 +581,7 @@ class GenerateModel:
             if exclude_solvent is True:
                 if current_res['res_name'] in solvent_list:
                     remove_ids.append(atom.GetIdx())
-                    
+
             name = rdkit_info(atom)
             if current_res != previous_res:
                 if name == 'C':
@@ -642,13 +683,13 @@ class GenerateModel:
                     if 'C' not in rdkit_info(list(atom.GetNeighbors())):
                         atom.SetHybridization(Chem.HybridizationType.SP2)
                         fix_N.append(atom.GetIdx())
-                        
+
             # Record atom ids to add to constrain list
             if name in constrain_atoms:
                 constrain_list.append(atom.GetIdx()+1)
         if len(fix_N) > 0:
             new_mol = Chem.rdmolops.AddHs(new_mol,addCoords=True,onlyOnAtoms=fix_N)
-            
+
         if save_file is True:
             if output_file is None:
                 output_file = '{}_'.format(self.protein_prefix)
@@ -666,7 +707,7 @@ class GenerateModel:
             with open('temp1.pdb') as f:
                 self.truncated_active_site_pdb = f.readlines()
             os.remove('temp1.pdb')
-            
+
         if proline_count > 0:
             print("WARNING: Active site model contains {}".\
                   format(proline_count)+" proline(s). The N backbone"
@@ -681,19 +722,18 @@ class GenerateModel:
                 active_site_charge-=1
 
         verbose_str += "N_ATOMS: {}\n".format(new_mol.GetNumAtoms())
-        verbose_str += "CHARGE: {}\n".format(active_site_charge) 
+        verbose_str += "CHARGE: {}\n".format(active_site_charge)
         verbose_str += "NOTE: charge does NOT include the catalytic center "
         verbose_str += "and is based on AMBER amino acid naming conventions.\n "
         verbose_str += "MODEL_COMPONENTS: {}\n".format(res_list[:-1])
-        if self.log_progress is True:
-            self.log(verbose_str)
+        self.log(verbose_str)
         verbose_str += "The following object attributes are now available:\n"
-        verbose_str += "\tself.active_site_charge\n" 
-        verbose_str += "\tself.model_atom_count\n" 
-        verbose_str += "\tself.truncated_active_site_mol\n" 
-        verbose_str += "\tself.truncated_active_site_pdb\n" 
-        verbose_str += "\tself.constrain_atom_list\n" 
-        verbose_str += "\tself.residues\n" 
+        verbose_str += "\tself.active_site_charge\n"
+        verbose_str += "\tself.model_atom_count\n"
+        verbose_str += "\tself.truncated_active_site_mol\n"
+        verbose_str += "\tself.truncated_active_site_pdb\n"
+        verbose_str += "\tself.constrain_atom_list\n"
+        verbose_str += "\tself.residues\n"
         if verbose is True:
             print(verbose_str)
 
@@ -703,6 +743,20 @@ class GenerateModel:
         self.constrain_atom_list = constrain_list
         self.model_residues = residues
         self.residues = residues
+
+        # write json
+        info = {
+            'Number of atoms': new_mol.GetNumAtoms(),
+            'Distance cutoff': self.distance_cutoff,
+            'Residues': residues,
+            'C-alpha atom indices': constrain_list,
+            'Active site charge': active_site_charge
+            }
+        try:
+            info['Output file'] = outfile
+        except:
+            pass
+        self.to_dict(section='Truncated active site', dict=info)
 
 ###############################################################################
     def QM_input(self,file=None,suffix='',substrate_charge=0,mult=1,mem='32GB',nprocs=16,qm_input=None,verbose=True):
@@ -715,7 +769,7 @@ class GenerateModel:
                 file += 'cutoff'+self.distance_cutoff+'.pdb'
                 with open(file, "a") as f:
                     f.writelines(self.truncated_active_site_pdb)
-        qprep(files=file, 
+        qprep(files=file,
               charge=chrg,
               mult=mult,
               freeze=self.constrain_atom_list,
@@ -729,16 +783,27 @@ class GenerateModel:
         os.rename('./QCALC/'+file.split('.pdb')[0]+suffix+'_conf_1.com',
                   './QCALC/'+file.split('.pdb')[0]+suffix+'.com')
         verbose_str = "INITIALIZING... AQME.QPREP QM INPUT FILE GENERATION\n"
-        verbose_str += "STARTING_STRUCTURE: {}\n".format(file) 
+        verbose_str += "STARTING_STRUCTURE: {}\n".format(file)
         verbose_str += "CALCULATION: {}\n".format(qm_input)
         verbose_str += "CHARGE: {}\n".format(chrg)
+        verbose_str += "MULTIPLICITY: {}\n".format(mult)
         verbose_str += "MEM: {}\n".format(mem)
         verbose_str += "NPROCS: {}\n".format(nprocs)
         verbose_str += "FROZEN_ATOMS: {}\n".format(self.constrain_atom_list)
-        verbose_str += "INPUT_FILE: {}\n".format(file.split('.pdb')[0]+suffix+'.com') 
+        verbose_str += "INPUT_FILE: {}\n".format(file.split('.pdb')[0]+suffix+'.com')
         if verbose is True:
             print(verbose_str)
-        if self.log_progress is True:
-            self.log(verbose_str)
+        self.log(verbose_str)
+
+        # write json
+        info = {
+            'Calculation file': file.split('.pdb')[0]+suffix+'.com',
+            'Calculation': qm_input,
+            'Charge': chrg,
+            'Multiplicity': mult,
+            'Memory': mem,
+            'Number of processors': nprocs,
+            }
+        self.to_dict(section='QM preparation', dict=info)
 
 
