@@ -14,6 +14,7 @@ from datetime import datetime
 from rdkit import Chem
 import os
 from rdkit.Chem import rdDistGeom
+from aqme.qprep import qprep
 from QMzyme import utils
 from QMzyme.rdkit_wrapper import(
     rdkit_info,
@@ -655,6 +656,7 @@ class GenerateModel:
                 output_file += 'truncated_active_site_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
             outfile = self.name_output(name=output_file,suffix='.pdb')
+            self.filename = outfile
             Chem.MolToPDBFile(new_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
             with open(outfile) as f:
@@ -680,7 +682,7 @@ class GenerateModel:
 
         verbose_str += "N_ATOMS: {}\n".format(new_mol.GetNumAtoms())
         verbose_str += "CHARGE: {}\n".format(active_site_charge) 
-        verbose_str += "NOTE: charge does NOT include the catalytic center"
+        verbose_str += "NOTE: charge does NOT include the catalytic center "
         verbose_str += "and is based on AMBER amino acid naming conventions.\n "
         verbose_str += "MODEL_COMPONENTS: {}\n".format(res_list[:-1])
         if self.log_progress is True:
@@ -701,5 +703,42 @@ class GenerateModel:
         self.constrain_atom_list = constrain_list
         self.model_residues = residues
         self.residues = residues
+
+###############################################################################
+    def QM_input(self,file=None,suffix='',substrate_charge=0,mult=1,mem='32GB',nprocs=16,qm_input=None,verbose=True):
+        chrg = self.active_site_charge+substrate_charge
+        if file is None:
+            try:
+                file = self.filename
+            except:
+                file = self.protein_prefix+'truncated_active_site_distance_'
+                file += 'cutoff'+self.distance_cutoff+'.pdb'
+                with open(file, "a") as f:
+                    f.writelines(self.truncated_active_site_pdb)
+        qprep(files=file, 
+              charge=chrg,
+              mult=mult,
+              freeze=self.constrain_atom_list,
+              qm_input=qm_input,
+              program='gaussian',
+              mem=mem,
+              nprocs=nprocs,
+              suffix=suffix)
+        if suffix!='':
+            suffix = '_'+suffix+'_'
+        os.rename('./QCALC/'+file.split('.pdb')[0]+suffix+'_conf_1.com',
+                  './QCALC/'+file.split('.pdb')[0]+suffix+'.com')
+        verbose_str = "INITIALIZING... AQME.QPREP QM INPUT FILE GENERATION\n"
+        verbose_str += "STARTING_STRUCTURE: {}\n".format(file) 
+        verbose_str += "CALCULATION: {}\n".format(qm_input)
+        verbose_str += "CHARGE: {}\n".format(chrg)
+        verbose_str += "MEM: {}\n".format(mem)
+        verbose_str += "NPROCS: {}\n".format(nprocs)
+        verbose_str += "FROZEN_ATOMS: {}\n".format(self.constrain_atom_list)
+        verbose_str += "INPUT_FILE: {}\n".format(file.split('.pdb')[0]+suffix+'.com') 
+        if verbose is True:
+            print(verbose_str)
+        if self.log_progress is True:
+            self.log(verbose_str)
 
 
