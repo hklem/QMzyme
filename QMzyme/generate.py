@@ -122,7 +122,6 @@ class GenerateModel:
         # initialize dict for json file
         self.to_dict(dict={'Starting structure': self.protein_file})
 
-        available_pks = []
         try:
             import MDAnalysis
             self.mdanalysis = True
@@ -152,16 +151,63 @@ class GenerateModel:
             f.writelines(string)
 
 ###############################################################################
+    def json_type_encoder(self, dict):
+        for key in dict.keys():
+            if isinstance(dict[key], np.integer):
+                dict[key] = int(dict[key])
+            if isinstance(dict[key], np.floating):
+                dict[key] = float(dict[key])
+            if isinstance(dict[key], np.ndarray):
+                dict[key] = dict[key].tolist()
+        return dict
+
+###############################################################################
     def to_dict(self, section=None, dict={}):
         import json
+        dict = self.json_type_encoder(dict)
+        if section is None:
+            self.data = dict
+        elif section == 'Catalytic center':
+            if section in self.data.keys():
+                raise Exception("A catalytic center has been previous " +
+                            "defined in this object. Please initialize a " +
+                            "new object via QMzyme.GenerateModel() to " +
+                            "continue with a new catalytic center definiton."
+                            )
+            self.data[section] = dict
+        else:
+            model = 'QMzyme {}'.format(len(self.data.keys())-2)
+            if 'QMzyme 1' not in self.data.keys():
+                model = 'QMzyme 1'
+                self.data[model] = {}
+                self.data[model][section] = dict
+            elif section in self.data[model].keys():
+                self.data['QMzyme {}'.format(int(model.split()[-1])+1)] = {section: dict}
+            else:
+                self.data[model][section] = dict
+        with open(self.json_file, "w") as f:
+            json.dump(self.data, f)
+###############################################################################
+    def to_dict_old(self, section=None, dict={}):
+        import json
+        dict = self.json_type_encoder(dict)
         if section is None:
             self.data = dict
         elif section in self.data.keys():
-            for key in self.data[section].keys():
+            if section == 'Catalytic center':
+                raise Exception("A catalytic center has been previous " +
+                            "defined in this object. Please initialize a " +
+                            "new object via QMzyme.GenerateModel() to " +
+                            "continue with a new catalytic center definiton."
+                            )
+            for key in dict.keys():
+                #if key not in self.data[section].keys():
+                #    self.data[section][key] = dict[key]
+                #    continue
                 if type(dict[key]) is not list:
                     if type(self.data[section][key]) is not list:
                         self.data[section][key] = [self.data[section][key]]
-                else:
+                elif type(dict[key]) is list:
                     if type(self.data[section][key][0]) is not list:
                         self.data[section][key] = [self.data[section][key]]
                 self.data[section][key].append(dict[key])
@@ -272,7 +318,6 @@ class GenerateModel:
         self.catalytic_center_mol = catalytic_center_mol
 
         #write json
-        print(cat_center_def)
         #for key in cat_center_def.keys():
         #    if len(cat_center_def[key]) == 1:
         #        if type(cat_center_def[key]) is list:
@@ -388,6 +433,10 @@ class GenerateModel:
             if current_res not in keep_residue:
                 new_mol.RemoveAtom(atom.GetIdx())
 
+        self.distance_cutoff=distance_cutoff
+        self.active_site_mol = new_mol
+        self.active_site_residues = res_dict
+
         if save_file is True:
             if output_file is None:
                 output_file = '{}_'.format(self.protein_prefix)
@@ -413,9 +462,6 @@ class GenerateModel:
 
         if verbose is True:
             print(verbose_str)
-        self.distance_cutoff=distance_cutoff
-        self.active_site_mol = new_mol
-        self.active_site_residues = res_dict
 
         # write json
         info = {
@@ -425,7 +471,7 @@ class GenerateModel:
         try:
             info['Output file'] = outfile
         except:
-            pass
+            info['Output file'] = 'Not saved'
         self.to_dict(section='Active site selection',dict=info)
 
 ###############################################################################
