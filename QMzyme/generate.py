@@ -187,34 +187,6 @@ class GenerateModel:
                 self.data[model][section] = dict
         with open(self.json_file, "w") as f:
             json.dump(self.data, f)
-###############################################################################
-    def to_dict_old(self, section=None, dict={}):
-        import json
-        dict = self.json_type_encoder(dict)
-        if section is None:
-            self.data = dict
-        elif section in self.data.keys():
-            if section == 'Catalytic center':
-                raise Exception("A catalytic center has been previous " +
-                            "defined in this object. Please initialize a " +
-                            "new object via QMzyme.GenerateModel() to " +
-                            "continue with a new catalytic center definiton."
-                            )
-            for key in dict.keys():
-                #if key not in self.data[section].keys():
-                #    self.data[section][key] = dict[key]
-                #    continue
-                if type(dict[key]) is not list:
-                    if type(self.data[section][key]) is not list:
-                        self.data[section][key] = [self.data[section][key]]
-                elif type(dict[key]) is list:
-                    if type(self.data[section][key][0]) is not list:
-                        self.data[section][key] = [self.data[section][key]]
-                self.data[section][key].append(dict[key])
-        else:
-            self.data[section] = dict
-        with open(self.json_file, "w") as f:
-            json.dump(self.data, f)
 
 ###############################################################################
     def catalytic_center(self, sel='', res_name=None, res_number=None, chain=None,
