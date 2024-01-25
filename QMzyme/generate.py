@@ -16,7 +16,7 @@ import os
 from rdkit.Chem import rdDistGeom
 from aqme.qprep import qprep
 from QMzyme import utils
-from QMzyme.mdanalysis_wrapper import res_selection
+from QMzyme.mdanalysis_wrapper import res_selection, atom_selection
 from QMzyme.rdkit_wrapper import(
     rdkit_info,
     h_cap,
@@ -785,7 +785,58 @@ class GenerateModel:
         self.to_dict(section='Truncated active site', dict=info)
 
 ###############################################################################
-    def QM_input(self,file=None,suffix='',substrate_charge=0,mult=1,mem='32GB',nprocs=16,qm_input=None,verbose=True):
+        def res_charges(residues):
+            charge=0 
+            if type(residues) is dict:
+                for i,res in enumerate(residues):
+                    residues[i] = res['Residue Name']
+            for res in residues:
+                if res in positive_residues:
+                    charge+=1
+                elif res in negative_residues:
+                    charge-=1
+
+            return charge
+
+###############################################################################
+        def QMXTB_input(self,file=None,suffix='',substrate_charge=0,mult=1,
+                        qm_atoms='',mem='32GB',nprocs=16,program='orca',
+                        qm_input=None,verbose=True):
+            '''qm_atoms is a string that gets passed to MDAnalysis to make the selection.'''
+            chrg = self.active_site_charge+substrate_charge
+            if '!' in qm_input:
+                qm_input = qm_input.split('!')[-1]
+            if 'qm/xtb' not in qm_input.lower():
+                qm_input = 'QM/XTB '+qm_input
+            if file is None:
+                try:
+                    file = self.filename
+                except:
+                    file = self.protein_prefix+'truncated_active_site_distance_'
+                    file += 'cutoff'+self.distance_cutoff+'.pdb'
+                    with open(file, "a") as f:
+                        f.writelines(self.truncated_active_site_pdb)
+            # calculate charge of qm region
+            qm_chrg = res_charges(res_selection(pdb=file, sel=qm_atoms))
+
+            qprep(files=file,
+                  charge=chrg,
+                  mult=mult,
+                  qm_input=qm_input,
+                  qm_atoms=atom_selection(pdb=file,sel=qm_atoms),
+                  qm_charge=qm_chrg,
+                  program=program,
+                  mem=mem,
+                  nprocs=nprocs,
+                  suffix=suffix)
+            if suffix!='':
+                suffix = '_'+suffix+'_'
+                os.rename('./QCALC/'+file.split('.pdb')[0]+suffix+'_conf_1.com',
+                          './QCALC/'+file.split('.pdb')[0]+suffix+'.com')
+            
+###############################################################################
+    def QM_input(self,file=None,suffix='',substrate_charge=0,mult=1,mem='32GB',
+                 nprocs=16,program='gaussian',qm_input=None,verbose=True):
         chrg = self.active_site_charge+substrate_charge
         if file is None:
             try:
@@ -800,7 +851,7 @@ class GenerateModel:
               mult=mult,
               freeze=self.constrain_atom_list,
               qm_input=qm_input,
-              program='gaussian',
+              program=program,
               mem=mem,
               nprocs=nprocs,
               suffix=suffix)
