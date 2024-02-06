@@ -77,7 +77,9 @@ class GenerateModel:
 
     def __init__(self, calculation='QM-only',
                  protein_file=None,
-                 pdb_code=None):
+                 pdb_code=None,
+                 save_json=True,
+                 verbose=True):
         '''
         Initialize QMzyme model.
         calculation -- string defining the type of calculation this
@@ -108,6 +110,8 @@ class GenerateModel:
         self.protein_file=os.path.basename(protein_file)
         self.protein_prefix = self.protein_file.split('.pdb')[0]
         self.calculation = calculation
+        self.verbose = verbose
+        self.save_json = save_json
 
         try:
             x = open(protein_file)
@@ -123,9 +127,8 @@ class GenerateModel:
                 print(f"{e}: Protein file {protein_file} was found but"+
                       " rdkit was unable to create mol object."+
                       " This may mean the file does not follow proper PDB"+
-                      " formatting. Run self.check_pdb() function to clean.")
-        # begin storing information
-        #file = self.protein_prefix+'_QMzyme_1'
+                      " formatting.")
+
         file = self.protein_prefix+'_QMzyme'
         a = 0
         while file+'.json' in os.listdir():
@@ -138,7 +141,9 @@ class GenerateModel:
         string += "{}\n".format(self.protein_prefix)
         timestamp = str(datetime.now()).split('.')[0]
         string += "TIMESTAMP: {}\n".format(timestamp)
-        self.log(string)
+        #self.log(string)
+        if self.verbose == True:
+            print(string)
 
         # initialize dict for json file
         self.dict = {'Starting structure': self.protein_file}
@@ -152,7 +157,7 @@ class GenerateModel:
 
 ###############################################################################
     def catalytic_center(self, sel='', res_name=None, res_number=None, chain=None,
-                         output_file=None, save_file=True, verbose=True):
+                         output_file=None, save_file=True, save_json=self.save_json, verbose=self.verbose):
         '''
         Function to define the center of the QMzyme model. This is
         typically the ligand/substrate. Currently only supports the
@@ -261,7 +266,7 @@ class GenerateModel:
 
 ###############################################################################
     def active_site(self, distance_cutoff=0, output_file=None, save_file=True, 
-                    starting_pdb=None, verbose=True):
+                    starting_pdb=None, save_json=self.save_json, verbose=self.verbose):
         '''
         Function that selects all residues that have at least
         one atom within the cutoff distance from the predefined catalytic
@@ -327,7 +332,7 @@ class GenerateModel:
 
         n_atoms = new_mol.GetNumAtoms()
         verbose_str += "N_ATOMS: {}\n".format(n_atoms)
-        self.log(verbose_str)
+        #self.log(verbose_str)
 
         verbose_str += "The following object attributes have been generated:\n"
         verbose_str += "\tself.distance_cutoff\n"
@@ -338,16 +343,17 @@ class GenerateModel:
             print(verbose_str)
 
         # write json
-        info = {
-            'Number of atoms': n_atoms,
-            'Distance cutoff': self.distance_cutoff,
-            }
-        try:
-            info['Output file'] = outfile
-        except:
-            info['Output file'] = 'Not saved'
-        self.dict = to_dict(key='Active site selection', data=info, 
-                            dict=self.dict, json_file=self.json_file)
+        if json_save == True:
+            info = {
+                'Number of atoms': n_atoms,
+                'Distance cutoff': self.distance_cutoff,
+                }
+            try:
+                info['Output file'] = outfile
+            except:
+                info['Output file'] = 'Not saved'
+            self.dict = to_dict(key='Active site selection', data=info, 
+                                dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
     def truncate(self, scheme='CA_terminal', output_file=None,
@@ -355,7 +361,8 @@ class GenerateModel:
                  remove_res_numbers=[], remove_atom_ids=[],
                  remove_sidechains=[], keep_backbones=[],
                  constrain_atoms=['CA'], add_hydrogens=False,
-                 exclude_solvent=False, save_file=True, verbose=True):
+                 exclude_solvent=False, save_file=True, save_json=self.save_json, 
+                 verbose=self.verbose):
         '''
         Function to prepare truncated QMzyme model.
         scheme            - string to define what truncation scheme to use.
@@ -583,7 +590,7 @@ class GenerateModel:
         verbose_str += "NOTE: charge does NOT include the catalytic center "
         verbose_str += "and is based on AMBER amino acid naming conventions.\n "
         verbose_str += "MODEL_COMPONENTS: {}\n".format(res_list[:-1])
-        self.log(verbose_str)
+        #self.log(verbose_str)
         verbose_str += "The following object attributes are now available:\n"
         verbose_str += "\tself.active_site_charge\n"
         verbose_str += "\tself.model_atom_count\n"
@@ -602,19 +609,20 @@ class GenerateModel:
         self.residues = residues
 
         # write json
-        info = {
-            'Number of atoms': new_mol.GetNumAtoms(),
-            'Distance cutoff': self.distance_cutoff,
-            'Residues': residues,
-            'C-alpha atom indices': constrain_list,
-            'Active site charge': active_site_charge
-            }
-        try:
-            info['Output file'] = outfile
-        except:
-            pass
-        self.dict = to_dict(key='Truncated active site', data=info, 
-                            dict=self.dict, json_file=self.json_file)
+        if save_json == True:
+            info = {
+                'Number of atoms': new_mol.GetNumAtoms(),
+                'Distance cutoff': self.distance_cutoff,
+                'Residues': residues,
+                'C-alpha atom indices': constrain_list,
+                'Active site charge': active_site_charge
+                }
+            try:
+                info['Output file'] = outfile
+            except:
+                pass
+            self.dict = to_dict(key='Truncated active site', data=info, 
+                                dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
     def size_scan(self, threshold=1000, starting_cutoff=6,
