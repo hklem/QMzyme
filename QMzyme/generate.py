@@ -26,6 +26,7 @@ from QMzyme.rdkit_wrapper import(
     mol_from_pdb,
     )
 from QMzyme.utils import(
+    download,
     get_coords,
     get_atoms,
     get_outlines,
@@ -102,10 +103,10 @@ class GenerateModel:
                                  " use the pdb_code argument to automatically"+
                                  " download the file from the PDB server.")
             else:
-                protein_file = utils.download(pdb_code)
+                protein_file = download(pdb_code)
 
-        self.protein_file=protein_file
-        self.protein_prefix = protein_file.split('.pdb')[0]
+        self.protein_file=os.path.basename(protein_file)
+        self.protein_prefix = self.protein_file.split('.pdb')[0]
         self.calculation = calculation
 
         try:
@@ -648,7 +649,8 @@ class GenerateModel:
                     qm_atoms='',mem='32GB',nprocs=16,program='orca',
                     qm_input=None,verbose=True):
         '''
-        CURRENTLY UNDER DEVELOPMENT. qm_atoms is a string that gets passed to MDAnalysis to make the selection.'''
+        CURRENTLY UNDER DEVELOPMENT. 
+        qm_atoms is a string that gets passed to MDAnalysis to make the selection.'''
         chrg = self.active_site_charge+substrate_charge
         if '!' in qm_input:
             qm_input = qm_input.split('!')[-1]
