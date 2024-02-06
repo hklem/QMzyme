@@ -7,16 +7,22 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
+import os
 import numpy as np
+from QMzyme.utils import get_outlines
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
-from rdkit.Chem import rdDistGeom
-
 solvent_list=['HOH','WAT','T3P','SOL']
 protein_residues =  ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                      'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
                      'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
                      'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP' ]
+
+def store_mol_pdb(mol):
+    Chem.MolToPDBFile(mol,'temp2.pdb')
+    data = get_outlines('temp2.pdb')
+    os.remove('temp2.pdb')
+    return data
 
 def atom_coords(mol, atom):
     '''
@@ -30,6 +36,9 @@ def atom_coords(mol, atom):
     numpy array of the atomic cartesian coorinates.
     '''
     return np.asarray(mol.GetConformer().GetAtomPosition(atom.GetIdx()))
+
+def mol_from_pdb(file):
+    return Chem.MolFromPDBFile(file, removeHs=False, sanitize=False)
 
 def centroid_coords(mol):
     return np.asarray(Chem.rdMolTransforms.ComputeCentroid((mol.GetConformer())))

@@ -10,13 +10,10 @@
 '''Generate QM-based enzyme model.'''
 
 import numpy as np
+import json
 from datetime import datetime
-from rdkit import Chem
 import os
-from rdkit.Chem import rdDistGeom
 from aqme.qprep import qprep
-from QMzyme import utils
-from QMzyme.mdanalysis_wrapper import res_selection, atom_selection
 from QMzyme.rdkit_wrapper import(
     rdkit_info,
     h_cap,
@@ -25,8 +22,28 @@ from QMzyme.rdkit_wrapper import(
     fix_h_bond,
     centroid_coords,
     define_residue,
+    store_mol_pdb,
+    mol_from_pdb,
     )
+from QMzyme.utils import(
+    get_coords,
+    get_atoms,
+    get_outlines,
+    to_dict,
+    name_output,
+    coords_from_pdb,
+    )
+try:
+    from rdkit import Chem
+    from rdkit.Chem import rdDistGeom
+except ModuleNotFoundError:
+    print('rdkit is not installed! You can install the program according to https://anaconda.org/conda-forge/rdkit.')
 
+try:
+    from QMzyme.mdanalysis_wrapper import res_selection, atom_selection
+    mdanalysis = True
+except:
+    mdanalysis = False
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                     'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
@@ -106,87 +123,30 @@ class GenerateModel:
                       " This may mean the file does not follow proper PDB"+
                       " formatting. Run self.check_pdb() function to clean.")
         # begin storing information
-        file = self.protein_prefix+'_QMzyme_1'
-        while file+'.log' in os.listdir():
-            a = int(file.split('QMzyme_')[1].split('.')[0])
-            file = self.protein_prefix
-            file += '_QMzyme_{}'.format(a+1)
-        self.log_file = file+'.log'
-        self.json_file = file+'.json'
+        #file = self.protein_prefix+'_QMzyme_1'
+        file = self.protein_prefix+'_QMzyme'
+        a = 0
+        while file+'.json' in os.listdir():
+            a += 1
+            file = self.protein_prefix + f'_QMzyme_{a+1}'
+        self.log_file = file + '.log'
+        self.json_file = file + '.json'
+
         string = "INITIALIZING... QMZYME OBJECT: "
         string += "{}\n".format(self.protein_prefix)
-        timestamp = str(datetime.now())
+        timestamp = str(datetime.now()).split('.')[0]
         string += "TIMESTAMP: {}\n".format(timestamp)
         self.log(string)
 
         # initialize dict for json file
-        self.to_dict(dict={'Starting structure': self.protein_file})
+        self.dict = {'Starting structure': self.protein_file}
+        self.dict['Timestamp'] = str(datetime.now()).split('.')[0]
 
-        try:
-            import MDAnalysis
-            self.mdanalysis = True
-        except:
-            self.mdanalysis = False
-
-###############################################################################
-    def name_output(self, name=None, suffix='.out'):
-        if name.endswith(suffix):
-            return name
-        else:
-            return name+suffix
-
-###############################################################################
-    def store_mol_pdb(self, mol):
-        Chem.MolToPDBFile(mol,'temp2.pdb')
-        with open('temp2.pdb') as f:
-            data = f.readlines()
-        os.remove('temp2.pdb')
-        return data
-
-###############################################################################
     def log(self, string):
         with open(self.log_file, 'a') as f:
             string += section_spacer
             string += '\n'
             f.writelines(string)
-
-###############################################################################
-    def json_type_encoder(self, dict):
-        for key in dict.keys():
-            if isinstance(dict[key], np.integer):
-                dict[key] = int(dict[key])
-            if isinstance(dict[key], np.floating):
-                dict[key] = float(dict[key])
-            if isinstance(dict[key], np.ndarray):
-                dict[key] = dict[key].tolist()
-        return dict
-
-###############################################################################
-    def to_dict(self, section=None, dict={}):
-        import json
-        dict = self.json_type_encoder(dict)
-        if section is None:
-            self.data = dict
-        elif section == 'Catalytic center':
-            if section in self.data.keys():
-                raise Exception("A catalytic center has been previous " +
-                            "defined in this object. Please initialize a " +
-                            "new object via QMzyme.GenerateModel() to " +
-                            "continue with a new catalytic center definiton."
-                            )
-            self.data[section] = dict
-        else:
-            model = 'QMzyme {}'.format(len(self.data.keys())-2)
-            if 'QMzyme 1' not in self.data.keys():
-                model = 'QMzyme 1'
-                self.data[model] = {}
-                self.data[model][section] = dict
-            elif section in self.data[model].keys():
-                self.data['QMzyme {}'.format(int(model.split()[-1])+1)] = {section: dict}
-            else:
-                self.data[model][section] = dict
-        with open(self.json_file, "w") as f:
-            json.dump(self.data, f)
 
 ###############################################################################
     def catalytic_center(self, sel='', res_name=None, res_number=None, chain=None,
@@ -218,7 +178,7 @@ class GenerateModel:
         cat_center_def = {}
         file_suffix = '_'
 
-        if self.mdanalysis is True and sel != '':
+        if mdanalysis is True and sel != '':
             cat_center_def = res_selection(self.protein_file,sel=sel)
 
         else:
@@ -269,13 +229,12 @@ class GenerateModel:
         if save_file is True:
             if output_file is None:
                 output_file = self.protein_prefix+'_catalytic_center.pdb'
-            outfile = self.name_output(name=output_file,suffix='.pdb')
+            outfile = name_output(name=output_file,suffix='.pdb')
             Chem.MolToPDBFile(catalytic_center_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
-            with open(outfile) as f:
-                self.catalytic_center_pdb = f.readlines()
+            self.catalytic_center_pdb = get_outlines(outfile)
         if save_file is False:
-            self.catalytic_center_pdb = self.store_mol_pdb(catalytic_center_mol)
+            self.catalytic_center_pdb = store_mol_pdb(catalytic_center_mol)
         self.log(verbose_str)
 
         verbose_str += "The following object attributes are now available:\n"
@@ -289,48 +248,29 @@ class GenerateModel:
         self.catalytic_center_definition = current_res
         self.catalytic_center_mol = catalytic_center_mol
 
-        #write json
-        #for key in cat_center_def.keys():
-        #    if len(cat_center_def[key]) == 1:
-        #        if type(cat_center_def[key]) is list:
-        #            cat_center_def[key] = cat_center_def[key][0]
         info = cat_center_def
         info['Number of atoms'] = n_atoms
         try:
             info['Output file'] = outfile
         except:
             pass
-        self.to_dict(section='Catalytic center', dict=info)
+        self.dict = to_dict(key='Catalytic center', data=info, 
+                            dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
-    def active_site(self, distance_cutoff=0, include_residues=[],
-                    output_file=None, save_file=True,
-                    solvent=solvent_list, intermediate_mol=None,
-                    center=None, verbose=True):
+    def active_site(self, distance_cutoff=0, output_file=None, save_file=True, 
+                    starting_pdb=None, verbose=True):
         '''
         Function that selects all residues that have at least
         one atom within the cutoff distance from the predefined catalytic
-        center atoms. If there are residues you want to include that may
-        not be within the distance cutoff you can specify that in
-        include_residues=[].
+        center atoms.
         distance_cutoff        - integer
-        include_residues    - list of a tuple of strings:
-                    (str(chain),str(res_name),int(res_number)).
-                    I.e., include_residues=[('A','GLY',101),('A','ASP',20)].
-                    It follows the define_residue() format.
         output_file        - string defining the .pdb output file name.
-        intermediate_mol    - rdkit mol object to be used instead of the
-            protein mol that was created during model initialization. This is
-            useful if, for example, you are creating multiple active sites
-            from the same initial PDB with varying cutoff distances, in
-            which case the intermediate_mol object must have been generated
+        starting_pdb    - PDB file to be used instead of the file from model 
+            initialization. This is useful if, for example, you are creating 
+            multiple active sites from the same initial PDB with varying cutoff distances, in
+            which case the starting_pdb should have been generated
             with a larger cutoff distance than what is currently specified.
-        center        - (Work in progress) string defining the .pdb file
-            of your catalytic center. Default is None. This is helpful to
-            use if you want to alter the ligand in any way, for example,
-            add hydrogens to certain atoms. Please not the coordinates of
-            the molecule need to be consistent with the coordinates of
-            the protein.
 
         Generates active_site_mol attribute, and creates .pdb file.
         '''
@@ -342,85 +282,46 @@ class GenerateModel:
             raise ValueError("Please specify a distance cutoff by"
                              " 'distance_cutoff={int}'.")
 
-        res_name, res_number, res_chain = [], [], []
-        add_residue=[]
-        if intermediate_mol is not None:
-            mol = intermediate_mol
+        keep_residue=[]
+        if starting_pdb is not None:
+            mol = mol_from_pdb(starting_pdb)
         else:
             mol = self.protein_mol
-
-        temp_mol = Chem.RWMol(mol)
         new_mol = Chem.RWMol(mol)
-        if center is not None:
-            self.catalytic_center_mol = Chem.MolFromPDBFile(center)
+        
+        all_coords = get_coords(self.protein_file)
+        lig_coords = coords_from_pdb(self.catalytic_center_pdb)
 
-        centroid = centroid_coords(self.catalytic_center_mol)
-        distances = [np.linalg.norm(atom_coords(mol, atom)-centroid)\
-            for atom in self.catalytic_center_mol.GetAtoms()]
-        distance_buffer = np.max(distances)
-
-        # First pass: goes over all atoms in protein and cat. centroid
         for atom in reversed(mol.GetAtoms()):
-            if rdkit_info(atom).startswith('H'):
-                continue
-            current_res=define_residue(atom)
-            if current_res in (include_residues or add_residue):
+            current_res = define_residue(atom)
+            if current_res in (include_residues or keep_residue):
                 continue
             else:
-                coords = atom_coords(mol,atom)
-                atomic_distance = np.linalg.norm(coords-centroid)
-                if atomic_distance < distance_cutoff+distance_buffer:
-                    add_residue.append(current_res)
-                else:
-                    temp_mol.RemoveAtom(atom.GetIdx())
-
-        # Second pass: goes over all atoms in catalytic center
-        keep_residue=[]
-        res_dict = {'Chain':[],
-                    'Residue Name':[],
-                    'Residue Number':[]}
-
-        for atom1 in reversed(temp_mol.GetAtoms()):
-            current_res=define_residue(atom1)
-            if current_res in include_residues:
-                keep_residue.append(current_res)
-                continue
-            if current_res in keep_residue:
-                continue
-            else:
-                coords1 = atom_coords(temp_mol,atom1)
-            for atom2 in self.catalytic_center_mol.GetAtoms():
-                if current_res in keep_residue:
-                    continue
-                coords2 = atom_coords(self.catalytic_center_mol,atom2)
-                atomic_distance = np.linalg.norm(coords1-coords2)
-                if atomic_distance < distance_cutoff:
-                    res_dict['Chain'].append(current_res['Chain'])
-                    res_dict['Residue Name'].append(current_res['Residue name'])
-                    res_dict['Residue Number'].append(current_res['Residue number'])
+                distances = [np.linalg.norm(all_coords[atom.GetIdx()]-coord) for coord in lig_coords]
+                if True in (d < distance_cutoff for d in distances):
                     keep_residue.append(current_res)
 
         for atom in reversed(mol.GetAtoms()):
             current_res=define_residue(atom)
-            if current_res not in keep_residue:
+            if current_res not in (include_residues or keep_residue):
                 new_mol.RemoveAtom(atom.GetIdx())
 
         self.distance_cutoff=distance_cutoff
         self.active_site_mol = new_mol
-        self.active_site_residues = res_dict
 
         if save_file is True:
             if output_file is None:
                 output_file = '{}_'.format(self.protein_prefix)
                 output_file += 'active_site_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
-            outfile = self.name_output(name=output_file,suffix='.pdb')
+            outfile = name_output(name=output_file,suffix='.pdb')
             Chem.MolToPDBFile(new_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
-            with open(outfile) as f:
-                self.active_site_pdb = f.readlines()
+            #with open(outfile) as f:
+                #self.active_site_pdb = f.readlines()
+            self.active_site_pdb = get_outlines(outfile)    
         if save_file is False:
-            self.active_site_pdb = self.store_mol_pdb(new_mol)
+            self.active_site_pdb = store_mol_pdb(new_mol)
 
         n_atoms = new_mol.GetNumAtoms()
         verbose_str += "N_ATOMS: {}\n".format(n_atoms)
@@ -430,7 +331,6 @@ class GenerateModel:
         verbose_str += "\tself.distance_cutoff\n"
         verbose_str += "\tself.active_site_mol\n"
         verbose_str += "\tself.active_site_pdb\n"
-        verbose_str += "\tself.active_site_residues\n"
 
         if verbose is True:
             print(verbose_str)
@@ -444,7 +344,8 @@ class GenerateModel:
             info['Output file'] = outfile
         except:
             info['Output file'] = 'Not saved'
-        self.to_dict(section='Active site selection',dict=info)
+        self.dict = to_dict(key='Active site selection', data=info, 
+                            dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
     def protonate_solvent(self,mol=None,solvent=solvent_list):
@@ -490,7 +391,6 @@ class GenerateModel:
             return combined_mol
         else:
             return mol
-
 
 ###############################################################################
     def size_scan(self, threshold=1000, starting_cutoff=6,
@@ -722,16 +622,18 @@ class GenerateModel:
                 output_file = '{}_'.format(self.protein_prefix)
                 output_file += 'truncated_active_site_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
-            outfile = self.name_output(name=output_file,suffix='.pdb')
+            outfile = name_output(name=output_file,suffix='.pdb')
             self.filename = outfile
             Chem.MolToPDBFile(new_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
-            with open(outfile) as f:
-                self.truncated_active_site_pdb = f.readlines()
+            #with open(outfile) as f:
+                #self.truncated_active_site_pdb = f.readlines()
+            self.truncated_active_site_pdb = get_outlines(outfile)
         if save_file is False:
             Chem.MolToPDBFile(new_mol,'temp1.pdb')
-            with open('temp1.pdb') as f:
-                self.truncated_active_site_pdb = f.readlines()
+            #with open('temp1.pdb') as f:
+                #self.truncated_active_site_pdb = f.readlines()
+            self.truncated_active_site_pdb = get_outlines('temp1.pdb')
             os.remove('temp1.pdb')
 
         if proline_count > 0:
@@ -782,62 +684,34 @@ class GenerateModel:
             info['Output file'] = outfile
         except:
             pass
-        self.to_dict(section='Truncated active site', dict=info)
+        self.dict = to_dict(key='Truncated active site', data=info, 
+                            dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
-        def res_charges(residues):
-            charge=0 
-            if type(residues) is dict:
-                for i,res in enumerate(residues):
-                    residues[i] = res['Residue Name']
-            for res in residues:
-                if res in positive_residues:
-                    charge+=1
-                elif res in negative_residues:
-                    charge-=1
+    def res_charges(residues):
+        charge=0 
+        if type(residues) is dict:
+            for i,res in enumerate(residues):
+                residues[i] = res['Residue Name']
+        for res in residues:
+            if res in positive_residues:
+                charge+=1
+            elif res in negative_residues:
+                charge-=1
 
-            return charge
+        return charge
 
 ###############################################################################
-        def QMXTB_input(self,file=None,suffix='',substrate_charge=0,mult=1,
-                        qm_atoms='',mem='32GB',nprocs=16,program='orca',
-                        qm_input=None,verbose=True):
-            '''qm_atoms is a string that gets passed to MDAnalysis to make the selection.'''
-            chrg = self.active_site_charge+substrate_charge
-            if '!' in qm_input:
-                qm_input = qm_input.split('!')[-1]
-            if 'qm/xtb' not in qm_input.lower():
-                qm_input = 'QM/XTB '+qm_input
-            if file is None:
-                try:
-                    file = self.filename
-                except:
-                    file = self.protein_prefix+'truncated_active_site_distance_'
-                    file += 'cutoff'+self.distance_cutoff+'.pdb'
-                    with open(file, "a") as f:
-                        f.writelines(self.truncated_active_site_pdb)
-            # calculate charge of qm region
-            qm_chrg = res_charges(res_selection(pdb=file, sel=qm_atoms))
-
-            qprep(files=file,
-                  charge=chrg,
-                  mult=mult,
-                  qm_input=qm_input,
-                  qm_atoms=atom_selection(pdb=file,sel=qm_atoms),
-                  qm_charge=qm_chrg,
-                  program=program,
-                  mem=mem,
-                  nprocs=nprocs,
-                  suffix=suffix)
-            if suffix!='':
-                suffix = '_'+suffix+'_'
-                os.rename('./QCALC/'+file.split('.pdb')[0]+suffix+'_conf_1.com',
-                          './QCALC/'+file.split('.pdb')[0]+suffix+'.com')
-            
-###############################################################################
-    def QM_input(self,file=None,suffix='',substrate_charge=0,mult=1,mem='32GB',
-                 nprocs=16,program='gaussian',qm_input=None,verbose=True):
+    def QMXTB_input(self,file=None,suffix='',substrate_charge=0,mult=1,
+                    qm_atoms='',mem='32GB',nprocs=16,program='orca',
+                    qm_input=None,verbose=True):
+        '''
+        CURRENTLY UNDER DEVELOPMENT. qm_atoms is a string that gets passed to MDAnalysis to make the selection.'''
         chrg = self.active_site_charge+substrate_charge
+        if '!' in qm_input:
+            qm_input = qm_input.split('!')[-1]
+        if 'qm/xtb' not in qm_input.lower():
+            qm_input = 'QM/XTB '+qm_input
         if file is None:
             try:
                 file = self.filename
@@ -846,41 +720,48 @@ class GenerateModel:
                 file += 'cutoff'+self.distance_cutoff+'.pdb'
                 with open(file, "a") as f:
                     f.writelines(self.truncated_active_site_pdb)
-        qprep(files=file,
-              charge=chrg,
-              mult=mult,
-              freeze=self.constrain_atom_list,
-              qm_input=qm_input,
-              program=program,
-              mem=mem,
-              nprocs=nprocs,
-              suffix=suffix)
-        if suffix!='':
-            suffix = '_'+suffix+'_'
-        os.rename('./QCALC/'+file.split('.pdb')[0]+suffix+'_conf_1.com',
-                  './QCALC/'+file.split('.pdb')[0]+suffix+'.com')
-        verbose_str = "INITIALIZING... AQME.QPREP QM INPUT FILE GENERATION\n"
-        verbose_str += "STARTING_STRUCTURE: {}\n".format(file)
-        verbose_str += "CALCULATION: {}\n".format(qm_input)
-        verbose_str += "CHARGE: {}\n".format(chrg)
-        verbose_str += "MULTIPLICITY: {}\n".format(mult)
-        verbose_str += "MEM: {}\n".format(mem)
-        verbose_str += "NPROCS: {}\n".format(nprocs)
-        verbose_str += "FROZEN_ATOMS: {}\n".format(self.constrain_atom_list)
-        verbose_str += "INPUT_FILE: {}\n".format(file.split('.pdb')[0]+suffix+'.com')
+        # calculate charge of qm region
+        qm_chrg = res_charges(res_selection(pdb=file, sel=qm_atoms))
+
+            
+###############################################################################
+    def QM_input(self,file=None,suffix='', non_protein_charge=0,mult=1,mem='32GB',
+                 nprocs=16,program='gaussian',level_of_theory=None,verbose=True, 
+                 save_json=False):
+        if suffix.startswith('_') is True:
+            suffix = suffix.split('_')[-1]
+        if file is None:
+            try:
+                file = self.filename
+            except:
+                file = self.protein_prefix+'truncated_active_site_distance_'
+                file += 'cutoff'+self.distance_cutoff+'.pdb'
+                with open(file, "a") as f:
+                    f.writelines(self.truncated_active_site_pdb)
+        qm_input = {"starting structure": file,
+                    "atom types": get_atoms(file),
+                    "coords": get_coords(file),
+                    "charge": self.active_site_charge+non_protein_charge,
+                    "multiplicity": mult,
+                    "memory": mem,
+                    "# processors": nprocs,
+                    "level of theory": level_of_theory}
+        if save_json is True:
+            outfile = file.split('.')[0]+suffix+'.json'
+            with open(outfile, 'w+') as f:
+                json.dump(qm_input, f, indent=1)
+        try: qm_input["frozen atoms"] = self.constrain_atom_list
+        except: pass
+        verbose_str, json_info = qm_only(qm_input, program, suffix=suffix, verbose=verbose)
         if verbose is True:
             print(verbose_str)
-        self.log(verbose_str)
+            self.log(verbose_str)
 
         # write json
-        info = {
-            'Calculation file': file.split('.pdb')[0]+suffix+'.com',
-            'Calculation': qm_input,
-            'Charge': chrg,
-            'Multiplicity': mult,
-            'Memory': mem,
-            'Number of processors': nprocs,
-            }
+        info = {'Calculation file': file.split('.pdb')[0]+suffix+'.com',
+                'Calculation': level_of_theory,
+                'Charge': self.active_site_charge+non_protein_charge,
+                'Multiplicity': mult}
         self.to_dict(section='QM preparation', dict=info)
 
 
