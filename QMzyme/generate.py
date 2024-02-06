@@ -255,14 +255,15 @@ class GenerateModel:
         self.catalytic_center_definition = current_res
         self.catalytic_center_mol = catalytic_center_mol
 
-        info = cat_center_def
-        info['Number of atoms'] = n_atoms
-        try:
-            info['Output file'] = outfile
-        except:
-            pass
-        self.dict = to_dict(key='Catalytic center', data=info, 
-                            dict=self.dict, json_file=self.json_file)
+        if save_json == True:
+            info = cat_center_def
+            info['Number of atoms'] = n_atoms
+            try:
+                info['Output file'] = outfile
+            except:
+                pass
+            self.dict = to_dict(key='Catalytic center', data=info, 
+                                dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
     def active_site(self, distance_cutoff=0, output_file=None, save_file=True, 
