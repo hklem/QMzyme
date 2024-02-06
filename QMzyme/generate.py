@@ -32,6 +32,7 @@ from QMzyme.utils import(
     to_dict,
     name_output,
     coords_from_pdb,
+    res_charges,
     )
 try:
     from rdkit import Chem
@@ -348,79 +349,6 @@ class GenerateModel:
                             dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
-    def protonate_solvent(self,mol=None,solvent=solvent_list):
-        '''
-        Function to add hydrogens to water molecules because reduce does not
-        recognize all water residue names. I found that for some weird
-        reason you cannot do rdkit's Chem.rdmolops.AddHs and include
-        PDB residue information when Hs are already present, so we can't
-        simply add Hs to the relevant water oxygen atoms because then
-        the PDB information cannot be included if any other Hs are present
-        in the structure. To avoid that situation, this function separates
-        water molecules from the mol object, protonates them, adds coordinate
-        information back, and then combines with final mol object. Note: if
-        any solvent molecules already have bound H, they will be skipped.
-
-        mol : rdkit mol object, must be defined.
-        solvent : List of strings containing names of solvent residues in PDB.
-            default is solvent=['HOH','WAT','T3P','SOL']
-
-        Returns mol object.
-        '''
-        solvent_mol = Chem.RWMol()
-        no_solvent_mol = Chem.RWMol(mol)
-        pos = []
-        for atom in reversed(mol.GetAtoms()):
-            if rdkit_info(atom,'Residue name') in solvent:
-                if rdkit_info(atom) == 'O':
-                    if len(atom.GetNeighbors()) != 2:
-                        pos.append(atom_coords(mol,atom))
-                        no_solvent_mol.RemoveAtom(atom.GetIdx())
-                        solvent_mol.AddAtom(atom)
-        if solvent_mol.GetNumAtoms() > 0:
-            rdDistGeom.EmbedMolecule(solvent_mol)
-            for i,atom in enumerate(reversed(solvent_mol.GetAtoms())):
-                solvent_mol.GetConformer().SetAtomPosition(atom.GetIdx(),pos[i])
-                atom.SetHybridization(Chem.HybridizationType.SP3)
-
-            solvent_mol = Chem.rdmolops.AddHs(solvent_mol,
-                                              addCoords=True,
-                                              addResidueInfo=True)
-
-            combined_mol = Chem.CombineMols(no_solvent_mol,solvent_mol)
-            return combined_mol
-        else:
-            return mol
-
-###############################################################################
-    def size_scan(self, threshold=1000, starting_cutoff=6,
-                     output_file=None, verbose=True):
-        cutoff = starting_cutoff-1
-        pass_verbose = verbose
-        verbose_str = "PERFORMING... SIZE SCAN\n"
-        verbose_str += "Scanning distance cutoffs starting from "
-        verbose_str += "{} Angstroms until minimal ".format(starting_cutoff)
-        verbose_str += "model size of {} atoms is met.".format(threshold)
-        if verbose is True:
-            print(verbose_str)
-        self.log(verbose_str)
-        n_atoms = 0
-        while n_atoms<threshold:
-            cutoff+=1
-            self.active_site(distance_cutoff=cutoff,
-                             save_file=False,verbose=pass_verbose)
-            self.truncate(save_file=False,verbose=pass_verbose)
-            n_atoms = self.model_atom_count
-        if output_file is None:
-            output_file = '{}_'.format(self.protein_prefix)
-            output_file += 'truncated_active_site_distance_cutoff'
-            output_file += '{}_'.format(self.distance_cutoff)
-            output_file += '{}atoms.pdb'.format(self.model_atom_count)
-        self.truncate(save_file=True,
-                      output_file=output_file,
-                      verbose=pass_verbose)
-
-###############################################################################
     def truncate(self, scheme='CA_terminal', output_file=None,
                  skip_res_names=solvent_list, skip_res_numbers=[],
                  remove_res_numbers=[], remove_atom_ids=[],
@@ -688,18 +616,32 @@ class GenerateModel:
                             dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
-    def res_charges(residues):
-        charge=0 
-        if type(residues) is dict:
-            for i,res in enumerate(residues):
-                residues[i] = res['Residue Name']
-        for res in residues:
-            if res in positive_residues:
-                charge+=1
-            elif res in negative_residues:
-                charge-=1
-
-        return charge
+    def size_scan(self, threshold=1000, starting_cutoff=6,
+                     output_file=None, verbose=True):
+        cutoff = starting_cutoff-1
+        pass_verbose = verbose
+        verbose_str = "PERFORMING... SIZE SCAN\n"
+        verbose_str += "Scanning distance cutoffs starting from "
+        verbose_str += "{} Angstroms until minimal ".format(starting_cutoff)
+        verbose_str += "model size of {} atoms is met.".format(threshold)
+        if verbose is True:
+            print(verbose_str)
+        self.log(verbose_str)
+        n_atoms = 0
+        while n_atoms<threshold:
+            cutoff+=1
+            self.active_site(distance_cutoff=cutoff,
+                             save_file=False,verbose=pass_verbose)
+            self.truncate(save_file=False,verbose=pass_verbose)
+            n_atoms = self.model_atom_count
+        if output_file is None:
+            output_file = '{}_'.format(self.protein_prefix)
+            output_file += 'truncated_active_site_distance_cutoff'
+            output_file += '{}_'.format(self.distance_cutoff)
+            output_file += '{}atoms.pdb'.format(self.model_atom_count)
+        self.truncate(save_file=True,
+                      output_file=output_file,
+                      verbose=pass_verbose)
 
 ###############################################################################
     def QMXTB_input(self,file=None,suffix='',substrate_charge=0,mult=1,

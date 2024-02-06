@@ -26,11 +26,16 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
-protein_residues =  ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
-                     'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
-                     'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
-                     'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP' ]
 
+protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
+                    'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
+                    'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
+                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP',
+                    'SEC', 'PYL']
+
+positive_residues = ['HIP', 'LYS', 'ARG']
+
+negative_residues = ['ASP', 'GLU']
 ###############################################################################
 def name_output(name=None, suffix='.out'):
     if name.endswith(suffix):
@@ -507,3 +512,16 @@ def get_atoms(file):
             if line.startswith('ATOM'):
                 atoms.append(pdb_info('element_symbol',line).strip())
     return atoms
+
+def res_charges(residues):
+        charge=0 
+        if type(residues) is dict:
+            for i,res in enumerate(residues):
+                residues[i] = res['Residue Name']
+        for res in residues:
+            if res in positive_residues:
+                charge+=1
+            elif res in negative_residues:
+                charge-=1
+
+        return charge
