@@ -141,19 +141,12 @@ class GenerateModel:
         string += "{}\n".format(self.protein_prefix)
         timestamp = str(datetime.now()).split('.')[0]
         string += "TIMESTAMP: {}\n".format(timestamp)
-        #self.log(string)
         if self.verbose == True:
             print(string)
 
         # initialize dict for json file
         self.dict = {'Starting structure': self.protein_file}
         self.dict['Timestamp'] = str(datetime.now()).split('.')[0]
-
-    def log(self, string):
-        with open(self.log_file, 'a') as f:
-            string += section_spacer
-            string += '\n'
-            f.writelines(string)
 
 ###############################################################################
     def catalytic_center(self, sel='', res_name=None, res_number=None, chain=None,
@@ -191,6 +184,11 @@ class GenerateModel:
 
         if mdanalysis is True and sel != '':
             cat_center_def = res_selection(self.protein_file,sel=sel)
+        if mdanalysis is False and sel != '':
+            raise ValueError("The sel argument is only compatible with the MDAnalysis "+ 
+                             "package which was not found. Either install MDAnalysis or "+
+                             "define the selection using any combination of res_name=str, "+
+                             "res_number=int or chain=str that will result in a unique definition.")
 
         else:
             if chain is not None:
@@ -246,7 +244,6 @@ class GenerateModel:
             self.catalytic_center_pdb = get_outlines(outfile)
         if save_file is False:
             self.catalytic_center_pdb = store_mol_pdb(catalytic_center_mol)
-        self.log(verbose_str)
 
         verbose_str += "The following object attributes are now available:\n"
         verbose_str += "\tself.catalytic_center_definition\n"
@@ -271,7 +268,8 @@ class GenerateModel:
 
 ###############################################################################
     def subsystem(self, distance_cutoff=0, output_file=None, save_file=True, 
-                    starting_pdb=None, save_json=None, verbose=None):
+                    starting_pdb=None, include_residues={}, 
+                    save_json=None, verbose=None):
         '''
         Function that selects all residues that have at least
         one atom within the cutoff distance from the predefined catalytic
@@ -280,7 +278,7 @@ class GenerateModel:
         output_file        - string defining the .pdb output file name.
         starting_pdb    - PDB file to be used instead of the file from model 
             initialization. This is useful if, for example, you are creating 
-            multiple active sites from the same initial PDB with varying cutoff distances, in
+            multiple subsystems from the same initial PDB with varying cutoff distances, in
             which case the starting_pdb should have been generated
             with a larger cutoff distance than what is currently specified.
 
@@ -290,7 +288,7 @@ class GenerateModel:
             verbose = self.verbose
         if save_json is None:
             save_json = self.save_json
-        verbose_str = "INITIALIZING... ACTIVE SITE SELECTION\n"
+        verbose_str = "INITIALIZING... SUBSYSTEM SELECTION\n"
         timestamp = str(datetime.now())
         verbose_str += "TIMESTAMP: {}\n".format(timestamp)
         verbose_str += "CUTOFF: {}\n".format(distance_cutoff)
@@ -339,8 +337,6 @@ class GenerateModel:
 
         n_atoms = new_mol.GetNumAtoms()
         verbose_str += "N_ATOMS: {}\n".format(n_atoms)
-        #self.log(verbose_str)
-
         verbose_str += "The following object attributes have been generated:\n"
         verbose_str += "\tself.distance_cutoff\n"
         verbose_str += "\tself.subsystem_mol\n"
@@ -359,7 +355,7 @@ class GenerateModel:
                 info['Output file'] = outfile
             except:
                 info['Output file'] = 'Not saved'
-            self.dict = to_dict(key='Active site selection', data=info, 
+            self.dict = to_dict(key='Subsystem selection', data=info, 
                                 dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
@@ -376,7 +372,7 @@ class GenerateModel:
                     Currently only option is 'CA_terminal'. This will remove
                     backbone atoms of residues that are not bondedto other
                     residues. I.e., if you have the following residues in
-                    the active site (ALA120, GLY121, ASP200), the N-terminus
+                    the subsystem (ALA120, GLY121, ASP200), the N-terminus
                     of ALA120 will be removed, the C-terminus of GLY121 will
                     be removed, and both termini will be removed from ASP
                     200 like a typical methyl-capping scheme.
@@ -391,7 +387,7 @@ class GenerateModel:
                     completed removed from the model.
         remove_sidechains    - list containing strings of residue names you
                     want the sidechains removed of. This can be useful if its
-                    a bulky residue pointing away from the active site, and
+                    a bulky residue pointing away from the catalytic center, and
                     only its backbone is important to consider in the model.
         keep_backbones        - list containing strings of residue names that
                     you want to keep backbone atoms of, regardless of the
@@ -414,7 +410,7 @@ class GenerateModel:
             verbose = self.verbose
         if save_json is None:
             save_json = self.save_json
-        verbose_str = "INITIALIZING... ACTIVE SITE TRUNCATION\n"
+        verbose_str = "INITIALIZING... SUBSYSTEM TRUNCATION\n"
         timestamp = str(datetime.now())
         verbose_str += "TIMESTAMP: {}\n".format(timestamp)
         verbose_str += "SCHEME: {}\n".format(scheme)
@@ -582,7 +578,7 @@ class GenerateModel:
             os.remove('temp1.pdb')
 
         if proline_count > 0:
-            print("WARNING: Active site model contains {}".\
+            print("WARNING: Subsystem model contains {}".\
                   format(proline_count)+" proline(s). The N backbone"
                   " atom was automatically kept.")
         subsystem_charge = 0
@@ -599,7 +595,6 @@ class GenerateModel:
         verbose_str += "NOTE: charge does NOT include the catalytic center "
         verbose_str += "and is based on AMBER amino acid naming conventions.\n "
         verbose_str += "MODEL_COMPONENTS: {}\n".format(res_list[:-1])
-        #self.log(verbose_str)
         verbose_str += "The following object attributes are now available:\n"
         verbose_str += "\tself.subsystem_charge\n"
         verbose_str += "\tself.model_atom_count\n"
@@ -624,13 +619,13 @@ class GenerateModel:
                 'Distance cutoff': self.distance_cutoff,
                 'Residues': residues,
                 'C-alpha atom indices': constrain_list,
-                'Active site charge': subsystem_charge
+                'Subsystem charge': subsystem_charge
                 }
             try:
                 info['Output file'] = outfile
             except:
                 pass
-            self.dict = to_dict(key='Truncated active site', data=info, 
+            self.dict = to_dict(key='Truncated subsystem', data=info, 
                                 dict=self.dict, json_file=self.json_file)
 
 ###############################################################################
@@ -644,7 +639,6 @@ class GenerateModel:
         verbose_str += "model size of {} atoms is met.".format(threshold)
         if verbose is True:
             print(verbose_str)
-        self.log(verbose_str)
         n_atoms = 0
         while n_atoms<threshold:
             cutoff+=1
@@ -716,8 +710,6 @@ class GenerateModel:
         verbose_str, json_info = qm_only(qm_input, program, suffix=suffix, verbose=verbose)
         if verbose is True:
             print(verbose_str)
-            self.log(verbose_str)
-
         # write json
         info = {'Calculation file': file.split('.pdb')[0]+suffix+'.com',
                 'Calculation': level_of_theory,
