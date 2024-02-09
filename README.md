@@ -4,7 +4,7 @@ QMzyme
 [![GitHub Actions Build Status](https://github.com/hklem/QMzyme/workflows/CI/badge.svg)](https://github.com/hklem/QMzyme/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/hklem/QMzyme/branch/main/graph/badge.svg)](https://codecov.io/gh/hklem/QMzyme/branch/main)
 
-![Alt text](images/logo.png)
+<img src="images/logo.png" alt="alt text" width="200" />
 
 QM-based enzyme model generation and validation.
 
