@@ -20,7 +20,6 @@ pip install -e .
 
 rdkit
 
-reduce (comes with ambertools)
 
 ### Copyright
 
