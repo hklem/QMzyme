@@ -9,50 +9,58 @@ import sys
 import pytest
 import QMzyme
 import os
-from QMzyme.protein_parser import collect_pdb_data
 
-path = os.path.join(os.getcwd(),'etc')
-test_start_file='test.pdb'
-model = QMzyme.GenerateModel(protein_file=os.path.join(path,test_start_file))
-model.catalytic_center(res_name='DNX',res_number=202,chain='A',
-                       save_file=True,verbose=False, 
-                       output_file='test_catalytic_center.pdb')
-model.active_site(distance_cutoff=4,save_file=True,output_file='test_active_site.pdb')
-model.truncate(save_file=True, output_file='test_truncate.pdb')
+model = None
+path_main = os.getcwd()
+path_tests = os.path.join(path_main,'tests')
+@pytest.mark.parametrize(
+        'test_function, test_type, init_file, target',
+        [
+            ("init", None, "init_files/1oh0_equ_from_amber_sim.pdb", None),
+            ("catalytic_center", "selection_string1", None, None),
+            ("catalytic_center", "selection_string2", None, None),
+            ("catalytic_center", "selection_notstring", None, None),
+            ("subsystem", None, None, None),
+            ("truncate", "CA_terminal", None, None),
+            (None, None, None, None)
+        ]
+    )
 
-catalytic_center_inp = model.catalytic_center_pdb
-active_site_inp = model.active_site_pdb
-truncated_active_site_inp = model.truncated_active_site_pdb
+def test_QMzyme_generate(test_function, test_type, init_file, target):
+    os.chdir(path_tests)
+    if test_function == "init":
+        assert "QMzyme" in sys.modules
+        global model
+        model = QMzyme.GenerateModel(protein_file=init_file, 
+                                     save_json=False,
+                                     verbose=False)
 
-catalytic_center_exp = 'test_end_catalytic_center_chainA_DNX_202.pdb'
-active_site_exp = 'test_end_catalytic_center_chainA_DNX_202_active_site_distance_cutoff_4.pdb'
-truncated_active_site_exp = 'test_end_catalytic_center_chainA_DNX_202_truncated_active_site_distance_cutoff_4.pdb'
+    if test_function == "catalytic_center":
+        if test_type == "selection_string1":
+            model.catalytic_center(sel='resid 263',
+                                   save_file=False)
+        if test_type == "selection_string2":
+            model.catalytic_center(sel='resname EQU and segid A',
+                                   save_file=False)
+        if test_type == "selection_notstring":
+            model.catalytic_center(res_name='EQU',
+                                   chain='A',
+                                   save_file=False)
+            
+        line_first = 'ATOM      1  C1  EQU A 263      43.927  42.973  31.198  1.00  0.00           C'
+        line_7 = 'ATOM      7  C6  EQU A 263      44.793  42.905  30.106  1.00  0.00           C'
+        line_last = 'END'
+        assert model.catalytic_center_pdb[0].strip() == line_first
+        assert model.catalytic_center_pdb[6].strip() == line_7
+        assert model.catalytic_center_pdb[-1].strip() == line_last
 
-info = ['res_name', 'res_number', 'atom_name']
-#info = ['res_name', 'res_number', 'atom_name', 'atom_coords']
+    if test_function == "subsystem":
+        model.subsystem()
 
-def collect_test_data(test_inp,test_exp):
-    data_exp = collect_pdb_data(file=os.path.join(path,test_exp),info=info)
-    data_inp = collect_pdb_data(data=test_inp,info=info)
-    return [(data_inp[key],data_exp[key],key) for key in data_exp.keys()]
+    # if test_function == "truncate":
 
-def test_QMzyme_imported():
-    """
-    Sample test, will always pass so long as import statement worked.
-    """
-    assert "QMzyme" in sys.modules
-
-@pytest.mark.parametrize('inp, expected, key',collect_test_data(catalytic_center_inp,catalytic_center_exp))
-def test_catalytic_center(inp,expected,key):
-    assert inp == expected, "a change was detected in {}.".format(key)
-    
-@pytest.mark.parametrize('inp, expected, key',collect_test_data(active_site_inp,active_site_exp))
-def test_active_site(inp,expected,key):
-    assert inp == expected, "a change was detected in {}.".format(key)
-
-@pytest.mark.parametrize('inp, expected, key',collect_test_data(truncated_active_site_inp,truncated_active_site_exp))
-def test_truncate(inp,expected,key):
-    assert inp == expected, "a change was detected in {}.".format(key)
+    # if test_function == None:
+    #     #remove test.pdb
 
 
 
