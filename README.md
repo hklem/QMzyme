@@ -1,9 +1,10 @@
 QMzyme
 ==============================
 [//]: # (Badges)
-[![GitHub Actions Build Status](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/QMzyme/workflows/CI/badge.svg)](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/QMzyme/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/QMzyme/branch/main/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/QMzyme/branch/main)
+[![GitHub Actions Build Status](https://github.com/hklem/QMzyme/workflows/CI/badge.svg)](https://github.com/hklem/QMzyme/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/hklem/QMzyme/branch/main/graph/badge.svg)](https://codecov.io/gh/hklem/QMzyme/branch/main)
 
+![Alt text](images/logo.png)
 
 QM-based enzyme model generation and validation.
 
