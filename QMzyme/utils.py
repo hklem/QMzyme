@@ -362,7 +362,7 @@ def coords_from_json(file):
 
 def coords_from_pdb(file):
     coords = []
-    if file in os.listdir():
+    if type(file) is str:
         data = get_outlines(file)
     else:
         data = file

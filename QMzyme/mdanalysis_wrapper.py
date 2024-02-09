@@ -34,7 +34,7 @@ def res_selection(pdb=None, sel=''):
     for r in res:
         res_dict = {
         'Residue name': r.resname,
-        'Residue number': r.resnum,
+        'Residue number': int(r.resnum),
         'Chain': r.segid
         }
         res_list.append(res_dict)
