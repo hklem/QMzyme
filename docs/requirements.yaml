@@ -5,6 +5,7 @@ dependencies:
   - python
   - pip
   - rdkit
+  - aqme
 
     # Pip-only installs
   #- pip:
