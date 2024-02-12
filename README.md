@@ -5,7 +5,7 @@ QMzyme
 [![codecov](https://codecov.io/gh/hklem/QMzyme/branch/main/graph/badge.svg)](https://codecov.io/gh/hklem/QMzyme/branch/main)
 
 <img src="docs/_static/logo.png" alt="alt text" width="200" /> --->
-![](docs/_static/logo.png "QMzyme" =200x)
+![](docs/_static/logo.png)
 
 QM-based enzyme model generation and validation.
 
