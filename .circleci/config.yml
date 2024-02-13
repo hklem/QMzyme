@@ -3,7 +3,7 @@
 version: 2.1
 orbs:
   python: circleci/python@2
-  codecov: codecov/codecov@3.2.4
+  #codecov: codecov/codecov@3.2.4
 jobs:
   build-and-test:
     # Install dependencies and run tests
@@ -21,18 +21,18 @@ jobs:
           pip install importlib-resources
           pip install .
           pip install pytest
-          pip istall pytest-cov
-          python -m pytest -v --cov=aqme --cov-report=xml
+          pip install pytest-cov
+          python -m pytest -v 
+          #python -m pytest -v --cov=qmzyme --cov-report=xml
           rm -r /tmp/*
           cp -r * /tmp
       - persist_to_workspace:
           root: /tmp
           paths:
-            - coverage.xml
+            #- coverage.xml
             - QMzyme
+            
   codecov-coverage:
-      docker:
-        - image: cimg/python:3.11-node
       steps:
         - attach_workspace:
             at: /tmp
