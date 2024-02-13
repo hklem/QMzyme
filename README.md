@@ -9,7 +9,7 @@ QMzyme
 - #### [Installation](#Installation)
 - #### [Dependencies](#Dependencies)
 - #### [Getting Started](#Getting-Started)
-    1. [Step 1. Generate QMzyme object](#Step-1.-Generate-your-QMzyme-object)
+    1. [Generate QMzyme object](#step1)
     2. [Define catalytic center](#Step-2.-Define-the-catalytic-center)
     3. [Select subsystem](#Step-3.-Select-the-subsystem)
     4. [Truncate subsystem](#Step-4.-Truncate-the-subsystem)
@@ -38,7 +38,7 @@ import inspect
 from IPython.display import HTML, display
 ```
 
-
+< a id="step1">< /a>
 ## Step 1. Generate your QMzyme object
 
 #### What arguments does QMzyme.GenerateModel take?
