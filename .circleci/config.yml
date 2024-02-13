@@ -22,7 +22,7 @@ jobs:
           pip install .
           pip install pytest
           pip install pytest-cov
-          pytest -v tests/
+          pytest -v --cov=QMzyme
       - persist_to_workspace:
           root: /tmp
           paths:
