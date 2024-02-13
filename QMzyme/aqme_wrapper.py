@@ -52,6 +52,6 @@ def qm_only(qm_input, program='gaussian', suffix='', verbose=True):
             'Memory': mem,
             'Number of processors': nprocs,
             }
-        self.to_dict(section='QM preparation', dict=info)
+    self.to_dict(section='QM preparation', dict=info)
     
     return verbose_str
