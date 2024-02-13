@@ -14,15 +14,6 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run: |
-          pip install --upgrade pip
-          pip install rdkit-pypi
-          pip install aqme
-          pip install MDAnalysis
-          pip install importlib-resources
-          pip install -e .
-          pip install pytest
-          pip install pytest-cov
-      - run: |
           pytest -v 
             
 workflows:
