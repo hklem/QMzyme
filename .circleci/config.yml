@@ -21,7 +21,7 @@ jobs:
           pip install .
           pip install pytest
           pip install pytest-cov
-          python -m pytest -v 
+          pytest -v 
           rm -r /tmp/*
           cp -r * /tmp
       - persist_to_workspace:
