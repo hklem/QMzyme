@@ -38,7 +38,7 @@ import inspect
 from IPython.display import HTML, display
 ```
 
-<a id="step1"></a>
+<a id="Step-1"></a>
 ## Step 1. Generate your QMzyme object
 
 #### What arguments does QMzyme.GenerateModel take?
