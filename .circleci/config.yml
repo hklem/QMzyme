@@ -23,6 +23,9 @@ jobs:
           pip install pytest
           pip install pytest-cov
           pytest -v tests/
+      - persist_to_workspace:
+          paths:
+            - QMzyme
             
 workflows:
   build-and-test:
