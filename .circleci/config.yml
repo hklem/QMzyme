@@ -19,14 +19,10 @@ jobs:
           pip install aqme
           pip install MDAnalysis
           pip install importlib-resources
-          pip install .
+          pip install -e .
           pip install pytest
           pip install pytest-cov
-          pytest -v --cov=QMzyme
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - QMzyme
+          pytest -v 
             
 workflows:
   build-and-test:
