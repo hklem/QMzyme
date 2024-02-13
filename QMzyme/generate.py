@@ -39,9 +39,10 @@ try:
     from rdkit import Chem
     from rdkit.Chem import rdDistGeom
 except ModuleNotFoundError:
-    print('rdkit is not installed! You can install the program according to https://anaconda.org/conda-forge/rdkit.')
+    print("RDKit is not installed! You can install the program with 'pip install rdkit' or according to https://anaconda.org/conda-forge/rdkit.")
 
 try:
+    import MDAnalysis
     from QMzyme.mdanalysis_wrapper import res_selection, atom_selection
     mdanalysis = True
 except:

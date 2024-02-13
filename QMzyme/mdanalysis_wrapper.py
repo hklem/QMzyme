@@ -7,7 +7,10 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-import MDAnalysis as mda
+try:
+    import MDAnalysis as mda
+except:
+    pass
 
 def res_selection(pdb=None, sel=''):
     '''

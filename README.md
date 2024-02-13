@@ -33,12 +33,27 @@ pip install QMzyme
 
 ```python
 import QMzyme as qmz
+from importlib_resources import files, as_file
 import inspect
+from IPython.display import HTML, display
 ```
 
     /Users/hrk/anaconda3/envs/qmzyme/lib/python3.11/site-packages/MDAnalysis/topology/TPRParser.py:161: DeprecationWarning: 'xdrlib' is deprecated and slated for removal in Python 3.13
       import xdrlib
 
+
+
+```python
+def set_background(color):    
+    script = (
+        "var cell = this.closest('.jp-CodeCell');"
+        "var editor = cell.querySelector('.jp-Editor');"
+        "editor.style.background='{}';"
+        "this.parentNode.removeChild(this)"
+    ).format(color)
+    
+    display(HTML('<img src onerror="{}" style="display:none">'.format(script)))
+```
 
 ## Step 1. Generate your QMzyme object
 
@@ -46,8 +61,13 @@ import inspect
 
 
 ```python
+set_background('honeydew')
 print(inspect.signature(qmz.GenerateModel))
 ```
+
+
+<img src onerror="var cell = this.closest('.jp-CodeCell');var editor = cell.querySelector('.jp-Editor');editor.style.background='honeydew';this.parentNode.removeChild(this)" style="display:none">
+
 
     (calculation='QM-only', protein_file=None, pdb_code=None, save_json=True, verbose=True)
 
@@ -56,14 +76,16 @@ print(inspect.signature(qmz.GenerateModel))
 
 
 ```python
-model = qmz.GenerateModel(protein_file='QMzyme/tests/init_files/1oh0_equ_xstal.pdb')
-# information gets printed out after each function call. To turn this off for all calls 
-# pass verbose=False to GenerateModel(). Otherwise, you can turn verbose on or off in each of the 
+file = str(files('QMzyme.data').joinpath('1oh0_equ_from_amber_sim.pdb'))
+model = qmz.GenerateModel(protein_file=file)
+
+#By default information is printed out after each function call. To turn this off for all calls 
+# pass verbose=False to GenerateModel(). Otherwise, you can set verbose True or False in each of the 
 # functions individually.
 ```
 
-    INITIALIZING... QMZYME OBJECT: 1oh0_equ_xstal
-    TIMESTAMP: 2024-02-12 14:12:27
+    INITIALIZING... QMZYME OBJECT: 1oh0_equ_from_amber_sim
+    TIMESTAMP: 2024-02-13 09:58:03
     
 
 
@@ -79,45 +101,43 @@ print(inspect.signature(qmz.GenerateModel.catalytic_center))
     (self, sel='', res_name=None, res_number=None, chain=None, output_file=None, save_file=True, save_json=None, verbose=None)
 
 
-#### If you have MDAnalysis installed, you use the sel argument to pass a string selection command that MDAnalysis will parse:
+#### You can specify certain residue identifiers like the residue name and/or residue number. If you use a non-unique specifier (like res_name='ALA'), every Alanine residue will be selected, and a warning will pop up to ensure this was your intention. 
 
 
 ```python
-model.catalytic_center(sel='resid 263', save_json=False) 
-# save_json is false here because an error will pop up if we have 
-# the same model object and try to write multiple catalytic centers 
-# to its corresponding json file. If you generate a new model object
-# in the same directory it will create a new json file and append a
-# number identifier to it. 
+model.catalytic_center(res_number=263, save_file=False)
+
+#I set save_file=False because I don't need the PDB file of the catalytic center,
+# but you might want to visualize that to ensure it's what you intended.
 ```
 
-    /Users/hrk/anaconda3/envs/qmzyme/lib/python3.11/site-packages/MDAnalysis/topology/PDBParser.py:331: UserWarning: Element information is missing, elements attribute will not be populated. If needed these can be guessed using MDAnalysis.topology.guessers.
-      warnings.warn("Element information is missing, elements attribute "
-
-
     INITIALIZING... CATALYTIC CENTER
-    TIMESTAMP: 2024-02-12 14:12:27.468466
+    TIMESTAMP: 2024-02-13 09:58:03.606747
     DEFINITION: 
     N_ATOMS: 37
-    OUTPUT_FILE: 1oh0_equ_xstal_catalytic_center.pdb
     The following object attributes are now available:
     	self.catalytic_center_definition
     	self.catalytic_center_mol
     	self.catalytic_center_pdb
 
 
-#### Alternatively, you can specify certain components likes the residue name and/or residue number. 
+#### If you have MDAnalysis installed, you can use the sel argument to pass a string selection command that MDAnalysis will parse:
 
 
 ```python
-model.catalytic_center(res_number=263)
+model.catalytic_center(sel='resid 263', save_json=False, save_file=False)
+
+#I set save_json=False here because an error will pop up if we have 
+# the same model object and try to write multiple catalytic centers 
+# to its corresponding json file. If you generate a new model object
+# in the same directory it will create a new json file and append a
+# number identifier to it. 
 ```
 
     INITIALIZING... CATALYTIC CENTER
-    TIMESTAMP: 2024-02-12 14:12:27.777376
+    TIMESTAMP: 2024-02-13 09:58:03.822078
     DEFINITION: 
     N_ATOMS: 37
-    OUTPUT_FILE: 1oh0_equ_xstal_catalytic_center.pdb
     The following object attributes are now available:
     	self.catalytic_center_definition
     	self.catalytic_center_mol
@@ -130,14 +150,13 @@ model.catalytic_center(res_number=263)
 
 
 ```python
-model.subsystem(distance_cutoff=5)
+model.subsystem(distance_cutoff=5, save_file=False)
 ```
 
     INITIALIZING... SUBSYSTEM SELECTION
-    TIMESTAMP: 2024-02-12 14:12:27.977062
+    TIMESTAMP: 2024-02-13 09:58:04.138838
     CUTOFF: 5
-    OUTPUT_FILE: 1oh0_equ_xstal_subsystem_distance_cutoff5.pdb
-    N_ATOMS: 406
+    N_ATOMS: 427
     The following object attributes have been generated:
     	self.distance_cutoff
     	self.subsystem_mol
@@ -151,18 +170,17 @@ model.subsystem(distance_cutoff=5)
 
 
 ```python
-model.truncate()
+model.truncate(save_file=False)
 ```
 
     INITIALIZING... SUBSYSTEM TRUNCATION
-    TIMESTAMP: 2024-02-12 14:12:28.518590
+    TIMESTAMP: 2024-02-13 09:58:04.725904
     SCHEME: CA_terminal
     CUTOFF: 5
-    OUTPUT_FILE: 1oh0_equ_xstal_truncated_subsystem_distance_cutoff5.pdb
-    N_ATOMS: 368
+    N_ATOMS: 391
     CHARGE: -1
     NOTE: charge does NOT include the catalytic center and is based on AMBER amino acid naming conventions.
-     MODEL_COMPONENTS: TYR16,ILE17,VAL20,ASP40,PRO41,TYR57,GLY60,LEU61,VAL66,ALA68,MET84,PHE86,VAL88,MET90,LEU99,VAL101,ASH103,MET105,MET116,ALA118,TRP120,LEU125,EQU263,WAT265,WAT266,WAT267
+     MODEL_COMPONENTS: TYR16,ILE17,VAL20,ASP40,PRO41,TYR57,GLN59,GLY60,LEU61,VAL66,ALA68,MET84,PHE86,VAL88,MET90,LEU99,VAL101,ASH103,MET116,ALA118,TRP120,LEU125,EQU263,WAT372,WAT373,WAT376,WAT378,WAT379,WAT380,WAT385,WAT387,WAT388,WAT389
     The following object attributes are now available:
     	self.subsystem_charge
     	self.model_atom_count
@@ -196,7 +214,7 @@ model_info["Starting structure"]
 
 
 
-    'QMzyme/tests/init_files/1oh0_equ_xstal.pdb'
+    '/Users/hrk/git/QMzyme/QMzyme/data/1oh0_equ_from_amber_sim.pdb'
 
 
 
@@ -208,9 +226,7 @@ model_info["Catalytic center"]
 
 
 
-    {'Residue number': 263,
-     'Number of atoms': 37,
-     'Output file': '1oh0_equ_xstal_catalytic_center.pdb'}
+    {'Residue number': 263, 'Number of atoms': 37}
 
 
 
@@ -224,9 +240,7 @@ model_info["QMzyme 1"]["Subsystem selection"]
 
 
 
-    {'Number of atoms': 406,
-     'Distance cutoff': 5,
-     'Output file': '1oh0_equ_xstal_subsystem_distance_cutoff5.pdb'}
+    {'Number of atoms': 427, 'Distance cutoff': 5, 'Output file': 'Not saved'}
 
 
 
@@ -238,7 +252,7 @@ model_info["QMzyme 1"]["Truncated subsystem"]
 
 
 
-    {'Number of atoms': 368,
+    {'Number of atoms': 391,
      'Distance cutoff': 5,
      'Residues': [{'Residue name': 'TYR', 'Residue number': 16, 'Chain': 'A'},
       {'Residue name': 'ILE', 'Residue number': 17, 'Chain': 'A'},
@@ -246,6 +260,7 @@ model_info["QMzyme 1"]["Truncated subsystem"]
       {'Residue name': 'ASP', 'Residue number': 40, 'Chain': 'A'},
       {'Residue name': 'PRO', 'Residue number': 41, 'Chain': 'A'},
       {'Residue name': 'TYR', 'Residue number': 57, 'Chain': 'A'},
+      {'Residue name': 'GLN', 'Residue number': 59, 'Chain': 'A'},
       {'Residue name': 'GLY', 'Residue number': 60, 'Chain': 'A'},
       {'Residue name': 'LEU', 'Residue number': 61, 'Chain': 'A'},
       {'Residue name': 'VAL', 'Residue number': 66, 'Chain': 'A'},
@@ -257,15 +272,21 @@ model_info["QMzyme 1"]["Truncated subsystem"]
       {'Residue name': 'LEU', 'Residue number': 99, 'Chain': 'A'},
       {'Residue name': 'VAL', 'Residue number': 101, 'Chain': 'A'},
       {'Residue name': 'ASH', 'Residue number': 103, 'Chain': 'A'},
-      {'Residue name': 'MET', 'Residue number': 105, 'Chain': 'A'},
       {'Residue name': 'MET', 'Residue number': 116, 'Chain': 'A'},
       {'Residue name': 'ALA', 'Residue number': 118, 'Chain': 'A'},
       {'Residue name': 'TRP', 'Residue number': 120, 'Chain': 'A'},
       {'Residue name': 'LEU', 'Residue number': 125, 'Chain': 'A'},
       {'Residue name': 'EQU', 'Residue number': 263, 'Chain': 'A'},
-      {'Residue name': 'WAT', 'Residue number': 265, 'Chain': 'A'},
-      {'Residue name': 'WAT', 'Residue number': 266, 'Chain': 'A'},
-      {'Residue name': 'WAT', 'Residue number': 267, 'Chain': 'A'}],
+      {'Residue name': 'WAT', 'Residue number': 372, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 373, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 376, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 378, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 379, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 380, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 385, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 387, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 388, 'Chain': 'A'},
+      {'Residue name': 'WAT', 'Residue number': 389, 'Chain': 'A'}],
      'C-alpha atom indices': [2,
       23,
       40,
@@ -273,23 +294,22 @@ model_info["QMzyme 1"]["Truncated subsystem"]
       74,
       78,
       97,
-      104,
+      114,
       121,
-      135,
-      143,
-      158,
-      176,
-      190,
-      205,
+      138,
+      152,
+      160,
+      175,
+      193,
+      207,
       222,
-      236,
-      247,
-      262,
-      277,
-      285,
-      307],
-     'Subsystem charge': -1,
-     'Output file': '1oh0_equ_xstal_truncated_subsystem_distance_cutoff5.pdb'}
+      239,
+      253,
+      264,
+      279,
+      287,
+      309],
+     'Subsystem charge': -1}
 
 
 

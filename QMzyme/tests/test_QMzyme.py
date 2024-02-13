@@ -6,17 +6,18 @@ Unit and regression test for the QMzyme package.
 # Name each function as test_* to be automatically included in test workflow
 
 import sys
+import os
 import pytest
 import QMzyme
-import os
+from importlib_resources import files, as_file
 
 model = None
-path_main = os.getcwd()
-path_tests = os.path.join(path_main,'tests')
+data = str(files('QMzyme.data').joinpath('1oh0_equ_from_amber_sim.pdb'))
+
 @pytest.mark.parametrize(
         'test_function, test_type, init_file, target',
         [
-            ("init", None, "init_files/1oh0_equ_from_amber_sim.pdb", None),
+            ("init", None, data, None),
             ("catalytic_center", "selection_string1", None, None),
             ("catalytic_center", "selection_string2", None, None),
             ("catalytic_center", "selection_notstring", None, None),
@@ -27,7 +28,6 @@ path_tests = os.path.join(path_main,'tests')
     )
 
 def test_QMzyme_generate(test_function, test_type, init_file, target):
-    os.chdir(path_tests)
     if test_function == "init":
         assert "QMzyme" in sys.modules
         global model
@@ -55,7 +55,7 @@ def test_QMzyme_generate(test_function, test_type, init_file, target):
         assert model.catalytic_center_pdb[-1].strip() == line_last
 
     if test_function == "subsystem":
-        model.subsystem()
+        model.subsystem(distance_cutoff=4)
 
     # if test_function == "truncate":
 
