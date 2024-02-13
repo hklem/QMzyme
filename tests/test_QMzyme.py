@@ -55,7 +55,7 @@ def test_QMzyme_generate(test_function, test_type, init_file, target):
         assert model.catalytic_center_pdb[-1].strip() == line_last
 
     if test_function == "subsystem":
-        model.subsystem(distance_cutoff=4)
+        model.subsystem(distance_cutoff=4, save_file=False)
 
     # if test_function == "truncate":
 
