@@ -3,35 +3,51 @@
 version: 2.1
 orbs:
   python: circleci/python@2
+  codecov: codecov/codecov@3.2.4
 jobs:
-  test-python:
+  build-and-test:
     # Install dependencies and run tests
     docker:
-      - image: cimg/python:3.8-node
+      - image: cimg/python:3.11-node
     steps:
       - checkout
-      - python/install-packages
+      - python/install-packages:
+          pkg-manager: pip
       - run:
-          name: Run tests
-          command: pytest --junitxml=junit.xml || ((($? == 5)) && echo 'Did not find any tests to run.')
-      - store_test_results:
-          path: junit.xml
-  deploy:
-    # This is an example deploy job, not actually used by the workflow
-    docker:
-      - image: cimg/base:stable
-    steps:
-      # Replace this with steps to deploy to users
-      - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
-      - run:
-          name: found github actions config
-          command: ':'
+          python -m pip install --upgrade pip
+          pip install rdkit-pypi
+          pip install aqme
+          pip install MDAnalysis
+          pip install importlib-resources
+          pip install .
+          pip install pytest
+          pip istall pytest-cov
+          python -m pytest -v --cov=aqme --cov-report=xml
+          rm -r /tmp/*
+          cp -r * /tmp
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - coverage.xml
+            - QMzyme
+  codecov-coverage:
+      docker:
+        - image: cimg/python:3.11-node
+      steps:
+        - attach_workspace:
+            at: /tmp
+        - checkout
+        - codecov/upload:
+            file: /tmp/coverage.xml
+            token: CODECOV_TOKEN
+            
 workflows:
   build-and-test:
     jobs:
-      - test-python
+      - build-and-test
+      #- codecov-coverage
+          #requires:
+            #- build-and-test
     # - deploy:
     #     requires:
     #       - test-python
