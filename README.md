@@ -9,11 +9,11 @@ QMzyme
 - #### [Installation](#Installation)
 - #### [Dependencies](#Dependencies)
 - #### [Getting Started](#Getting-Started)
-    1. [Generate QMzyme object](#step1)
-    2. [Define catalytic center](#Step-2.-Define-the-catalytic-center)
-    3. [Select subsystem](#Step-3.-Select-the-subsystem)
-    4. [Truncate subsystem](#Step-4.-Truncate-the-subsystem)
-    5. [Resulting model](#Step-5.-Resulting-model)
+    1. [Generate QMzyme object](#Step-1)
+    2. [Define catalytic center](#Step-2)
+    3. [Select subsystem](#Step-3)
+    4. [Truncate subsystem](#Step-4)
+    5. [Resulting model](#Step-5)
 
 ## Installation
 ```
@@ -66,7 +66,7 @@ model = qmz.GenerateModel(protein_file=file)
 >     INITIALIZING... QMZYME OBJECT: 1oh0_equ_from_amber_sim
 >     TIMESTAMP: 2024-02-13 09:58:03
     
-
+<a id="Step-2"></a>
 ## Step 2. Define the catalytic center
 
 #### What arguments does QMzyme.GenerateModel.catalytic_center take?
@@ -121,7 +121,7 @@ model.catalytic_center(sel='resid 263', save_json=False, save_file=False)
 >     	self.catalytic_center_mol
 >     	self.catalytic_center_pdb
 
-
+<a id="Step-3"></a>
 ## Step 3. Select the subsystem
 
 #### You must define some cutoff distance in Å. Any residue with at least one atom within this distance of at least one atom of the catalytic center will be included in the subsystem.
@@ -141,7 +141,7 @@ model.subsystem(distance_cutoff=5, save_file=False)
 >     self.subsystem_pdb
     
 
-
+<a id="Step-4"></a>
 ## Step 4. Truncate the subsystem
 
 #### We will do this following the default truncation scheme of cutting only at backbone atoms of terminal residues (i.e., if the subsystem is comprised of residues 1, 2, 3 and 5, the N termini of residues 1 and 5 will be cut and the C termini of residues 3 and 5 will be cut.
@@ -169,7 +169,7 @@ model.truncate(save_file=False)
 >     self.residues
     
 
-
+<a id="Step-5"></a>
 ## Step 5. Resulting model
 
 #### As the code was running, a json file was created each step of the way to record information about the creation process and the resulting model. Creation of this json file can be turned off for all steps by setting save_json=False in qmz.GenerateModel(), or at any of the individual steps. Let's take a look at what information is stored in the json:
