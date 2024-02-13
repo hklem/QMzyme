@@ -28,8 +28,9 @@ def test_generate_model(init_file=amber_file):
             ("mdanalysis_resname_and_segid", "resname EQU and segid A", None, None, None, amber_file),
             ("rdkit_selection", None, "EQU", None, "A", amber_file)
         ]
+)
 def test_catalytic_center(test_type, sel, res_name, res_number, chain, init_file):
-        model.catalytic_center(sel=sel, res_name=res_name, res_number=int(res_number), chain=chain, save_file=False)
+        model.catalytic_center(sel=sel, res_name=res_name, res_number=res_number, chain=chain, save_file=False)
         line_first = 'ATOM      1  C1  EQU A 263      43.927  42.973  31.198  1.00  0.00           C'
         line_7 = 'ATOM      7  C6  EQU A 263      44.793  42.905  30.106  1.00  0.00           C'
         line_last = 'END'

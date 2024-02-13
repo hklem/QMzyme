@@ -183,9 +183,9 @@ class GenerateModel:
         cat_center_def = {}
         file_suffix = '_'
 
-        if mdanalysis is True and sel != '':
+        if mdanalysis is True and sel != ('' or None):
             cat_center_def = res_selection(self.protein_file,sel=sel)
-        if mdanalysis is False and sel != '':
+        if mdanalysis is False and sel != ('' or None):
             raise ValueError("The sel argument is only compatible with the MDAnalysis "+ 
                              "package which was not found. Either install MDAnalysis or "+
                              "define the selection using any combination of res_name=str, "+
