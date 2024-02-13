@@ -23,13 +23,11 @@ jobs:
           pip install pytest
           pip install pytest-cov
           python -m pytest -v 
-          #python -m pytest -v --cov=qmzyme --cov-report=xml
           rm -r /tmp/*
           cp -r * /tmp
       - persist_to_workspace:
           root: /tmp
           paths:
-            #- coverage.xml
             - QMzyme
             
   codecov-coverage:
