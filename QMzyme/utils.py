@@ -368,7 +368,7 @@ def coords_from_pdb(file):
         data = file
     count = 0
     for i, line in enumerate(data):
-        if line.split()[0] in ['ATOM', 'HETATM']:
+        if line[:4] in ['ATOM', 'HETA']:
             coords.append([float(line.split()[x+6]) for x in range(3)])
     return np.array(coords)
 
