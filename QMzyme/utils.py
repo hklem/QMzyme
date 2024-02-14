@@ -368,8 +368,9 @@ def coords_from_pdb(file):
         data = file
     count = 0
     for i, line in enumerate(data):
-        if line[:4] in ['ATOM', 'HETA']:
-            coords.append([float(line.split()[x+6]) for x in range(3)])
+        if pdb_info('record_type',line) in ['ATOM','HETATM']:
+            coords.append([float(pdb_info(coord, line) for coord in ['x', 'y', 'z'])])
+            #coords.append([float(line.split()[x+6]) for x in range(3)])
     return np.array(coords)
 
 def coords_from_gout(file):
@@ -509,7 +510,7 @@ def get_atoms(file):
     atoms = []
     with open(file, 'r') as f:
         for line in f.readlines():
-            if line.startswith('ATOM'):
+            if pdb_info('record_type',line) in ['ATOM','HETATM']:
                 atoms.append(pdb_info('element_symbol',line).strip())
     return atoms
 
