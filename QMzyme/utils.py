@@ -157,7 +157,7 @@ def check_pdb(file,clean=False):
     residues_reordered=False
     if clean==True:
         for i,line in enumerate(data):
-            if pdb_info('record_type',line) in ['ATOM','HETATM']:
+            if pdb_info('record_type',line).strip() in ['ATOM','HETATM']:
                 atom_type = pdb_info('atom_name',line)
                 res_num = pdb_info('res_number',line)
                 res_name = pdb_info('res_name',line)
@@ -308,7 +308,7 @@ def collect_pdb_data(file=None,data=None):
 
     pdb_data = {'res_name_sequence':[],'atom_sequence':[],'number_of_atoms':0,'atom_coords':[],'res_num_sequence':[]}
     for line in data:
-        if pdb_info('record_type',line) in ['ATOM','HETATM']:
+        if pdb_info('record_type',line).strip() in ['ATOM','HETATM']:
             pdb_data['res_name_sequence'].append(pdb_info('res_name',line))
             pdb_data['res_num_sequence'].append(pdb_info('res_number',line))
             pdb_data['number_of_atoms'] += 1
@@ -368,7 +368,7 @@ def coords_from_pdb(file):
         data = file
     count = 0
     for i, line in enumerate(data):
-        if pdb_info('record_type',line) in ['ATOM','HETATM']:
+        if pdb_info('record_type',line).strip() in ['ATOM','HETATM']:
             coords.append([float(pdb_info(coord, line)) for coord in ['x', 'y', 'z']])
             #coords.append([float(line.split()[x+6]) for x in range(3)])
     return np.array(coords)
@@ -510,7 +510,7 @@ def get_atoms(file):
     atoms = []
     with open(file, 'r') as f:
         for line in f.readlines():
-            if pdb_info('record_type',line) in ['ATOM','HETATM']:
+            if pdb_info('record_type',line).strip() in ['ATOM','HETATM']:
                 atoms.append(pdb_info('element_symbol',line).strip())
     return atoms
 
