@@ -1,0 +1,46 @@
+COMPND    ATP SYNTHASE EPSILON CHAIN
+HETATM    1  PB  ADP D 600     100.256  48.938  63.437  1.00 37.47           P  
+HETATM    2  O1B ADP D 600      99.787  49.949  62.459  1.00 37.49           O  
+HETATM    3  O2B ADP D 600     101.143  47.968  62.735  1.00 37.58           O  
+HETATM    4  O3B ADP D 600     100.878  49.520  64.641  1.00 37.40           O  
+HETATM    5  PA  ADP D 600      98.408  46.708  63.988  1.00 38.82           P  
+HETATM    6  O1A ADP D 600      98.161  46.260  62.606  1.00 39.38           O  
+HETATM    7  O2A ADP D 600      99.262  45.744  64.703  1.00 37.92           O  
+HETATM    8  O3A ADP D 600      98.993  48.205  64.084  1.00 38.95           O  
+HETATM    9  O5' ADP D 600      97.016  46.898  64.753  1.00 38.60           O  
+HETATM   10  C5' ADP D 600      97.001  47.071  66.215  1.00 38.58           C  
+HETATM   11  C4' ADP D 600      95.843  46.310  66.811  1.00 38.02           C  
+HETATM   12  O4' ADP D 600      94.582  46.982  66.447  1.00 37.59           O  
+HETATM   13  C3' ADP D 600      95.639  44.873  66.307  1.00 37.95           C  
+HETATM   14  O3' ADP D 600      96.433  43.918  66.973  1.00 38.45           O  
+HETATM   15  C2' ADP D 600      94.167  44.671  66.689  1.00 37.61           C  
+HETATM   16  O2' ADP D 600      94.028  44.513  68.095  1.00 38.05           O  
+HETATM   17  C1' ADP D 600      93.587  46.009  66.200  1.00 37.62           C  
+HETATM   18  N9  ADP D 600      93.263  45.998  64.767  1.00 37.68           N  
+HETATM   19  C8  ADP D 600      94.002  46.437  63.716  1.00 35.93           C  
+HETATM   20  N7  ADP D 600      93.396  46.263  62.553  1.00 36.15           N  
+HETATM   21  C5  ADP D 600      92.199  45.662  62.874  1.00 36.70           C  
+HETATM   22  C6  ADP D 600      91.115  45.235  62.079  1.00 36.36           C  
+HETATM   23  N6  ADP D 600      91.073  45.353  60.761  1.00 35.68           N  
+HETATM   24  N1  ADP D 600      90.060  44.686  62.729  1.00 37.89           N  
+HETATM   25  C2  ADP D 600      90.095  44.575  64.094  1.00 37.16           C  
+HETATM   26  N3  ADP D 600      91.042  44.949  64.903  1.00 38.17           N  
+HETATM   27  C4  ADP D 600      92.087  45.494  64.233  1.00 37.13           C  
+CONECT    1    2    3    4    8
+CONECT    5    6    7    8    9
+CONECT    9   10
+CONECT   10   11
+CONECT   11   12   13
+CONECT   12   17
+CONECT   13   14   15
+CONECT   15   16   17
+CONECT   17   18
+CONECT   18   19   27
+CONECT   19   20
+CONECT   20   21
+CONECT   21   22   27
+CONECT   22   23   24
+CONECT   24   25
+CONECT   25   26
+CONECT   26   27
+END
