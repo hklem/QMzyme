@@ -321,8 +321,9 @@ class GenerateModel:
             if current_res not in (include_residues or keep_residue):
                 new_mol.RemoveAtom(atom.GetIdx())
 
-        self.distance_cutoff=distance_cutoff
+        self.distance_cutoff = distance_cutoff
         self.subsystem_mol = new_mol
+        self.residues = keep_residue[::-1] #-1 step reverses list
 
         if save_file is True:
             if output_file is None:
@@ -350,12 +351,13 @@ class GenerateModel:
         if save_json == True:
             info = {
                 'Number of atoms': n_atoms,
-                'Distance cutoff': self.distance_cutoff,
+                'Distance cutoff': self.distance_cutoff
                 }
             try:
                 info['Output file'] = outfile
             except:
-                info['Output file'] = 'Not saved'
+                info['Output file'] = None
+            info['Residues'] = self.residues
             self.dict = to_dict(key='Subsystem selection', data=info, 
                                 dict=self.dict, json_file=self.json_file)
 
