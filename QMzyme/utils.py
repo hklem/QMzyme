@@ -92,12 +92,10 @@ def to_dict(key=None, data=None, dict={}, json_file=''):
             dict[f'QMzyme {number+1}'] = {key: data}
     with open(json_file, "w") as f:
         json.dump(dict, f, indent=4)
-
     return dict
 
-
 ###############################################################################
-def download(pdb_code):
+def download_pdb(pdb_code):
     base_url = 'http://www.pdb.org/pdb/download/downloadFile.do?fileFormat'+\
      '=pdb&compression=NO&structureId='
     for structure in pdb_code.split():
@@ -376,7 +374,6 @@ def coords_from_pdb(file):
 def coords_from_gout(file):
     coords = []
     data = get_outlines(file)
-    done = False
     for i, line in enumerate(data):
         if 'Standard orientation' in line:
             for j in range(i+5, i+20000):
@@ -385,7 +382,7 @@ def coords_from_gout(file):
                 else:
                     coords.append([float(data[j].split()[x+3]) for x in range(3)])
             break
-    return coords
+    return np.array(coords)
 
 def get_frozen_coords(coords, frozen_atoms):
     f_coords = np.array([coords[x] for x in frozen_atoms])

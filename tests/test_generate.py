@@ -1,5 +1,5 @@
 """
-Tests for the QMzyme package.
+Tests for the QMzyme generate.py code.
 """
 
 # Import package, test suite, and other packages as needed

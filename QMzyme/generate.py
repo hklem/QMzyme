@@ -26,7 +26,7 @@ from QMzyme.rdkit_wrapper import(
     mol_from_pdb,
     )
 from QMzyme.utils import(
-    download,
+    download_pdb,
     get_coords,
     get_atoms,
     get_outlines,
