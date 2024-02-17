@@ -17,23 +17,14 @@ jobs:
           pip install --upgrade pip
           pip install -e .
           pytest -v -W ignore::DeprecationWarning --color yes --cov=QMzyme --cov-report=xml
-          #rm -r /tmp/*
-          cp -r * /tmp
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - coverage.xml
-            - aqme
           
   codecov-coverage:
     docker:
       - image: cimg/python:3.11-node
     steps:
-      - attach_workspace:
-          at: /tmp
       - checkout 
       - codecov/upload:
-          file: /tmp/coverage.xml
+          file: ./coverage.xml
           token: CODECOV_TOKEN
             
 workflows:
