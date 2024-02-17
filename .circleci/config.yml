@@ -17,7 +17,7 @@ jobs:
           pip install --upgrade pip
           pip install -e .
           pytest -v -W ignore::DeprecationWarning --color yes --cov=QMzyme --cov-report=xml
-          rm -r /tmp/*
+          #rm -r /tmp/*
           cp -r * /tmp
       - persist_to_workspace:
           root: /tmp
