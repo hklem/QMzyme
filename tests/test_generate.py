@@ -55,8 +55,8 @@ def test_subsystem(test_type, distance_cutoff, init_file):
         line_7 = 'ATOM      7  HB3 TYR A  16      45.513  34.980  32.548  1.00  0.00           H'
         line_last = 'END'
         assert model.subsystem_pdb[0].strip() == line_first
-        assert model.subsystem_pdb[0].strip() == line_7
-        assert model.subsystem_pdb[0].strip() == line_last
+        assert model.subsystem_pdb[6].strip() == line_7
+        assert model.subsystem_pdb[-1].strip() == line_last
 
 @pytest.mark.parametrize(
         'test_type, truncation_scheme, constrain_atoms, init_file',
