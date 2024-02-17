@@ -61,7 +61,7 @@ def test_subsystem(test_type, distance_cutoff, init_file):
 @pytest.mark.parametrize(
         'test_type, truncation_scheme, constrain_atoms, init_file',
         [
-            ('default', 'CA_terminal', ['CA'], amber_file)
+            ('default', 'CA_terminal', ['CA'], amber_file),
             ('constrain_CA_and_CB', 'CA_terminal', ['CA', 'CB'], amber_file)
         ]
 )
