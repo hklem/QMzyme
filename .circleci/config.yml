@@ -16,9 +16,21 @@ jobs:
       - run: |
           pip install --upgrade pip
           pip install -e .
-          pytest -v -W ignore::DeprecationWarning
+          pytest -v -W ignore::DeprecationWarning --color yes --cov=QMzyme --cov-report=xml
+          
+  codecov-coverage:
+    docker:
+      - image: cimg/python:3.11-node
+    steps:
+      - checkout 
+      - codecov/upload:
+          file: ./coverage.xml
+          token: CODECOV_TOKEN
             
 workflows:
   build-and-test:
     jobs:
       - build-and-test
+      - codecov-coverage:
+          requires:
+            - build-and-test
