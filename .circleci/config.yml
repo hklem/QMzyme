@@ -1,5 +1,5 @@
 # This config was automatically generated from your source code
-# Stacks detected: cicd:github-actions:.github/workflows,deps:python:. 
+# Stacks detected: cicd:github-actions:.github/workflows,deps:python:.
 version: 2.1
 orbs:
   python: circleci/python@2
