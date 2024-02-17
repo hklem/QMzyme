@@ -18,9 +18,9 @@ jobs:
           pip install -e .
           pip install pytest-cov
           pytest -v -W ignore::DeprecationWarning --color yes --cov=QMzyme --cov-report=xml
-     - codecov/upload:
-         file: ./coverage.xml
-         token: CODECOV_TOKEN
+      - codecov/upload:
+          file: ./coverage.xml
+          token: CODECOV_TOKEN
           
   #codecov-coverage:
     #docker:
