@@ -16,6 +16,11 @@ def electric_field_efg(log_file, atom1_id, atom2_id):
     '''
     To calculate the electric field from a Gaussian prop=efg calculation.
 
+    Notes
+    ----- 
+    - Atom order will alter sign of electric field. Typical to define atom1 as the less electronegative atom, 
+    such that the bond vector will be in the direction of the bond dipole.
+
     Parameters
     ----------
     log_file : str, required
@@ -24,16 +29,13 @@ def electric_field_efg(log_file, atom1_id, atom2_id):
         0 indexed id for starting atom.
     atom2_id : int, required
         0 indexed id for ending atom.
-
-    Notes
-    ----- 
-    - Atom order will alter sign of electric field. Typical to define atom1 as the less electronegative atom, 
-    such that the bond vector will be in the direction of the bond dipole.
     
     Returns
     -------
-    Scalar electric field value in units MV/cm averaged over the electric field magnitude at atom1 and atom2.
-
+    ef1, ef2 : float
+        scalar electric field magnitudes at atom 1 and atom 2
+    unit_vec : array
+        unit vector along the direction of the atom 1 and atom 2 bond dipole.
     '''
 
     with open(log_file) as f:
@@ -42,12 +44,16 @@ def electric_field_efg(log_file, atom1_id, atom2_id):
     ef_sart = None
 
     for i, line in enumerate(data):
-        if center_start == None:
-            if 'Atomic Center' in line:
-                center_start = i
+        #if center_start == None:
+        #    if 'Atomic Center' in line:
+        #        center_start = i
+        if 'Electrostatic Properties Using The SCF Density' in line:
+            center_start = i+4
         if '-------- Electric Field --------' in line:
             ef_start = i+3
-            break
+            #break #removing break because if you also do opt then the 
+            #  EF is save to the file twice!! We want the optimized EF 
+            #  so save on the second encounter.
     
     coords1 = np.array([float(x) for x in data[center_start+atom1_id].split()[-3:]])
     coords2 = np.array([float(x) for x in data[center_start+atom2_id].split()[-3:]])
@@ -57,7 +63,25 @@ def electric_field_efg(log_file, atom1_id, atom2_id):
     ef1 = np.array([float(x) for x in data[ef_start+atom1_id].split()[-3:]])
     ef2 = np.array([float(x) for x in data[ef_start+atom2_id].split()[-3:]])
 
+    return ef1, ef2, unit_vec
+
+    #return (0.5*(np.dot(ef1, unit_vec)+np.dot(ef2, unit_vec)))*conv # in units MV/cm
+
+def electric_field_avg(ef1, ef2, unit_vec):
+    '''
+    Returns
+    -------
+    Scalar electric field value in units MV/cm averaged over the electric field magnitude at atom1 and atom2.
+    '''
     return (0.5*(np.dot(ef1, unit_vec)+np.dot(ef2, unit_vec)))*conv # in units MV/cm
+
+def electric_field_drop(ef1, ef2, unit_vec):
+    '''
+    Returns
+    -------
+    Scalar electric field value in units MV/cm taken as the difference in electric field magnitude at atom1 and atom2.
+    '''
+    return (np.dot(ef1, unit_vec)-np.dot(ef2, unit_vec))*conv # in units MV/cm
 
 def unit_vector(coords_start, coords_end):
     '''
@@ -81,3 +105,4 @@ def unit_vector(coords_start, coords_end):
     bond_length = np.linalg.norm(coords_end-coords_start)
     bond_vec = coords_end-coords_start
     return bond_vec/bond_length
+
