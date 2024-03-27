@@ -317,7 +317,10 @@ def collect_pdb_data(file=None,data=None):
 
     return pdb_data
 
-def rmsd(xyz1, xyz2):
+def rmsd(xyz1, xyz2, align=False):
+    if align == True:
+        t, r = compute_translation_and_rotation(xyz1, xyz2)
+        xyz1 = kabsch_transform(xyz1, t, r)
     delta = xyz1 - xyz2
     rmsd = (delta ** 2.0).sum(1).mean() ** 0.5
     return rmsd
@@ -459,6 +462,7 @@ def align(mobile, reference, atom_indices=[]):
     '''
     Mobile and reference are numpy arrays with dimensions (N, 3) where N is the number of atoms.
     Atom by default is an empty list and alignment will be performed for all atoms.
+    Atom indices are 0 indexed.
     '''
     if type(mobile) is str:
         mobile = get_coords(mobile)
