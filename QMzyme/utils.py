@@ -6,6 +6,7 @@ from urllib.request import urlopen
 from rdkit import Chem
 #from QMzyme.rdkit_wrapper import check_pdb_rdkit
 from QMzyme.protein_parser import collect_pdb_data, pdb_deposit_info
+from QMzyme.Biopython.Data.PDBData import protein_letters_3to1_extended
 
 
 ##### GENERAL #####
@@ -27,21 +28,19 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
-                    'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
-                    'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
-                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP',
-                    'SEC', 'PYL']
+protein_residues = [r for r in protein_letters_3to1_extended.keys()]
 
 positive_residues = ['HIP', 'LYS', 'ARG']
 
 negative_residues = ['ASP', 'GLU']
 ###############################################################################
-def name_output(name=None, suffix='.out'):
+def filename_format(name=None, suffix='.out'):
     if name.endswith(suffix):
         return name
     else:
-        return name+suffix
+        if suffix.startswith('.'):
+            return f"{name}{suffix}"
+        else: return f"{name}.{suffix}"
 
 ###############################################################################
 def write_log(file, text):
