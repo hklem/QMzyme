@@ -31,7 +31,7 @@ from QMzyme.utils import(
     get_atoms,
     get_outlines,
     to_dict,
-    name_output,
+    filename_format,
     coords_from_pdb,
     res_charges,
     )
@@ -239,7 +239,7 @@ class GenerateModel:
         if save_file is True:
             if output_file is None:
                 output_file = self.protein_prefix+'_catalytic_center.pdb'
-            outfile = name_output(name=output_file,suffix='.pdb')
+            outfile = filename_format(output_file,'.pdb')
             Chem.MolToPDBFile(catalytic_center_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
             self.catalytic_center_pdb = get_outlines(outfile)
@@ -330,7 +330,7 @@ class GenerateModel:
                 output_file = '{}_'.format(self.protein_prefix)
                 output_file += 'subsystem_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
-            outfile = name_output(name=output_file,suffix='.pdb')
+            outfile = filename_format(output_file,'.pdb')
             Chem.MolToPDBFile(new_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
             self.subsystem_pdb = get_outlines(outfile)    
@@ -568,7 +568,7 @@ class GenerateModel:
                 output_file = '{}_'.format(self.protein_prefix)
                 output_file += 'truncated_subsystem_distance_cutoff'
                 output_file += '{}.pdb'.format(self.distance_cutoff)
-            outfile = name_output(name=output_file,suffix='.pdb')
+            outfile = filename_format(output_file,'.pdb')
             self.filename = outfile
             Chem.MolToPDBFile(new_mol,outfile)
             verbose_str += "OUTPUT_FILE: {}\n".format(outfile)
