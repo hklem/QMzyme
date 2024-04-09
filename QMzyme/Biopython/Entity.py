@@ -1,3 +1,6 @@
+# Portions of this code have been modified or adapted by 
+# Heidi Klem for usage in the QMzyme package. 
+
 # Copyright (C) 2002, Thomas Hamelryck (thamelry@binf.ku.dk)
 #
 # This file is part of the Biopython distribution and governed by your
@@ -7,6 +10,7 @@
 """Base class for Residue, Chain, Model and Structure classes.
 
 It is a simple container class, with list and dictionary like properties.
+* This code has been modified from the original Biopython code.
 """
 
 import warnings

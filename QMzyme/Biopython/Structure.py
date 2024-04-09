@@ -1,3 +1,6 @@
+# Portions of this code have been modified or adapted by 
+# Heidi Klem for usage in the QMzyme package. 
+
 # Copyright (C) 2002, Thomas Hamelryck (thamelry@binf.ku.dk)
 #
 # This file is part of the Biopython distribution and governed by your
@@ -5,7 +8,9 @@
 # Please see the LICENSE file that should have been included as part of this
 # package.
 
-"""The structure class, representing a macromolecular structure."""
+"""The structure class, representing a macromolecular structure.
+* This code has been modified from the original Biopython code.
+"""
 
 from QMzyme.Biopython.Entity import Entity
 

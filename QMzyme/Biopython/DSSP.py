@@ -1,3 +1,6 @@
+# Portions of this code have been modified or adapted by 
+# Heidi Klem for usage in the QMzyme package. 
+
 # Copyright (C) 2002, Thomas Hamelryck (thamelry@binf.ku.dk)
 #
 # This file is part of the Biopython distribution and governed by your
@@ -87,6 +90,8 @@ The dssp data returned for a single residue is a tuple in the form:
     12           O-->NH_2_relidx
     13           O-->NH_2_energy
     ============ ===
+
+* This code has been modified from the original Biopython code.
 
 """
 

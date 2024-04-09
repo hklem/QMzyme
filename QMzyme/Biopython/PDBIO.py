@@ -1,9 +1,14 @@
+# Portions of this code have been modified or adapted by 
+# Heidi Klem for usage in the QMzyme package. 
+
 # Copyright (C) 2002, Thomas Hamelryck (thamelry@binf.ku.dk)
 # This code is part of the Biopython distribution and governed by its
 # license.  Please see the LICENSE file that should have been included
 # as part of this package.
 
-"""Output of PDB files."""
+"""Output of PDB files.
+* This code has been modified from the original Biopython code.
+"""
 
 import warnings
 

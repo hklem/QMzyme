@@ -1,3 +1,6 @@
+# Portions of this code have been modified or adapted by 
+# Heidi Klem for usage in the QMzyme package. 
+
 # Copyright 1999 by Jeffrey Chang.  All rights reserved.
 # Copyright 2009-2018 by Peter Cock. All rights reserved.
 #
@@ -9,6 +12,7 @@
 
 Bio.File defines private classes used in Bio.SeqIO and Bio.SearchIO for
 indexing files. These are not intended for direct use.
+* This code has been modified from the original Biopython code.
 """
 
 import os
