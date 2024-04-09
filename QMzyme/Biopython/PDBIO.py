@@ -162,16 +162,18 @@ class PDBIO(StructureIO):
         charge="  ",
     ):
         """Return an ATOM PDB string (PRIVATE)."""
+
         if hetfield != " ":
             record_type = "HETATM"
         else:
             record_type = "ATOM  "
-
+        
         # Atom properties
 
         # Check if the atom serial number is an integer
         # Not always the case for structures built from
         # mmCIF files.
+            
         try:
             atom_number = int(atom_number)
         except ValueError:
@@ -187,7 +189,6 @@ class PDBIO(StructureIO):
             raise ValueError(
                 f"Atom serial number ('{atom_number}') exceeds PDB format limit."
             )
-
         # Check if the element is valid, unknown (X), or blank
         if atom.element:
             element = atom.element.strip().upper()
@@ -196,7 +197,6 @@ class PDBIO(StructureIO):
             element = element.rjust(2)
         else:
             element = "  "
-
         # Format atom name
         # Pad if:
         #     - smaller than 4 characters
@@ -205,16 +205,18 @@ class PDBIO(StructureIO):
         name = atom.fullname.strip()
         if len(name) < 4 and name[:1].isalpha() and len(element.strip()) < 2:
             name = " " + name
-
+        
         altloc = atom.altloc
         x, y, z = atom.coord
-
+        
         # Write PDB format line
+
         if not self.is_pqr:
             bfactor = atom.bfactor
             try:
                 occupancy = f"{atom.occupancy:6.2f}"
             except (TypeError, ValueError):
+                print('wtf wtf wtf')
                 if atom.occupancy is None:
                     occupancy = " " * 6
                     warnings.warn(
@@ -225,7 +227,7 @@ class PDBIO(StructureIO):
                     raise ValueError(
                         f"Invalid occupancy value: {atom.occupancy!r}"
                     ) from None
-
+        
             args = (
                 record_type,
                 atom_number,
@@ -245,7 +247,6 @@ class PDBIO(StructureIO):
                 charge,
             )
             return _ATOM_FORMAT_STRING % args
-
         # Write PQR format line
         else:
             try:

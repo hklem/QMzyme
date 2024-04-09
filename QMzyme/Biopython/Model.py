@@ -55,3 +55,12 @@ class Model(Entity["Structure", "Chain"]):
         """Return atoms."""
         for r in self.get_residues():
             yield from r
+
+    def list_chains(self):
+        return [c for c in self.get_chains()]
+
+    def list_residues(self):
+        return [r for r in self.get_residues()]    
+
+    def list_atoms(self):
+        return [a for a in self.get_atoms()]

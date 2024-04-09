@@ -177,3 +177,10 @@ class Chain(Entity["Model", "Residue"]):
         """Return atoms from residues."""
         for r in self.get_residues():
             yield from r
+
+    def list_residues(self):
+        return [r for r in self.get_residues()]    
+
+    def list_atoms(self):
+        return [a for a in self.get_atoms()]
+

@@ -2,12 +2,12 @@ import os
 import numpy as np
 from typing import List, Optional
 from QMzyme.Biopython.StructureBuilder import StructureBuilder
-from QMzyme.Biopython.Structure import Structure
+from QMzyme.Biopython.QMzymeBuilder import QMzymeBuilder
 from QMzyme.Biopython import NeighborSearch
 from QMzyme.Biopython.PDBParser import PDBParser
 from QMzyme.Biopython.MMCIFParser import MMCIFParser
 from QMzyme.Biopython.PDBIO import PDBIO
-from QMzyme.Biopython.PDBIO import StructureIO
+from QMzyme.Biopython.Atom import Atom
 from QMzyme.utils import filename_format
 
 model_dispatch = {'id': lambda model: model.id,
@@ -63,16 +63,19 @@ atom_dispatch = {'name': lambda atom: atom.name,
 
 class BiopythonWrapper():
 
-    def write_pdb(pdb_object, filename: Optional[str]=""):
+    def write_pdb(pdb_object, filename="", verbose=True):
         io = PDBIO()
         io.set_structure(pdb_object)
         if filename == "":
             for i in pdb_object.full_id:
                 filename += f"{i}_"
             filename = filename[:-1]
+
         filename = filename_format(filename,'.pdb')
-        io.save(f"{filename}")
-        print(f"File {filename} created.")
+        io.save(f"{filename}", preserve_atom_numbering=True)
+        if verbose == True:
+            print(f"File {filename} created.")
+        return filename
 
     def order_residues(residues_list):
         new_list = []
@@ -118,16 +121,21 @@ class BiopythonWrapper():
             neighbors += neighbor_search.search(coord,cutoff)
         return list(set(neighbors)) 
     
-    def init_model(structure, model_residues, xtra = {}):
+    def init_model(structure, model_residues, method = {}):
         """
         xtra is a dictional where you can add whatever you want.
         """ 
         s = StructureBuilder()
         s.init_structure(structure.id)
-        s.init_model(model_id = len(list(structure.get_models())))
-        for c in structure.child_list[0].get_chains():
+        #s.structure = structure # with this option, things get messed up because of duplicates
+        id = structure.child_list[-1].id + 1
+        s.init_model(model_id = id)
+        #structure.init_model(model_id = id)
+        #for c in structure.parent.get_chains():
+        for c in structure.get_chains():
             #for res in self.models[-1]:
             for res in model_residues:
+            #for res in structure.list_models()[-1].get_residues():
                 if res.parent.id != c.id:
                     continue
                 s.init_chain(chain_id = c.id)        
@@ -152,14 +160,162 @@ class BiopythonWrapper():
                     if pqr_charge is not None:
                         is_pqr = True
                     s.init_atom(name, coord, b_factor, occupancy, altloc, fullname, serial_number, element, pqr_charge, radius, is_pqr)
-        s.model.xtra = xtra
+        s.model.method = method
 
         return s.model
+    
+    # def check_terminal_neighbors(model):
+    #     for chain in model.get_chains():
+    #         prev_res = chain.child_list[0]
+    #         prev_res.truncation = {'N_terminus': 'cut', 'C_terminus' : 'cut'}
+    #         for res in chain.child_list[1:]:
+    #             if res.resname not in QMzyme.protein_residues:
+    #                 continue
+    #             res.truncation = {'N_terminus': 'cut', 'C_terminus' : 'cut'}
+    #             if res.id[1]-1 == prev_res.id[1]:
+    #                 res.truncation['N_terminus'] = 'keep'
+    #                 prev_res.truncation['C_terminus'] = 'keep'
+    #             elif res.resname == 'PRO':
+    #                 res.truncation['N_terminus'] = 'keep'     
+    #             prev_res = res
+
+    def check_terminal_neighbor(residue, inc):
+        resid = residue.id[1]
+        for res in residue.parent.get_residues():
+            if res.id[1] == resid+inc:
+                return True
+        return False
+            
+    def has_Nterm_neighbor(residue):
+        return BiopythonWrapper.check_terminal_neighbor(residue,-1)
+    
+    def has_Cterm_neighbor(residue):
+        return BiopythonWrapper.check_terminal_neighbor(residue,1)
+    
+    def h_cap(atom, bonded_atom, Hbond_length = 1.00):
+        coords = BiopythonWrapper.change_bond_length(bonded_atom.coord, atom.coord, 
+                                                     Hbond_length)
+        if atom.id == 'N':
+            id = 'HN'
+        if atom.id == 'C':
+            id = 'HC'
+        else:
+            id = 'H'
+        new_atom = {'element': 'H', 'name': 'Hcap', 
+                    'coord': coords, 'fullname': 'Hcap', 'mass': 1.00794,
+                    'id': id}
+        BiopythonWrapper.alter_atom(atom, new_atom)
+
+    def change_bond_length(fixed_coords, mobile_coords, new_length):
+        M = new_length/np.linalg.norm(fixed_coords-mobile_coords)
+        q = fixed_coords-(M*(fixed_coords-mobile_coords))
+        return q
+    
+    def alter_atom(atom, new_atom_dict):
+        for key, val in new_atom_dict.items():
+            if hasattr(atom, key):
+                setattr(atom, key, val)
+        setattr(atom, 'full_id', (atom.parent.full_id, (atom.id, atom.altloc)))
 
 
+    def remove_atoms(entity, serial_numbers = []):
+        for atom in entity.get_atoms():
+            if atom.serial_number in serial_numbers:
+                atom.parent.detach_child(atom.id)
+        
+    def remove_atom(atom):
+        atom.parent.detach_child(atom.id)
+
+    def cap_terminus(residue, terminus):
+        """
+        terminus options are 'N' or 'C'.
+        """
+        model = residue.parent.parent
+        remove_atoms = []
+        if terminus == 'N':
+            remove = ['H']
+        if terminus == 'C':
+            remove = ['O']
+        for atom in residue.get_atoms():
+            if atom.id == terminus:
+                replace_atom = atom
+            if atom.id == 'CA':
+                CAatom = atom
+            if atom.id in remove:
+                remove_atom = atom
+        # Necessary to avoid messing with very first or last res in full sequence if they were capped for simulation
+        if remove_atoms != []:
+            BiopythonWrapper.h_cap(replace_atom, CAatom)
+            BiopythonWrapper.remove_atom(remove_atom)
+
+    def get_atom_idx(entity, atom_name):
+        """
+        Parameters
+        ----------
+        entity: object, required
+        atom_name: str, required
+            Value corresponding to the atom attribute 'name'.
+
+        Returns
+        -------
+        - List of indeces corresponding to atoms in entity with atom_name. 0 indexed.
+        """
+        idx = []
+        for i, atom in enumerate(entity.get_atoms()):
+            if atom.name in atom_name:
+                idx.append(i)
+        return idx
+    
+
+    def make_atom_dict(atom, idx):
+        skip_keys = ['altloc' 'full_name', 'parent', '_sorting_keys', 'level', 'disordered_flag', 'anisou_array', 'siguij_array', 'sigatm_array', 'xtra']
+        atom_dict = {}
+        for key, val in atom.__dict__.items():
+            if key in skip_keys:
+                continue
+            if key == 'coord':
+                val = [float(c) for c in val]
+            atom_dict['idx'] = idx
+            atom_dict[key] = val
+        return atom_dict
 
 
+    def make_res_dict(res, atom_count):
+        _dict = {}
+        skip_keys = ['altloc', 'child_list', 'child_dict', 'parent', 'level', 'disordered_flag', 'xtra']
+        for key, val in res.__dict__.items():
+            if key == 'child_list':
+                _dict['Atoms'] = {}
+                for atom in val:
+                    _dict['Atoms'][atom.id] = BiopythonWrapper.make_atom_dict(atom, atom_count)
+                    atom_count += 1
+            if key in skip_keys:
+                continue
+            _dict[key] = val
+        return _dict, atom_count
 
-
-
-
+    def make_model_dict(model):
+        model_dict = {'Residues': {}}
+        skip_keys = ['level', 'serial_num', 'parent', 'child_list', 'child_dict', 'xtra', 'calculations', 'method']
+        atom_count = 0
+        for res in model.list_residues():
+            resname = res.resname
+            resnumber = res.id[1]
+            model_dict['Residues'][f'{resname}{resnumber}'], atom_count = BiopythonWrapper.make_res_dict(res, atom_count)
+        for key, val in model.__dict__.items():
+            if key not in skip_keys:
+                model_dict[key] = val
+            elif key == 'method':
+                cc = []
+                for res in val['catalytic_center']:
+                    if type(res) is str:
+                        cc.append(res)
+                    else:
+                        cc.append(f'{res.resname}{res.id[1]}')
+                val['catalytic_center'] = cc
+                model_dict[key] = val
+            elif key == 'calculations':
+                model_dict['calculations'] = []
+                for c in val:
+                    model_dict['calculations'].append(c.__dict__)
+        return model_dict

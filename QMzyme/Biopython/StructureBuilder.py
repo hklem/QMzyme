@@ -35,6 +35,9 @@ def _is_completely_disordered(residue: Residue) -> bool:
     return True
 
 
+
+
+
 class StructureBuilder:
     """Deals with constructing the Structure object.
 
@@ -127,15 +130,16 @@ class StructureBuilder:
                 # The hetero field consists of H_ + the residue name (e.g. H_FUC)
                 field = "H_" + resname
         res_id = (field, resseq, icode)
+
         if field == " ":
             if self.chain.has_id(res_id):
                 # There already is a residue with the id (field, resseq, icode).
                 # This only makes sense in the case of a point mutation.
-                warnings.warn(
-                    "WARNING: Residue ('%s', %i, '%s') redefined at line %i."
-                    % (field, resseq, icode, self.line_counter),
-                    PDBConstructionWarning,
-                )
+                #warnings.warn(
+                #    "WARNING: Residue ('%s', %i, '%s') redefined at line %i."
+                #    % (field, resseq, icode, self.line_counter),
+                #    PDBConstructionWarning,
+                #)
                 duplicate_residue = self.chain[res_id]
                 if duplicate_residue.is_disordered() == 2:
                     # The residue in the chain is a DisorderedResidue object.
@@ -153,12 +157,12 @@ class StructureBuilder:
                         return
                 else:
                     if resname == duplicate_residue.resname:
-                        warnings.warn(
-                            "WARNING: Residue ('%s', %i, '%s','%s') already defined "
-                            "with the same name at line  %i."
-                            % (field, resseq, icode, resname, self.line_counter),
-                            PDBConstructionWarning,
-                        )
+                        #warnings.warn(
+                        #    "WARNING: Residue ('%s', %i, '%s','%s') already defined "
+                        #    "with the same name at line  %i."
+                        #    % (field, resseq, icode, resname, self.line_counter),
+                        #    PDBConstructionWarning,
+                        #)
                         self.residue = duplicate_residue
                         return
                     # Make a new DisorderedResidue object and put all

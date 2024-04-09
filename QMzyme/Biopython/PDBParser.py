@@ -190,7 +190,7 @@ class PDBParser:
                 resseq = int(line[22:26].split()[0])  # sequence identifier
                 icode = line[26]  # insertion code
                 if record_type == "HETATM":  # hetero atom flag
-                    if resname == "HOH" or resname == "WAT":
+                    if resname == "HOH" or resname == "WAT" or resname == "SOL":
                         hetero_flag = "W"
                     else:
                         hetero_flag = "H"

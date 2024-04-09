@@ -43,7 +43,8 @@ class Residue(Entity["Chain", "Atom"]):
         resname = self.get_resname()
         hetflag, resseq, icode = self.get_id()
         full_id = (resname, hetflag, resseq, icode)
-        return "<Residue %s het=%s resseq=%s icode=%s>" % full_id
+        #return "<Residue %s het=%s resseq=%s icode=%s>" % full_id
+        return f"<Residue {resname} resseq={resseq} chain={self.parent.id}"
 
     def strictly_equals(
         self: _ResidueT, other: _ResidueT, compare_coordinates: bool = False
@@ -76,10 +77,10 @@ class Residue(Entity["Chain", "Atom"]):
         PDBConstructionException if so.
         """
         atom_id = atom.get_id()
-        if self.has_id(atom_id):
-            raise PDBConstructionException(
-                f"Atom {atom_id} defined twice in residue {self}"
-            )
+        #if self.has_id(atom_id):
+        #    raise PDBConstructionException(
+        #        f"Atom {atom_id} defined twice in residue {self}"
+        #    )
         Entity.add(self, atom)
 
     def flag_disordered(self):
@@ -112,6 +113,9 @@ class Residue(Entity["Chain", "Atom"]):
     def get_atoms(self):
         """Return atoms."""
         yield from self
+    
+    def list_atoms(self):
+        return [a for a in self.get_atoms()]
 
 
 class DisorderedResidue(DisorderedEntityWrapper):

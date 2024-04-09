@@ -3,4 +3,5 @@
 # Add imports here
 from QMzyme import *
 from .generate import *
+from .calculate import *
 from ._version import __version__
