@@ -1,11 +1,13 @@
 import os
 import json
+import inspect
 from datetime import datetime
 import numpy as np
 from urllib.request import urlopen
 from rdkit import Chem
 #from QMzyme.rdkit_wrapper import check_pdb_rdkit
 from QMzyme.protein_parser import collect_pdb_data, pdb_deposit_info
+from QMzyme.Biopython.Data.PDBData import protein_letters_3to1_extended
 
 
 ##### GENERAL #####
@@ -27,34 +29,41 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
-                    'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
-                    'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
-                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP',
-                    'SEC', 'PYL']
+protein_residues = [r for r in protein_letters_3to1_extended.keys()]
 
 positive_residues = ['HIP', 'LYS', 'ARG']
 
 negative_residues = ['ASP', 'GLU']
-###############################################################################
-def name_output(name=None, suffix='.out'):
+
+
+def record_execution(QMzyme_details, function_name):
+    if function_name not in QMzyme_details.keys():
+        QMzyme_details[function_name] = {}
+        QMzyme_details[function_name]['Time'] = 'placeholder'
+    return QMzyme_details
+
+
+def filename_format(name=None, suffix='.out'):
     if name.endswith(suffix):
         return name
     else:
-        return name+suffix
+        if suffix.startswith('.'):
+            return f"{name}{suffix}"
+        else: return f"{name}.{suffix}"
 
-###############################################################################
+
 def write_log(file, text):
     log = open(file,'w')
     log.write("{}\n".format(text))
     log.write(delimeter)
     log.close()
 
+
 def log(string, file):
     with open(self.log_file, 'a') as f:
-        string += section_spacer
         string += '\n'
         f.writelines(string)
+
 
 def json_type_encoder(dict):
     for key in dict.keys():
@@ -66,33 +75,6 @@ def json_type_encoder(dict):
             dict[key] = dict[key].tolist()
     return dict
 
-def to_dict(key=None, data=None, dict={}, json_file=''):
-    if type(data) is dict:
-        data = json_type_encoder(data)
-    if key == 'Catalytic center':
-        if key in dict.keys():
-            raise Exception("A catalytic center has been previous " +
-                            "defined in this object. Please initialize a " +
-                            "new object via QMzyme.GenerateModel() to " +
-                            "continue with a new catalytic center definiton."
-                            )
-        dict[key] = data
-    elif 'QMzyme 1' not in dict.keys():
-        dict['QMzyme 1'] = {key: data}
-    else:
-        number = 0
-        for model in dict.keys():
-            if 'QMzyme' in model:
-                number += 1
-        if f'QMzyme {number}' not in dict.keys():
-            dict[f'QMzyme {number}'] = {key: data}
-        elif key not in dict[f'QMzyme {number}'].keys():
-            dict[f'QMzyme {number}'][key] = data
-        else:
-            dict[f'QMzyme {number+1}'] = {key: data}
-    with open(json_file, "w") as f:
-        json.dump(dict, f, indent=4)
-    return dict
 
 ###############################################################################
 def download_pdb(pdb_code):
@@ -109,168 +91,6 @@ def download_pdb(pdb_code):
              print(pdb_url)
                 
     return output_file
-
-###############################################################################
-def check_pdb(file,clean=False):
-    '''
-    Function to assess PDB format, fix any issues that might break 
-    the QMzyme code, and gather useful basic information.
-    clean            - boolean, default=True. If False, the PDB format will 
-    not be checked. Usually not a problem when downloading 
-    straight from rcsb.org.
-
-    Prints out basic information of the pdb file, and  if 
-    issues are found the PDB file will be fixed, and the original 
-    will be copied to a new file with the suffix '_original.pdb'.
-    '''
-
-    wat_count, protein_res_count, non_protein_res_count = 0,0,0
-    data, protein_seq, non_protein_seq = [], [], []
-    h_present, no_chain_info = False, False
-    previous_res = None
-    edits_made = False
-    residue_count = 0
-    res_num_previous = None
-    non_protein_residues = {}
-    non_protein_residues['Chain'] = []
-    non_protein_residues['Name'] = []
-    non_protein_residues['Number'] = []
-    non_protein_chemical_name = {}
-
-    pdb_data = collect_pdb_data(file=file)
-    deposit_info = pdb_deposit_info(file=file)
-
-    with open(file,'r') as f:
-        data = f.readlines()
-    for line in data:
-        if 'HET   ' in line:
-            non_protein_res_count += 1
-            chain, name, number = line[12], line[7:10], line[13:17]
-            non_protein_residues['Chain'].append(chain)
-            non_protein_residues['Name'].append(name)
-            non_protein_residues['Number'].append(number)
-        if 'HETNAM' in line:
-            non_protein_chemical_name[line[11:14]]=line[15:].split('  ')[0]
-
-    residues_reordered=False
-    if clean==True:
-        for i,line in enumerate(data):
-            if pdb_info('record_type',line).strip() in ['ATOM','HETATM']:
-                atom_type = pdb_info('atom_name',line)
-                res_num = pdb_info('res_number',line)
-                res_name = pdb_info('res_name',line)
-                if res_num != res_num_previous:
-                    if res_name not in solvent_list:
-                        residue_count += 1
-                        if int(res_num.split()[0]) != residue_count:
-                            residues_reordered = True
-                            edits_made=True
-                            if residue_count>999:
-                                res_num = str(residue_count)
-                            elif residue_count>99:
-                                res_num = ' '+str(residue_count)
-                            elif residue_count>9:
-                                res_num = '  '+str(residue_count)
-                            else:
-                                res_num = '   '+str(residue_count)
-                            #data[i]=line[0:22]+res_num+line[26:]
-                            #line=line[0:22]+res_num+line[26:]
-                            if pdb_info('res_name', data[i+1]) == res_name:
-                                residue_count -= 1
-                res_num_previous = res_num
-                try:
-                    element = pdb_info('element_symbol', line)
-                except ValueError:
-                    element=None
-
-                if atom_type[0]!=' ':
-                    if atom_type[0]=='H':
-                        if len(atom_type)==4:
-                            if element is None:
-                                edits_made=True
-                                #data[i]=line[0:76]+' H'+line[78:]
-                            continue
-                if atom_type[:2] in elements:
-                    if element is None:
-                        edits_made=True
-                        #data[i]=line[0:76]+atom_type[:2]+line[78:]
-                    elif atom_type[:2] == element:
-                        continue
-                if atom_type[1] in elements:
-                    if element is None:
-                        edits_made=True
-                        #data[i]=line[0:76]+atom_type[:2]+line[78:]
-                    elif atom_type[:2] == element:
-                        continue
-                    #else:
-                else:
-                    if atom_type[1]+atom_type[2].lower() in elements:
-                        edits_made=True
-                        #data[i]=line[0:12]+atom_type[1:]+' '+line[16:76]+\
-                            #atom_type[1:3]+line[78:]
-                            
-                        print("SUSPECTED ISSUE FOUND ON ATOM{}: Element symbol"\
-                              .format(pdb_info('atom_number',line))+
-                              " with two letters ({}) must begin in the 13th"\
-                              .format(atom_type[1:3])+" columnspace according"+
-                              " to PDB format.")
-                    elif atom_type[2] in elements:
-                        edits_made=True
-                        unk_sym = atom_type[:2].split()[0]
-                        #if len(unk_sym) == 2:
-                        #    data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-                        #              line[16:76]+' '+atom_type[2]+line[78:]
-                        #if len(unk_sym) == 1:
-                        #    data[i] = line[0:12]+' '+atom_type[2:]+' '+\
-                        #              line[16:76]+' '+atom_type[2]+line[78:]
-                        
-                        print("SUSPECTED ISSUE FOUND ON ATOM{}"\
-                              .format(pdb_info('atom_number',line)) +
-                              ": Atom type ({}) ".format(atom_type) +
-                              "is preceeded by unknown symbols ({})."\
-                              .format(atom_type[:2]))
-        #if residues_reordered==True:
-        #    print("WARNING: Some residues were renumbered.")
-        #if edits_made is True:
-        #    new_file = self.protein_prefix+'_original.pdb'
-        #    cmd = 'cp {} {}'.format(self.protein_file,new_file)
-        #    os.system(cmd)
-        #    print("Saved original pdb file as {}.".format(new_file)+
-        #          " Suspected issue(s)/warning(s) have been resolved in {}."\
-        #          .format(self.protein_file))
-        #    with open(self.protein_file, 'w+') as g:
-        #        for i,line in enumerate(data):
-        #            g.writelines(data[i])
-    protein_res_count,h_present,non_protein_residues,non_protein_residue_count,non_protein_chemical_names = check_pdb_rdkit(file)
-    return protein_res_count,h_present,non_protein_residues,non_protein_residue_count,non_protein_chemical_names
-
-
-
-###############################################################################
-def add_H(pdb_file=None, output_file=None, remove_file=False):
-    '''
-    Function that calls the reduce function from AmberTools 
-    to add hydrogens.
-    pdb_file        - string defining the .pdb file to be reduced.
-    output_file        - string defining the reduced .pdb file name.
-
-    Returns new rdkit mol object that has been reduced and saves 
-    the reduced .pdb. 
-    '''
-        
-    if pdb_file is None:
-        raise ValueError("PDB file must be defined.")
-    if output_file is None:
-        output_file=pdb_file.split('.pdb')[0]+'_reduced.pdb'
-    cmd = "reduce -NOFLIP -Quiet {} > {}".format(pdb_file,output_file)
-    os.system(cmd)
-    new_mol = Chem.MolFromPDBFile(output_file,
-                                  removeHs=False,
-                                  sanitize=False)
-    if remove_file is True:
-        os.remove(output_file)
-        
-    return new_mol
 
 ##### PDB SPECIFIC #####
 pdb_format = {'record_type':[0,6],
@@ -317,7 +137,10 @@ def collect_pdb_data(file=None,data=None):
 
     return pdb_data
 
-def rmsd(xyz1, xyz2):
+def rmsd(xyz1, xyz2, align=False):
+    if align == True:
+        t, r = compute_translation_and_rotation(xyz1, xyz2)
+        xyz1 = kabsch_transform(xyz1, t, r)
     delta = xyz1 - xyz2
     rmsd = (delta ** 2.0).sum(1).mean() ** 0.5
     return rmsd
@@ -459,6 +282,7 @@ def align(mobile, reference, atom_indices=[]):
     '''
     Mobile and reference are numpy arrays with dimensions (N, 3) where N is the number of atoms.
     Atom by default is an empty list and alignment will be performed for all atoms.
+    Atom indices are 0 indexed.
     '''
     if type(mobile) is str:
         mobile = get_coords(mobile)
