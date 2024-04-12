@@ -25,10 +25,10 @@ from QMzyme.utils import(
     get_coords,
     get_atoms,
     get_outlines,
-    to_dict,
     filename_format,
     coords_from_pdb,
     res_charges,
+    set_args,
     )
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
@@ -57,7 +57,7 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
 
 class GenerateModel(Structure):
 
-    def __init__(self, structure, id=None, child=0):
+    def __init__(self, structure, id=None, model_id=0):
         if type(structure) == str:
             filename = structure
             structure = BiopythonWrapper.load_structure(structure, id)
@@ -65,7 +65,8 @@ class GenerateModel(Structure):
         self.__dict__ = structure.__dict__.copy()
 
         if not hasattr(self, 'base'):
-            self.base = self.child_list[child]
+            #self.base = self.child_dict[model_id]
+            self.base = self.child_list[model_id]
         self.models = []
         self.QMzyme_details = {}
         func = inspect.currentframe().f_code.co_name
@@ -76,11 +77,12 @@ class GenerateModel(Structure):
 
     def __repr__(self):
         return f"<QMzyme Structure id={self._id}>"
-    
+
 
     def set_catalytic_center(
-        self, resname: Optional[str] = None, resnumber: Optional[int] = None, 
-        chain: Optional[str] = None, overwrite=True
+        self, 
+        overwrite=True,
+        **kwargs
     ):        
         '''
         Function to define the center of the QMzyme model. This is
@@ -99,24 +101,18 @@ class GenerateModel(Structure):
         chain : str, optional
             Single letter matching residue chain. May be necessary to 
             uniquely identify a residue.  
-        overwrite : bool, required, default=True
+        overwrite : bool, default=True
             To clear any existing catalytic_center definition. Set to 
             False if you would like to append current catalytic_center.
 
         Notes
         -----
-
         '''
+        _dict=(kwargs)
         residues = []
-        _list, _dict = ['resname', 'resnumber', 'chain'], {}
-        for key, val in locals().items():
-            if val != None and key in _list:
-                _dict[key] = val
-
         for res in self.base.get_residues(): 
             if False not in [val == res_dispatch[key](res) for key, val in _dict.items()]:
-                residues.append(res)
-                
+                residues.append(res)   
         if overwrite is True:
             self.catalytic_center = []
             self.catalytic_center = residues
