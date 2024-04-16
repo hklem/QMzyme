@@ -69,7 +69,6 @@ class CalculateQM(CalculateModel):
                 basis_set, opt=True, freq=True, freeze_atoms = [], 
                 charge = 0, mult = 1, mem='32GB', 
                 nprocs=16, program='gaussian', suffix=''):
-        
     
         self.type = 'QM_only'
         self.functional = functional
