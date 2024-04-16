@@ -15,6 +15,7 @@ import inspect
 from typing import Optional
 from datetime import datetime
 import os
+import warnings
 from QMzyme.calculate import *
 from QMzyme.Biopython.Structure import Structure
 from QMzyme.BiopythonWrapper import BiopythonWrapper
@@ -25,10 +26,10 @@ from QMzyme.utils import(
     get_coords,
     get_atoms,
     get_outlines,
-    to_dict,
     filename_format,
     coords_from_pdb,
     res_charges,
+    set_args,
     )
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
@@ -57,7 +58,7 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
 
 class GenerateModel(Structure):
 
-    def __init__(self, structure, id=None, child=0):
+    def __init__(self, structure, id=None, model_id=0):
         if type(structure) == str:
             filename = structure
             structure = BiopythonWrapper.load_structure(structure, id)
@@ -65,7 +66,8 @@ class GenerateModel(Structure):
         self.__dict__ = structure.__dict__.copy()
 
         if not hasattr(self, 'base'):
-            self.base = self.child_list[child]
+            #self.base = self.child_dict[model_id]
+            self.base = self.child_list[model_id]
         self.models = []
         self.QMzyme_details = {}
         func = inspect.currentframe().f_code.co_name
@@ -76,11 +78,12 @@ class GenerateModel(Structure):
 
     def __repr__(self):
         return f"<QMzyme Structure id={self._id}>"
-    
+
 
     def set_catalytic_center(
-        self, resname: Optional[str] = None, resnumber: Optional[int] = None, 
-        chain: Optional[str] = None, overwrite=True
+        self, 
+        overwrite=True,
+        **kwargs
     ):        
         '''
         Function to define the center of the QMzyme model. This is
@@ -99,24 +102,18 @@ class GenerateModel(Structure):
         chain : str, optional
             Single letter matching residue chain. May be necessary to 
             uniquely identify a residue.  
-        overwrite : bool, required, default=True
+        overwrite : bool, default=True
             To clear any existing catalytic_center definition. Set to 
             False if you would like to append current catalytic_center.
 
         Notes
         -----
-
         '''
+        _dict=(kwargs)
         residues = []
-        _list, _dict = ['resname', 'resnumber', 'chain'], {}
-        for key, val in locals().items():
-            if val != None and key in _list:
-                _dict[key] = val
-
         for res in self.base.get_residues(): 
             if False not in [val == res_dispatch[key](res) for key, val in _dict.items()]:
-                residues.append(res)
-                
+                residues.append(res)   
         if overwrite is True:
             self.catalytic_center = []
             self.catalytic_center = residues
@@ -125,34 +122,74 @@ class GenerateModel(Structure):
 
 
     def within_distance(self, distance_cutoff, store_model=True):
-            residues = []
-            center_coords = []
-            for res in self.catalytic_center:
-                for atom in res.get_atoms():
-                    center_coords.append(atom.get_coord())
-            neighbors = BiopythonWrapper.get_neighbors(self.base, center_coords, distance_cutoff)
-            residues = [atom.get_parent() for atom in neighbors]
-            residues = list(set(residues))
-            residues = BiopythonWrapper.order_residues(residues)
-            method = {}
-            method['type'] = 'within_distance'
-            method['cutoff'] = distance_cutoff
-            method['catalytic_center'] = self.catalytic_center
-            if store_model is True:
-                self.store_model(residues, method)
-            else:
-                return BiopythonWrapper.init_model(self, residues, method)
+        '''
+        Function to select all residues that have at least one atom within a
+        specified distance to any atom in self.catalytic_center. By default,
+        the resulting model is appended to self.models. 
+
+        Parameters
+        ----------
+        distance_cutoff : int or float, required
+            Numerical value specifying selection cutoff.
+
+        Notes
+        -----
+        The cutoff is not done radially, unless your catalytic_center definition 
+        only contains one atom. Therefore, the shape of the selection region depends
+        on the shape of the catalytic_center.
+        '''
+
+        residues = []
+        center_coords = []
+        for res in self.catalytic_center:
+            for atom in res.get_atoms():
+                center_coords.append(atom.get_coord())
+        neighbors = BiopythonWrapper.get_neighbors(self.base, center_coords, distance_cutoff)
+        residues = [atom.get_parent() for atom in neighbors]
+        residues = list(set(residues))
+        residues = BiopythonWrapper.order_residues(residues)
+        method = set_args(type=inspect.currentframe().f_code.co_name,
+                          cutoff=distance_cutoff, 
+                          catalytic_center=self.catalytic_center)
+        if store_model is True:
+            self.store_model(residues, method)
+        else:
+            return BiopythonWrapper.init_model(self, residues, method)
 
 
-    def truncate(self, scheme = 'CA_terminal'):
-            for res in self.child_list[-1].get_residues():
-                if res.resname not in protein_residues:
-                    continue
-                if BiopythonWrapper.has_Nterm_neighbor(res) is False and res.resname != 'PRO':
-                    BiopythonWrapper.cap_terminus(res, 'N')
-                if BiopythonWrapper.has_Cterm_neighbor(res) is False:
-                    BiopythonWrapper.cap_terminus(res, 'C')
-            self.models[-1] = self.child_list[-1]
+    def truncate(self, scheme='CA_terminal'):
+        '''
+        Function to remove extraneous atoms in preparation for model calculation.
+        This will be performed only on the most recently created model.
+
+        Parameters
+        ----------
+        scheme : str, default='CA_terminal'
+            See documentation for explanations of each truncation scheme.
+
+        Notes
+        -----
+        Currently, the only available scheme is CA_terminal, which will remove 
+        backbone atoms only on residues without their sequence neighbor present in
+        the model, and cap the C-alpha atom with hydrogen(s). I.e., if the following
+        resnumbers are in the model: [15, 23, 24, 25], then the N-terminal and C-terminal 
+        backbone atoms will be removed from residue 15 and the C-alpha will be converted 
+        to a methyl group, the N-terminal backbone atoms of residue 23 will be removed, but
+        the C-terminal backbone atoms will remain, as will the N-terminal backbone atoms of
+        residues 24 and 25, but the C-terminal backbone atoms of 25 will be removed. 
+        Additional schemes will be created in the future.
+
+        The added Hydrogens will have a bond length of 1.00, along the bond vector of the
+        original atom the H is replacing.
+        '''
+        for res in self.child_list[-1].get_residues():
+            if res.resname not in protein_residues:
+                continue
+            if BiopythonWrapper.has_Nterm_neighbor(res) is False and res.resname != 'PRO':
+                BiopythonWrapper.cap_terminus(res, 'N')
+            if BiopythonWrapper.has_Cterm_neighbor(res) is False:
+                BiopythonWrapper.cap_terminus(res, 'C')
+        self.models[-1] = self.child_list[-1]
 
 
     def store_model(self, residues, method):
@@ -191,3 +228,21 @@ class GenerateModel(Structure):
             filename = self.id+'.json'
         with open(filename, 'w') as f:
             json.dump(QMzyme_dict, f, indent=4, sort_keys=True)
+
+
+
+    ########################
+    # DEPRECATED FUNCTIONS #
+    ########################
+
+    def QMXTB_input(self, file=None, suffix='', substrate_charge=0, mult=1, qm_atoms='', mem='32GB', nprocs=16, program='orca', qm_input=None, verbose=True):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def catalytic_center(self, sel=None, res_name=None, res_number=None, chain=None, output_file=None, save_file=True, save_json=None, verbose=None):
+        warnings.warn("This function is no longer available and has been replaced with 'set_catalytic_center'. Revert back to QMzyme 0.9.34 to use the original function.", DeprecationWarning)
+
+    def subsystem(self, distance_cutoff=0, output_file=None, save_file=True, starting_pdb=None, include_residues={}, save_json=None, verbose=None):
+        warnings.warn("This function is no longer available and has been replaced with 'within_distance'. Revert back to QMzyme 0.9.34 to use the original function.", DeprecationWarning)
+
+    def size_scan(self, threshold=1000, starting_cutoff=6, output_file=None, verbose=True):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
