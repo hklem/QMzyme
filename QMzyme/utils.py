@@ -1,6 +1,5 @@
 import os
 import json
-import inspect
 from datetime import datetime
 import numpy as np
 from urllib.request import urlopen
@@ -51,20 +50,6 @@ def filename_format(name=None, suffix='.out'):
             return f"{name}{suffix}"
         else: return f"{name}.{suffix}"
 
-
-def write_log(file, text):
-    log = open(file,'w')
-    log.write("{}\n".format(text))
-    log.write(delimeter)
-    log.close()
-
-
-def log(string, file):
-    with open(self.log_file, 'a') as f:
-        string += '\n'
-        f.writelines(string)
-
-
 def json_type_encoder(dict):
     for key in dict.keys():
         if isinstance(dict[key], np.integer):
@@ -74,23 +59,6 @@ def json_type_encoder(dict):
         if isinstance(dict[key], np.ndarray):
             dict[key] = dict[key].tolist()
     return dict
-
-
-###############################################################################
-def download_pdb(pdb_code):
-    base_url = 'http://www.pdb.org/pdb/download/downloadFile.do?fileFormat'+\
-     '=pdb&compression=NO&structureId='
-    for structure in pdb_code.split():
-         pdb_url = base_url + structure[:4]
-         output_file = structure[:4] + '.pdb'
-
-         with urlopen(pdb_url) as response, open(output_file, 'wb') as outfile:
-             data = response.read()
-             outfile.write(data)
-             print("Downloading {} as {}.".format(structure[:4], output_file))
-             print(pdb_url)
-                
-    return output_file
 
 ##### PDB SPECIFIC #####
 pdb_format = {'record_type':[0,6],
@@ -112,30 +80,6 @@ pdb_format = {'record_type':[0,6],
 
 def pdb_info(info,line):
     return line[pdb_format[info][0]:pdb_format[info][1]]
-
-def collect_pdb_data(file=None,data=None):
-    if file is not None:
-        try: 
-            with open(file, 'r') as f:
-                data=f.readlines()
-        except:
-            raise FileNotFoundError("test file {} not found.".format(file))
-    else:
-        if data is None:
-            raise Exception("Must define either file or lines from a pdb file.")
-
-    pdb_data = {'res_name_sequence':[],'atom_sequence':[],'number_of_atoms':0,'atom_coords':[],'res_num_sequence':[]}
-    for line in data:
-        if pdb_info('record_type',line).strip() in ['ATOM','HETATM']:
-            pdb_data['res_name_sequence'].append(pdb_info('res_name',line))
-            pdb_data['res_num_sequence'].append(pdb_info('res_number',line))
-            pdb_data['number_of_atoms'] += 1
-            pdb_data['atom_sequence'].append(pdb_info('atom_name',line))
-            pdb_data['atom_coords'].append((pdb_info('x',line),
-                                          pdb_info('y',line),
-                                          pdb_info('z',line)))
-
-    return pdb_data
 
 def rmsd(xyz1, xyz2, align=False):
     if align == True:
@@ -347,3 +291,52 @@ def res_charges(residues):
                 charge-=1
 
         return charge
+
+
+class AddArgs:
+    pass
+
+def set_args(kwargs, var_dict):
+    # set default options and options provided
+    options = AddArgs()
+    # dictionary containing default values for options
+    for key in var_dict:
+        vars(options)[key] = var_dict[key]
+    for key in kwargs:
+        if key in var_dict:
+            vars(options)[key] = kwargs[key]
+        elif key.lower() in var_dict:
+            vars(options)[key.lower()] = kwargs[key.lower()]
+        else:
+            print("Warning! Option: [", key,":",kwargs[key],"] provided but no option exists, try the online documentation to see available options for each module.",)
+    return vars(options)
+
+
+    ########################
+    # DEPRECATED FUNCTIONS #
+    ########################
+
+    def add_H(pdb_file=None, output_file=None, remove_file=False):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def check_pdb(file, clean=False):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def download(pdb_code):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use the original function.", DeprecationWarning)
+
+    def to_dict(key=None, data=None, dict={}, json_file=''):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def collect_pdb_data(file=None, data=None):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def log(string, file):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def log(string, file):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
+    def write_log(file, text):
+        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
+
