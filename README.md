@@ -4,7 +4,9 @@ QMzyme
 
 ![](logo.png)
 
+Full documentation with installation instructions, technical details and examples can be found in [Read the Docs](https://hklem-qmzyme-documentation.readthedocs.io).
 
+<! --
 ### Jump to Contents
 - #### [Installation](#Installation)
 - #### [Dependencies](#Dependencies)
@@ -274,7 +276,7 @@ model_info["QMzyme 1"]["Truncated subsystem"]
 >      309],
 >     'Subsystem charge': -1}
 
-
+-->
 
 #### Copyright
 Copyright (c) 2023, Heidi Klem
