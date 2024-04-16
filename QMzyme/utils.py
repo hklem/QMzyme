@@ -1,15 +1,18 @@
+###############################################################################
+# Code written by Heidi Klem while at
+# Colorado State University as a graduate student
+# in the Paton and McCullagh groups and at the
+# National Institute of Standards and Technology
+# as an NRC Postdoc (Fed).
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+'''Utility functions for QMzyme package.'''
+
 import os
 import json
-from datetime import datetime
 import numpy as np
-from urllib.request import urlopen
-from rdkit import Chem
-#from QMzyme.rdkit_wrapper import check_pdb_rdkit
-from QMzyme.protein_parser import collect_pdb_data, pdb_deposit_info
 from QMzyme.Biopython.Data.PDBData import protein_letters_3to1_extended
-
-
-##### GENERAL #####
 
 delimeter='---------------------------------------------------------\n'
 solvent_list=['HOH','WAT','T3P','SOL'] 
@@ -296,19 +299,21 @@ def res_charges(residues):
 class AddArgs:
     pass
 
-def set_args(kwargs, var_dict):
+#def set_args(kwargs, var_dict):
+def set_args(**kwargs):
     # set default options and options provided
     options = AddArgs()
     # dictionary containing default values for options
-    for key in var_dict:
-        vars(options)[key] = var_dict[key]
+    #for key in var_dict:
+    #    vars(options)[key] = var_dict[key]
     for key in kwargs:
-        if key in var_dict:
-            vars(options)[key] = kwargs[key]
-        elif key.lower() in var_dict:
-            vars(options)[key.lower()] = kwargs[key.lower()]
-        else:
-            print("Warning! Option: [", key,":",kwargs[key],"] provided but no option exists, try the online documentation to see available options for each module.",)
+        vars(options)[key] = kwargs[key]
+        # if key in var_dict:
+        #     vars(options)[key] = kwargs[key]
+        # elif key.lower() in var_dict:
+        #     vars(options)[key.lower()] = kwargs[key.lower()]
+        # else:
+        #     print("Warning! Option: [", key,":",kwargs[key],"] provided but no option exists, try the online documentation to see available options for each module.",)
     return vars(options)
 
 

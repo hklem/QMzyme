@@ -4,4 +4,5 @@
 from QMzyme import *
 from .generate import *
 from .calculate import *
+from .BiopythonWrapper import *
 from ._version import __version__

@@ -7,10 +7,10 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-'''Generate QM-based enzyme model QM-only or QM/MM calculation input.'''
+'''Generate QM-based enzyme model QM-only or QM/MM calculation input files.'''
 
 import os
-from QMzyme.BiopythonWrapper import BiopythonWrapper
+from QMzyme import BiopythonWrapper
 from aqme.qprep import qprep
 
 

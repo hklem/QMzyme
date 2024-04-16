@@ -12,25 +12,13 @@
 import numpy as np
 import json
 import inspect
-from typing import Optional
 from datetime import datetime
-import os
 import warnings
 from QMzyme.calculate import *
 from QMzyme.Biopython.Structure import Structure
-from QMzyme.BiopythonWrapper import BiopythonWrapper
+from QMzyme import BiopythonWrapper
 from QMzyme.BiopythonWrapper import res_dispatch
-from QMzyme import utils
-from QMzyme.utils import(
-    download_pdb,
-    get_coords,
-    get_atoms,
-    get_outlines,
-    filename_format,
-    coords_from_pdb,
-    res_charges,
-    set_args,
-    )
+from QMzyme.utils import (set_args, record_execution)
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                     'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
@@ -59,11 +47,19 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
 class GenerateModel(Structure):
 
     def __init__(self, structure, id=None, model_id=0):
+
         if type(structure) == str:
             filename = structure
             structure = BiopythonWrapper.load_structure(structure, id)
             setattr(structure, 'pdb_file', filename)
         self.__dict__ = structure.__dict__.copy()
+
+        Hs_present = False
+        for atom in self.get_atoms():
+            if atom.element == 'H':
+                Hs_present = True
+        if Hs_present == False:
+            raise Exception("PDB structure does not contain hydrogens. Please pre-process this structure.")
 
         if not hasattr(self, 'base'):
             #self.base = self.child_dict[model_id]
@@ -71,7 +67,7 @@ class GenerateModel(Structure):
         self.models = []
         self.QMzyme_details = {}
         func = inspect.currentframe().f_code.co_name
-        self.QMzyme_details = utils.record_execution(self.QMzyme_details, func)
+        self.QMzyme_details = record_execution(self.QMzyme_details, func)
         setattr(self, 'id', id)
         delattr(self, 'xtra')
 
@@ -148,9 +144,9 @@ class GenerateModel(Structure):
         residues = [atom.get_parent() for atom in neighbors]
         residues = list(set(residues))
         residues = BiopythonWrapper.order_residues(residues)
-        method = set_args(type=inspect.currentframe().f_code.co_name,
-                          cutoff=distance_cutoff, 
-                          catalytic_center=self.catalytic_center)
+        method = {'type': inspect.currentframe().f_code.co_name,
+                  'cutoff': distance_cutoff, 
+                  'catalytic_center': self.catalytic_center}
         if store_model is True:
             self.store_model(residues, method)
         else:
@@ -202,7 +198,9 @@ class GenerateModel(Structure):
         print(f"Model {self.child_list[-1].id} created by the {method['type']} method has been stored to {self.__repr__()}.")
 
 
-    def write_pdb(self, entity, filename=""):
+    def write_pdb(self, entity=None, filename=""):
+        if entity == None:
+            entity = self.models[-1]
         entity.pdb_file = BiopythonWrapper.write_pdb(entity, filename)
 
 
@@ -228,7 +226,6 @@ class GenerateModel(Structure):
             filename = self.id+'.json'
         with open(filename, 'w') as f:
             json.dump(QMzyme_dict, f, indent=4, sort_keys=True)
-
 
 
     ########################

@@ -7,10 +7,8 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-import numpy as np
 import os
 from aqme.qprep import qprep
-from aqme.qcorr import qcorr
 from QMzyme.utils import get_outlines
 
 
