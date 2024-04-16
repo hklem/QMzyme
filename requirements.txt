@@ -1,6 +1,6 @@
-rdkit
 aqme
-MDAnalysis
 importlib-resources
 pytest 
 pytest-cov
+numpy
+json
