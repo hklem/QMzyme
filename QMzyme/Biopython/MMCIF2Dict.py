@@ -7,7 +7,7 @@
 
 """Turn an mmCIF file into a dictionary."""
 
-from Bio.File import as_handle
+from QMzyme.Biopython.File import as_handle
 
 
 class MMCIF2Dict(dict):
