@@ -65,9 +65,9 @@ class GenerateModel(Structure):
             #self.base = self.child_dict[model_id]
             self.base = self.child_list[model_id]
         self.models = []
-        self.QMzyme_details = {}
+        self.QMzyme_calls = {}
         func = inspect.currentframe().f_code.co_name
-        self.QMzyme_details = record_execution(self.QMzyme_details, func)
+        record_execution(self.QMzyme_calls, func)
         setattr(self, 'id', id)
         delattr(self, 'xtra')
 
@@ -116,6 +116,9 @@ class GenerateModel(Structure):
         if overwrite is False:
             self.catalytic_center += residues
 
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
+
 
     def within_distance(self, distance_cutoff, store_model=True):
         '''
@@ -151,6 +154,9 @@ class GenerateModel(Structure):
             self.store_model(residues, method)
         else:
             return BiopythonWrapper.init_model(self, residues, method)
+        
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
 
 
     def truncate(self, scheme='CA_terminal'):
@@ -187,6 +193,9 @@ class GenerateModel(Structure):
                 BiopythonWrapper.cap_terminus(res, 'C')
         self.models[-1] = self.child_list[-1]
 
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
+
 
     def store_model(self, residues, method):
         m = BiopythonWrapper.init_model(self, residues, method)
@@ -197,11 +206,16 @@ class GenerateModel(Structure):
         self.models.append(self.child_list[-1])
         print(f"Model {self.child_list[-1].id} created by the {method['type']} method has been stored to {self.__repr__()}.")
 
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
 
     def write_pdb(self, entity=None, filename=""):
         if entity == None:
             entity = self.models[-1]
         entity.pdb_file = BiopythonWrapper.write_pdb(entity, filename)
+
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
 
 
     def calculateQM(self, model=None, functional=None, 
@@ -216,16 +230,27 @@ class GenerateModel(Structure):
             model.multiplicity = mult
         CalculateQM(model, functional, basis_set, opt, freq, freeze_atoms, charge, mult, mem, nprocs, program, suffix)
 
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
 
     def write_json(self, filename=None):
         _dict = {}
+        _dict['Original structure'] = BiopythonWrapper.make_model_dict(self.base)
         for model in self.models:
             _dict['Model '+str(model.id)] = BiopythonWrapper.make_model_dict(model)
-        QMzyme_dict = {self.__repr__()[1:-1]: _dict}
+    
+        QMzyme_dict = {'id': self._id}
+        QMzyme_dict['Structure file'] = self.pdb_file
+        QMzyme_dict['QMzyme_calls'] = self.QMzyme_calls
+        QMzyme_dict = {**QMzyme_dict,**_dict}
+
         if filename == None:
             filename = self.id+'.json'
         with open(filename, 'w') as f:
             json.dump(QMzyme_dict, f, indent=4, sort_keys=True)
+
+        func = inspect.currentframe().f_code.co_name
+        record_execution(self.QMzyme_calls, func)
 
 
     ########################

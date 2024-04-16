@@ -12,6 +12,7 @@
 import os
 import json
 import numpy as np
+import datetime
 from QMzyme.Biopython.Data.PDBData import protein_letters_3to1_extended
 
 delimeter='---------------------------------------------------------\n'
@@ -39,10 +40,22 @@ negative_residues = ['ASP', 'GLU']
 
 
 def record_execution(QMzyme_details, function_name):
-    if function_name not in QMzyme_details.keys():
-        QMzyme_details[function_name] = {}
-        QMzyme_details[function_name]['Time'] = 'placeholder'
-    return QMzyme_details
+    now = datetime.datetime.now()
+    date = now.strftime("%m/%d/%Y")
+    time = now.strftime("%H:%M:%S")
+    count = 1
+    for key in QMzyme_details.keys():
+        if function_name in key:
+            count += 1
+    if count > 1:
+        if function_name in list(QMzyme_details.keys()):
+            QMzyme_details[f'{function_name}_run_1'] = QMzyme_details[function_name]
+            del QMzyme_details[function_name]
+        function_name += f'_run_{count}'
+
+    QMzyme_details[function_name] = {}
+    QMzyme_details[function_name]['Date'] = date
+    QMzyme_details[function_name]['Time'] = time
 
 
 def filename_format(name=None, suffix='.out'):
