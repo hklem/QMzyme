@@ -64,6 +64,8 @@ class CalculateQM(CalculateModel):
             - coords
             - functional
             - basis set
+            - charge
+            - mult
     '''
     def __init__(self, model, functional, 
                 basis_set, opt=True, freq=True, freeze_atoms = [], 

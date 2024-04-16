@@ -7,18 +7,17 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-'''Generate QM-based enzyme model.'''
+'''Generate QM-based enzyme models.'''
 
 import numpy as np
 import json
 import inspect
-from datetime import datetime
 import warnings
 from QMzyme.calculate import *
 from QMzyme.Biopython.Structure import Structure
 from QMzyme import BiopythonWrapper
 from QMzyme.BiopythonWrapper import res_dispatch
-from QMzyme.utils import (set_args, record_execution)
+from QMzyme.utils import record_execution
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                     'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
@@ -47,6 +46,16 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
 class GenerateModel(Structure):
 
     def __init__(self, structure, id=None, model_id=0):
+        """
+        Constructor method for GenerateModel class.
+
+        :param structure: PDB or mmCIF file.  
+        :type structure: str, required
+        :param id: Name to associate structure with, defaults to file name.
+        :type id: str
+        :param model_id: Model ID to base original structure on, defaults to 0. 
+        :type model_id: int
+        """
 
         if type(structure) == str:
             filename = structure
@@ -198,6 +207,19 @@ class GenerateModel(Structure):
 
 
     def store_model(self, residues, method):
+        """
+        Function to store new model to QMzyme structure object.
+
+        Parameters
+        ----------
+        residues : list
+            List of residue objects that comprise the model.
+        method : dict
+            Dictionary containing details of how that model was generated.
+
+        Notes
+        -----
+        """
         m = BiopythonWrapper.init_model(self, residues, method)
         self.add(m)
         if self.child_list[0] == self.base:
@@ -210,6 +232,18 @@ class GenerateModel(Structure):
         record_execution(self.QMzyme_calls, func)
 
     def write_pdb(self, entity=None, filename=""):
+        """
+        Function to write PDB file.
+
+        Parameters
+        ----------
+        entity : Biopython structure, model, or chain object, defaults to last generated model
+        filename : str
+            File name (should have '.pdb' suffix). Defaults to object id. 
+
+        Notes
+        -----
+        """
         if entity == None:
             entity = self.models[-1]
         entity.pdb_file = BiopythonWrapper.write_pdb(entity, filename)
@@ -222,6 +256,28 @@ class GenerateModel(Structure):
                 basis_set=None, opt=True, freq=True, freeze_atoms = [], 
                 charge = 0, mult = 1, mem='32GB', 
                 nprocs=16, program='gaussian', suffix=''):
+        """
+        Function to generate QM only calculation input file.
+
+        Parameters
+        ----------
+        model : QMzyme model object, defaults to last model in the list.
+        functional : str, QM theory functional to use.
+        basis_set : str, QM theory basis set to use. 
+        opt : bool, set up input to perform optimization if true. Default is True.
+        freq : bool, set up input to perform frequency analysis if true. Default is True.
+        freeze_atoms : list containing the PDB style names of any atoms to be frozen during optimization.
+            E.x., ['CA'] will assign frozen atom flags to all C-alpha atoms.
+        charge : int, electronic charge of model. 
+        mult : int, multiplicity of model.
+        mem : str, amount of memory to specify in input file. Default is '32GB'.
+        nprocs: int, amount of processors to specify for job. Default is 16. 
+        program: str, name of QM program to be used. Options are 'gaussian' or 'orca'. 
+        suffix: str, to be appended to end of calculation input file name. Default is ''.
+
+        Notes
+        -----
+        """
         if model == None:
             model = self.child_list[-1]
         if charge != None:
@@ -234,6 +290,17 @@ class GenerateModel(Structure):
         record_execution(self.QMzyme_calls, func)
 
     def write_json(self, filename=None):
+        """
+        Function to write JSON file containing all information regarding QMzyme run.
+
+        Parameters
+        ----------
+        filename : str
+            File name. Defaults to structure id. 
+
+        Notes
+        -----
+        """
         _dict = {}
         _dict['Original structure'] = BiopythonWrapper.make_model_dict(self.base)
         for model in self.models:
