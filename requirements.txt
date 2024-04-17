@@ -4,4 +4,3 @@ biopython
 pytest 
 pytest-cov
 numpy
-jsonlib

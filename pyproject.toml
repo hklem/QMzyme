@@ -24,7 +24,6 @@ dependencies = [
     "importlib-resources",
     "numpy",
     "aqme",
-    "jsonlib",
     "biopython"
 ]
 
