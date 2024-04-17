@@ -49,7 +49,7 @@ def test_catalytic_center(test_type, resname, resnumber, chain, init_file, overw
         ]
 )
 def test_within_distance(test_type, distance_cutoff, init_file):
-        model.within_distance(distance_cutoff)
+        model.within_distance(distance_cutoff=distance_cutoff)
         
         assert len(model.models[-1].list_atoms()) == 427
         assert len(model.models[-1].list_residues()) == 33
@@ -81,5 +81,3 @@ def test_truncate(test_type, truncation_scheme, init_file):
 
         atom1 = model.models[-1].list_atoms()[1]
         assert atom1.name == 'CA'
-
-def test_calculateQM(test_type, init_file)
