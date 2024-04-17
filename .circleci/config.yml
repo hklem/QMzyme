@@ -18,24 +18,34 @@ jobs:
           pip install -e .
           pip install pytest
           pip install pytest-cov
-          python -m pytest -v --color yes --cov=QMzyme --cov-report=xml
-      - codecov/upload:
-          file: ./coverage.xml
-          token: CODECOV_TOKEN
+          pytest -v --color yes --cov=QMzyme --cov-report=xml
+      - run:
+          name: Code Coverage
+          command: |
+            pip install coverage
+            coverage run -m pytest
+            coverage report
+            coverage html # open htmlcov/index.html in a browser
+      - store_artifacts:
+          path: htmlcov
+
+      #- codecov/upload:
+      #    file: ./coverage.xml
+      #    token: CODECOV_TOKEN
           
-  codecov-coverage:
-    docker:
-      - image: cimg/python:3.11-node
-    steps:
-      - checkout 
-      - codecov/upload:
-          file: ./coverage.xml
-          token: CODECOV_TOKEN
+  # codecov-coverage:
+  #   docker:
+  #     - image: cimg/python:3.11-node
+  #   steps:
+  #     - checkout 
+  #     - codecov/upload:
+  #         file: ./coverage.xml
+  #         token: CODECOV_TOKEN
             
 workflows:
   build-and-test:
     jobs:
       - build-and-test
-      - codecov-coverage:
-          requires:
-            - build-and-test
+      # - codecov-coverage:
+      #     requires:
+      #       - build-and-test
