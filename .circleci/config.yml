@@ -18,7 +18,7 @@ jobs:
           pip install -e .
           pip install pytest
           pip install pytest-cov
-          python -m pytest -v -W --color yes --cov=QMzyme --cov-report=xml
+          python -m pytest -v --color yes --cov=QMzyme --cov-report=xml
       - codecov/upload:
           file: ./coverage.xml
           token: CODECOV_TOKEN
