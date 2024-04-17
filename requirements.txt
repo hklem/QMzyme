@@ -2,3 +2,4 @@ aqme
 importlib-resources
 numpy
 rdkit
+biopython
