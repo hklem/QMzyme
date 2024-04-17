@@ -2,7 +2,7 @@
 # Stacks detected: cicd:github-actions:.github/workflows,deps:python:.
 version: 2.1
 orbs:
-  python: circleci/python@2
+  python: circleci/python@2.1.1
   codecov: codecov/codecov@4.0.1
 jobs:
   build-and-test:
@@ -16,8 +16,9 @@ jobs:
       - run: |
           pip install --upgrade pip
           pip install -e .
+          pip install pytest
           pip install pytest-cov
-          pytest -v -W ignore::DeprecationWarning --color yes --cov=QMzyme --cov-report=xml
+          python -m pytest -v -W --color yes --cov=QMzyme --cov-report=xml
       - codecov/upload:
           file: ./coverage.xml
           token: CODECOV_TOKEN
