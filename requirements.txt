@@ -1,6 +1,5 @@
 aqme
 importlib-resources
-biopython
 pytest 
 pytest-cov
 numpy

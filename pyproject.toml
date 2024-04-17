@@ -24,7 +24,6 @@ dependencies = [
     "importlib-resources",
     "numpy",
     "aqme",
-    "biopython"
 ]
 
 # Update the urls once the hosting is set up.
