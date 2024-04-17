@@ -37,7 +37,8 @@ class NeighborSearch:
            with this to optimize speed if you feel like it.
 
         """
-        from Bio.PDB.kdtrees import KDTree
+        #from QMzyme.Biopython.kdtrees import KDTree
+        from Bio.PDB.kdtrees import KDTree #need to fix to Biopython is not a dependency
 
         self.atom_list = atom_list
         # get the coordinates

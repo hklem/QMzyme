@@ -6,6 +6,9 @@
 # as an NRC Postdoc (Fed).
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
+'''
+Module in charge of analyzing QM output. This module is under development.
+'''
 
 import numpy as np
 

@@ -7,7 +7,22 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-'''Generate QM-based enzyme model QM-only or QM/MM calculation input files.'''
+'''
+Module in charge of create input files for QM-only or QM/MM calculations. This 
+module integrates the `AQME QPREP <https://aqme.readthedocs.io/en/latest/API/aqme.qprep.html>`_ 
+workflow.
+
+Required input
+...............
+
+    *   QMzyme model object.
+    *   Model charge and multiplicity.
+
+Notes
+...............
+
+    *   Currently optimized to generate QM-only Gaussian input files.
+'''
 
 import os
 from QMzyme import BiopythonWrapper

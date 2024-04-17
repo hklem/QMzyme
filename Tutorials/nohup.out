@@ -1,0 +1,47 @@
+[I 2024-04-16 20:33:33.384 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2024-04-16 20:33:33.386 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2024-04-16 20:33:33.387 ServerApp] jupyterlab | extension was successfully linked.
+[I 2024-04-16 20:33:33.581 ServerApp] notebook_shim | extension was successfully linked.
+[I 2024-04-16 20:33:33.624 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2024-04-16 20:33:33.625 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2024-04-16 20:33:33.626 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2024-04-16 20:33:33.628 LabApp] JupyterLab extension loaded from /Users/hrk/anaconda3/envs/qmzyme_dev/lib/python3.11/site-packages/jupyterlab
+[I 2024-04-16 20:33:33.628 LabApp] JupyterLab application directory is /Users/hrk/anaconda3/envs/qmzyme_dev/share/jupyter/lab
+[I 2024-04-16 20:33:33.628 LabApp] Extension Manager is 'pypi'.
+[I 2024-04-16 20:33:33.653 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2024-04-16 20:33:33.653 ServerApp] The port 8888 is already in use, trying another port.
+[I 2024-04-16 20:33:33.654 ServerApp] Serving notebooks from local directory: /Users/hrk/git/QMzyme/Tutorials
+[I 2024-04-16 20:33:33.654 ServerApp] Jupyter Server 2.14.0 is running at:
+[I 2024-04-16 20:33:33.654 ServerApp] http://localhost:8889/lab?token=019a95a3ea57c0b83553646028a0fe9088ab96861c41ae4a
+[I 2024-04-16 20:33:33.654 ServerApp]     http://127.0.0.1:8889/lab?token=019a95a3ea57c0b83553646028a0fe9088ab96861c41ae4a
+[I 2024-04-16 20:33:33.654 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 2024-04-16 20:33:33.659 ServerApp] 
+    
+    To access the server, open this file in a browser:
+        file:///Users/hrk/Library/Jupyter/runtime/jpserver-91811-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:8889/lab?token=019a95a3ea57c0b83553646028a0fe9088ab96861c41ae4a
+        http://127.0.0.1:8889/lab?token=019a95a3ea57c0b83553646028a0fe9088ab96861c41ae4a
+[I 2024-04-16 20:33:33.668 ServerApp] Skipped non-installed server(s): bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[W 2024-04-16 20:33:36.112 LabApp] Could not determine jupyterlab build status without nodejs
+[W 2024-04-16 20:33:36.243 ServerApp] 404 GET /api/contents/implementing_biopython.ipynb?content=0&hash=0&1713321216239 (e82b351baf3943ed84e883a258a27f90@::1) 1.33ms referer=http://localhost:8889/lab
+[W 2024-04-16 20:33:36.243 ServerApp] 404 GET /api/contents/implementing_biopython.ipynb?content=0&hash=0&1713321216239 (::1): No such file or directory: implementing_biopython.ipynb
+[W 2024-04-16 20:33:36.244 ServerApp] 404 GET /api/contents/test_5.pdb?content=0&hash=0&1713321216240 (e82b351baf3943ed84e883a258a27f90@::1) 1.24ms referer=http://localhost:8889/lab
+[W 2024-04-16 20:33:36.245 ServerApp] 404 GET /api/contents/test_5.pdb?content=0&hash=0&1713321216240 (::1): No such file or directory: test_5.pdb
+[W 2024-04-16 20:33:42.151 ServerApp] Notebook Getting-Started.ipynb is not trusted
+[I 2024-04-16 20:33:42.439 ServerApp] Kernel started: b0bd6fe7-bc3c-4c60-9d4b-eee8ab10324d
+[I 2024-04-16 20:33:42.919 ServerApp] Connecting to kernel b0bd6fe7-bc3c-4c60-9d4b-eee8ab10324d.
+[I 2024-04-16 20:33:42.920 ServerApp] Connecting to kernel b0bd6fe7-bc3c-4c60-9d4b-eee8ab10324d.
+[I 2024-04-16 20:33:42.922 ServerApp] Connecting to kernel b0bd6fe7-bc3c-4c60-9d4b-eee8ab10324d.
+[W 2024-04-16 20:33:55.714 ServerApp] 404 GET /api/contents/QMzyme?content=0&hash=0&1713321235711 (e82b351baf3943ed84e883a258a27f90@::1) 1.17ms referer=http://localhost:8889/lab/tree/Getting-Started.ipynb
+[W 2024-04-16 20:33:55.714 ServerApp] 404 GET /api/contents/QMzyme?content=0&hash=0&1713321235711 (::1): No such file or directory: QMzyme
+[I 2024-04-16 20:34:48.918 ServerApp] interrupted
+[I 2024-04-16 20:34:48.918 ServerApp] Serving notebooks from local directory: /Users/hrk/git/QMzyme/Tutorials
+    1 active kernel
+    Jupyter Server 2.14.0 is running at:
+    http://localhost:8889/lab?token=019a95a3ea57c0b83553646028a0fe9088ab96861c41ae4a
+        http://127.0.0.1:8889/lab?token=019a95a3ea57c0b83553646028a0fe9088ab96861c41ae4a
+Shut down this Jupyter server (y/[n])? [C 2024-04-16 20:34:49.073 ServerApp] received signal 2, stopping
+[I 2024-04-16 20:34:49.075 ServerApp] Shutting down 4 extensions
+[I 2024-04-16 20:34:49.075 ServerApp] Shutting down 1 kernel
+[I 2024-04-16 20:34:49.075 ServerApp] Kernel shutdown: b0bd6fe7-bc3c-4c60-9d4b-eee8ab10324d

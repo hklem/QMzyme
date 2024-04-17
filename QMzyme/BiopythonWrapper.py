@@ -206,6 +206,7 @@ def change_bond_length(fixed_coords, mobile_coords, new_length):
     return q
 
 def alter_atom(atom, new_atom_dict):
+    #setattr(atom, 'original_atom', (atom.parent.full_id, (atom.id, atom.altloc)))
     for key, val in new_atom_dict.items():
         if hasattr(atom, key):
             setattr(atom, key, val)
@@ -246,9 +247,10 @@ def get_atom_idx(entity, atom_name):
     """
     Parameters
     ----------
-    entity: object, required
-    atom_name: str, required
-        Value corresponding to the atom attribute 'name'.
+    :param entity:
+    :type entity: Entity, required
+    :param atom_name: Value corresponding to the atom attribute 'name'.
+    :type atom_name: str, required
 
     Returns
     -------

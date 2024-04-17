@@ -7,7 +7,26 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-'''Generate QM-based enzyme models.'''
+'''
+Module in charge of creating the QM enzyme models given a starting structure. 
+This module can be used to call CalculateModel to generate QM calculation 
+input files.
+
+Required input
+...............
+
+    *   Prepared starting structure in PDB format.
+    *   Residue selection for catalytic center definition.
+    *   Distance cutoff for region selection.
+
+Output options
+...............
+
+    *   QMzyme structure object containing all model information.
+    *   PDB files for catalytic center or truncated models.
+    *   QM calculation input files for Gaussian or Orca packages.
+    *   JSON file containing all model information.
+'''
 
 import numpy as np
 import json
@@ -98,21 +117,18 @@ class GenerateModel(Structure):
         and set 'overwrite=False'. This will append the new residue information
         to the existing catalytic_center attribute. 
 
-        Parameters
-        ----------
-        resname : str, optional
-            Three letter code matching residue name. 
-        resnumber : int, optional
-            Number matching residue id/seq number.
-        chain : str, optional
-            Single letter matching residue chain. May be necessary to 
-            uniquely identify a residue.  
-        overwrite : bool, default=True
-            To clear any existing catalytic_center definition. Set to 
-            False if you would like to append current catalytic_center.
+        :param resname: Three letter code matching residue name.
+        :type resname: str, optional
 
-        Notes
-        -----
+        :param resnumber: Number matching residue id/seq number.
+        :type resnumber: int, optional
+
+        :param chain: Single letter matching residue chain. May be necessary to uniquely identify a residue.  
+        :type chain: str, optional
+
+        :param overwrite: To clear any existing catalytic_center definition. Set to False if you would like to append current catalytic_center. Defaults to True.
+        :type overwrite: bool, required
+
         '''
         _dict=(kwargs)
         residues = []
@@ -135,16 +151,19 @@ class GenerateModel(Structure):
         specified distance to any atom in self.catalytic_center. By default,
         the resulting model is appended to self.models. 
 
-        Parameters
-        ----------
-        distance_cutoff : int or float, required
-            Numerical value specifying selection cutoff.
+        :param distance_cutoff: Numerical value specifying selection cutoff.
+        :type distance_cutoff: int or float, required
 
-        Notes
-        -----
-        The cutoff is not done radially, unless your catalytic_center definition 
-        only contains one atom. Therefore, the shape of the selection region depends
-        on the shape of the catalytic_center.
+        :param store_model: To specify if model should be recorded in QMzyme object. Set to False if you are just messing around with this function and do not want everything recorded. Defaults to True.
+        :type store_model: bool
+
+        .. code-block:: text
+
+            Notes:
+
+            The cutoff is not done radially, unless your catalytic_center definition 
+            only contains one atom. Therefore, the shape of the selection region depends
+            on the shape of the catalytic_center.
         '''
 
         residues = []
@@ -171,27 +190,27 @@ class GenerateModel(Structure):
     def truncate(self, scheme='CA_terminal'):
         '''
         Function to remove extraneous atoms in preparation for model calculation.
-        This will be performed only on the most recently created model.
-
-        Parameters
-        ----------
-        scheme : str, default='CA_terminal'
-            See documentation for explanations of each truncation scheme.
-
-        Notes
-        -----
-        Currently, the only available scheme is CA_terminal, which will remove 
-        backbone atoms only on residues without their sequence neighbor present in
-        the model, and cap the C-alpha atom with hydrogen(s). I.e., if the following
-        resnumbers are in the model: [15, 23, 24, 25], then the N-terminal and C-terminal 
-        backbone atoms will be removed from residue 15 and the C-alpha will be converted 
-        to a methyl group, the N-terminal backbone atoms of residue 23 will be removed, but
-        the C-terminal backbone atoms will remain, as will the N-terminal backbone atoms of
-        residues 24 and 25, but the C-terminal backbone atoms of 25 will be removed. 
-        Additional schemes will be created in the future.
-
-        The added Hydrogens will have a bond length of 1.00, along the bond vector of the
+        This will be performed only on the most recently created model. The added Hydrogens will have a bond length of 1.00 Angstroms, along the bond vector of the
         original atom the H is replacing.
+
+        :param scheme: See `QMzyme documentation <https://hklem-qmzyme-documentation.readthedocs.io>`_ for explanations of each truncation scheme. Defaults to 'CA_terminal'.
+        :type scheme: str
+
+        .. code-block:: text
+
+            Notes:
+
+            Currently, the only available scheme is CA_terminal, which will remove 
+            backbone atoms only on residues without their sequence neighbor present in
+            the model, and cap the C-alpha atom with hydrogen(s). I.e., if the following
+            resnumbers are in the model: [15, 23, 24, 25], then the N-terminal and C-terminal 
+            backbone atoms will be removed from residue 15 and the C-alpha will be converted 
+            to a methyl group, the N-terminal backbone atoms of residue 23 will be removed, but
+            the C-terminal backbone atoms will remain, as will the N-terminal backbone atoms of
+            residues 24 and 25, but the C-terminal backbone atoms of 25 will be removed. 
+            
+            Additional schemes will be created in the future.
+
         '''
         for res in self.child_list[-1].get_residues():
             if res.resname not in protein_residues:
@@ -210,15 +229,12 @@ class GenerateModel(Structure):
         """
         Function to store new model to QMzyme structure object.
 
-        Parameters
-        ----------
-        residues : list
-            List of residue objects that comprise the model.
-        method : dict
-            Dictionary containing details of how that model was generated.
+        :param residues: List of residue objects that comprise the model.
+        :type residues: list, required
 
-        Notes
-        -----
+        :param method: Dictionary containing details of how that model was generated.
+        :type method: dict, required
+
         """
         m = BiopythonWrapper.init_model(self, residues, method)
         self.add(m)
@@ -235,15 +251,14 @@ class GenerateModel(Structure):
         """
         Function to write PDB file.
 
-        Parameters
-        ----------
-        entity : Biopython structure, model, or chain object, defaults to last generated model
-        filename : str
-            File name (should have '.pdb' suffix). Defaults to object id. 
+        :param entity: Defaults to last generated model.
+        :type entity: Structure, Model, or Chain
 
-        Notes
-        -----
+        :param filename: File name (should have '.pdb' suffix). Defaults to object id. 
+        :type filename: str
+        
         """
+
         if entity == None:
             entity = self.models[-1]
         entity.pdb_file = BiopythonWrapper.write_pdb(entity, filename)
@@ -259,25 +274,44 @@ class GenerateModel(Structure):
         """
         Function to generate QM only calculation input file.
 
-        Parameters
-        ----------
-        model : QMzyme model object, defaults to last model in the list.
-        functional : str, QM theory functional to use.
-        basis_set : str, QM theory basis set to use. 
-        opt : bool, set up input to perform optimization if true. Default is True.
-        freq : bool, set up input to perform frequency analysis if true. Default is True.
-        freeze_atoms : list containing the PDB style names of any atoms to be frozen during optimization.
-            E.x., ['CA'] will assign frozen atom flags to all C-alpha atoms.
-        charge : int, electronic charge of model. 
-        mult : int, multiplicity of model.
-        mem : str, amount of memory to specify in input file. Default is '32GB'.
-        nprocs: int, amount of processors to specify for job. Default is 16. 
-        program: str, name of QM program to be used. Options are 'gaussian' or 'orca'. 
-        suffix: str, to be appended to end of calculation input file name. Default is ''.
+        :param model: Defaults to last model in the list.
+        :type model: Model
 
-        Notes
-        -----
+        :param functional: QM theory functional to use, i.e., 'b3lyp'.
+        :type functional: str, required
+
+        :param basis_set: QM theory basis set to use, i.e., '6-31g(d)'. 
+        :type basis_set: str, required
+
+        :param opt: Set up input to perform optimization if True. Default is True.
+        :type opt: bool
+
+        :param freq: Set up input to perform frequency analysis if True. Default is True.
+        :type freq: bool
+
+        :param freeze_atoms: List containing the PDB style names of any atoms to be frozen during optimization. E.x., ['CA'] will assign frozen atom flags to all C-alpha atoms.
+        :type freeze_atoms: list
+
+        :param charge: Electronic charge of model. 
+        :type charge: int, required
+        
+        :param mult: Multiplicity of model.
+        :type mult: int, required
+        
+        :param mem: Amount of memory to specify in input file. Default is '32GB'.
+        :type mem: str
+
+        :param nprocs: Amount of processors to specify for job. Default is 16. 
+        :type nprocs: int
+
+        :param program: Name of QM program to be used. Options are 'gaussian' or 'orca'. 
+        :type program: str
+
+        :param suffix: To be appended to end of calculation input file name. Default to 'calc_1'.
+        :type suffix: str
+
         """
+
         if model == None:
             model = self.child_list[-1]
         if charge != None:
@@ -293,13 +327,9 @@ class GenerateModel(Structure):
         """
         Function to write JSON file containing all information regarding QMzyme run.
 
-        Parameters
-        ----------
-        filename : str
-            File name. Defaults to structure id. 
+        :param filename: File name. Defaults to structure id. 
+        :type filename: str
 
-        Notes
-        -----
         """
         _dict = {}
         _dict['Original structure'] = BiopythonWrapper.make_model_dict(self.base)
