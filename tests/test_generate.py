@@ -6,7 +6,6 @@ Tests for the QMzyme generate.py code.
 # Name each function as test_* to be automatically included in test workflow
 
 import sys
-import os
 import pytest
 import QMzyme
 from importlib_resources import files, as_file
