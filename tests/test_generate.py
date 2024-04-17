@@ -8,7 +8,7 @@ Tests for the QMzyme generate.py code.
 import sys
 import pytest
 import QMzyme
-from importlib_resources import files, as_file
+from importlib_resources import files
 
 model = None
 amber_file = str(files('QMzyme.data').joinpath('1oh0_equ_from_amber_sim.pdb'))
@@ -81,3 +81,52 @@ def test_truncate(test_type, truncation_scheme, init_file):
 
         atom1 = model.models[-1].list_atoms()[1]
         assert atom1.name == 'CA'
+
+@pytest.mark.parametrize(
+        'test_type, model, functional, basis_set, opt, freq, freeze_atoms, charge, mult, mem, nprocs, program, suffix, init_file',
+        [
+            ('default', None, None, None, None, None, None, None, None, None, None, None, None, amber_file),
+            ('frozen_atoms', None, None, None, None, None, ['CA'], None, None, None, None, None, None, amber_file),
+        ]
+)
+def test_calculateQM(test_type, 
+                     model, 
+                     functional, 
+                     basis_set, 
+                     opt, 
+                     freq, 
+                     freeze_atoms, 
+                     charge, 
+                     mult, 
+                     mem, 
+                     nprocs,
+                     program, 
+                     suffix, 
+                     init_file):
+
+        if test_type == 'default':
+                model.calculateQM()
+                exp_dict = {
+                        'type': 'QM_only',
+                        'functional': None,
+                        'basis_set': None,
+                        'frozen_atoms': [],
+                        'status': None,
+                        'mem': '32GB',
+                        'nprocs': 16,
+                        'program': 'gaussian',
+                        'pdb_file': 'None_1.pdb',
+                        'opt': True,
+                        'freq': True,
+                        'charge': 0,
+                        'mult': 1,
+                        'suffix': 'calc_1'}
+
+                assert hasattr(model.models[-1], 'calculations')
+                assert model.models[-1].calculations[-1].__dict__ == exp_dict
+
+        elif test_type == 'frozen_atoms':
+                model.calculateQM(freeze_atoms=['CA'])
+                exp_list = [1,22,39,53,73,77,96,113,120,137,151,159,174,192,206,221,238,252,263,278,286,308]
+                
+                assert model.models[-1].calculations[-1].frozen_atoms == exp_list

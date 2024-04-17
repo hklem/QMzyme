@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import  QMzyme
 from QMzyme.Biopython.StructureBuilder import StructureBuilder
 from QMzyme.Biopython import NeighborSearch
 from QMzyme.Biopython.PDBParser import PDBParser
@@ -91,6 +92,13 @@ def count_atoms(entity):
 
 def count_residues(entity):
     return len(list(entity.get_residues()))
+
+def count_nonprotein_residues(entity):
+    count = 0
+    for res in entity.get_residues():
+        if res.resname not in QMzyme.protein_residues:
+            count += 1
+    return count
 
 def count_chains(entity):
     return len(list(entity.get_chains()))
@@ -211,12 +219,6 @@ def alter_atom(atom, new_atom_dict):
         if hasattr(atom, key):
             setattr(atom, key, val)
     setattr(atom, 'full_id', (atom.parent.full_id, (atom.id, atom.altloc)))
-
-
-def remove_atoms(entity, serial_numbers = []):
-    for atom in entity.get_atoms():
-        if atom.serial_number in serial_numbers:
-            atom.parent.detach_child(atom.id)
     
 def remove_atom(atom):
     atom.parent.detach_child(atom.id)
@@ -250,18 +252,40 @@ def get_atom_idx(entity, atom_name):
     :param entity:
     :type entity: Entity, required
     :param atom_name: Value corresponding to the atom attribute 'name'.
-    :type atom_name: str, required
+    :type atom_name: str or list, required
 
     Returns
     -------
     - List of indeces corresponding to atoms in entity with atom_name. 0 indexed.
     """
     idx = []
+    if type(atom_name) == str:
+        atom_name = [atom_name]
+
     for i, atom in enumerate(entity.get_atoms()):
-        if atom.name in atom_name:
-            idx.append(i)
+        for name in atom_name:
+            if atom.name == name:
+                idx.append(i)
     return idx
 
+def get_element_idx(entity, atom_element):
+    """
+    Parameters
+    ----------
+    :param entity:
+    :type entity: Entity, required
+    :param atom_element: Value corresponding to the atom attribute 'element'.
+    :type atom_element: str, required
+
+    Returns
+    -------
+    - List of indeces corresponding to atoms in entity of that element type. 0 indexed.
+    """
+    idx = []
+    for i, atom in enumerate(entity.get_atoms()):
+        if atom.element == atom_element:
+            idx.append(i)
+    return idx
 
 def make_atom_dict(atom, idx):
     skip_keys = ['altloc' 'full_name', 'parent', '_sorting_keys', 'level', 'disordered_flag', 'anisou_array', 'siguij_array', 'sigatm_array', 'xtra']
