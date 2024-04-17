@@ -3,10 +3,10 @@ Tests for the QMzyme BiopythonWrapper.py module.
 """
 
 
-import sys
 import os
 import shutil
 import QMzyme
+import pytest
 from QMzyme.BiopythonWrapper import *
 from importlib_resources import files
 
