@@ -6,12 +6,23 @@ Tests for the QMzyme generate.py code.
 # Name each function as test_* to be automatically included in test workflow
 
 import sys
+import shutil
+import os
 import pytest
 import QMzyme
 from importlib_resources import files
 
 model = None
 amber_file = str(files('QMzyme.data').joinpath('1oh0_equ_from_amber_sim.pdb'))
+original_files = os.listdir()
+
+def restore_folder():
+    for file in os.listdir():
+        if file not in original_files:
+            try:
+                os.remove(file)
+            except:
+                shutil.rmtree(file)
 
 def test_init(init_file=amber_file):
         assert "QMzyme" in sys.modules
@@ -83,14 +94,14 @@ def test_truncate(test_type, truncation_scheme, init_file):
         assert atom1.name == 'CA'
 
 @pytest.mark.parametrize(
-        'test_type, model, functional, basis_set, opt, freq, freeze_atoms, charge, mult, mem, nprocs, program, suffix, init_file',
+        'test_type, model_id, functional, basis_set, opt, freq, freeze_atoms, charge, mult, mem, nprocs, program, suffix, init_file',
         [
             ('default', None, None, None, None, None, None, None, None, None, None, None, None, amber_file),
             ('frozen_atoms', None, None, None, None, None, ['CA'], None, None, None, None, None, None, amber_file),
         ]
 )
 def test_calculateQM(test_type, 
-                     model, 
+                     model_id, 
                      functional, 
                      basis_set, 
                      opt, 
@@ -130,3 +141,5 @@ def test_calculateQM(test_type,
                 exp_list = [1,22,39,53,73,77,96,113,120,137,151,159,174,192,206,221,238,252,263,278,286,308]
                 
                 assert model.models[-1].calculations[-1].frozen_atoms == exp_list
+        
+        restore_folder()
