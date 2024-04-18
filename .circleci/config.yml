@@ -8,7 +8,8 @@ jobs:
   build-and-test:
     # Install dependencies and run tests
     docker:
-      - image: cimg/python:3.11-node
+      #- image: cimg/python:3.11-node
+      - image: continuumio/miniconda3
     steps:
       - checkout
       - python/install-packages:
