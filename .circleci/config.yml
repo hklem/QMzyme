@@ -16,7 +16,7 @@ jobs:
       - run: |
           conda update -y conda
           conda create -n qmzyme python=3.11
-	  source activate base 
+          source activate base 
           conda activate qmzyme
           conda install -y -c conda-forge openbabel
           pip install --upgrade pip
