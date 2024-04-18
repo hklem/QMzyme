@@ -3,5 +3,4 @@ importlib-resources
 pytest 
 pytest-cov
 rdkit-pypi
-dpenbabel
-numpy
+biopython

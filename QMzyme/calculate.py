@@ -26,7 +26,7 @@ Notes
 
 import os
 from QMzyme import BiopythonWrapper
-from aqme.qprep import qprep
+from QMzyme.aqme.qprep import qprep
 
 
 class CalculateModel():
