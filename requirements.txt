@@ -2,5 +2,4 @@ aqme
 importlib-resources
 numpy
 rdkit-pypi
-openbabel
 biopython
