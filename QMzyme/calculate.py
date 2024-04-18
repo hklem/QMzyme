@@ -26,6 +26,7 @@ Notes
 
 import os
 from QMzyme import BiopythonWrapper
+from QMzyme import aqme
 from QMzyme.aqme.qprep import qprep
 
 
