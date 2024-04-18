@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import  QMzyme
+import QMzyme
 from QMzyme.Biopython.StructureBuilder import StructureBuilder
 from QMzyme.Biopython import NeighborSearch
 from QMzyme.Biopython.PDBParser import PDBParser
