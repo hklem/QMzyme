@@ -56,15 +56,17 @@ zip-safe = false
 # (instead of using 'find'). With 'find', the 'tests' subpackage is discovered
 # recursively because of its __init__.py file, but the data subdirectory is excluded
 # with include-package-data = false and namespaces = false.
-include-package-data = false
+
+#include-package-data = false
 [tool.setuptools.packages.find]
-namespaces = false
-where = ["."]
+#namespaces = false
+where = [".","data"]
 
 # Ref https://setuptools.pypa.io/en/latest/userguide/datafiles.html#package-data
 [tool.setuptools.package-data]
 QMzyme = [
-    "py.typed"
+    "py.typed",
+    "*.pdb",
 ]
 
 [tool.versioningit]
