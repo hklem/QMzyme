@@ -1,6 +1,6 @@
 aqme
 importlib-resources
 numpy
-rdkit
+rdkit-pypi
 openbabel
 biopython
