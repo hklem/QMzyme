@@ -194,7 +194,10 @@ def has_Nterm_neighbor(residue):
 def has_Cterm_neighbor(residue):
     return check_terminal_neighbor(residue,1)
 
-def h_cap(atom, bonded_atom, Hbond_length = 1.00):
+def h_cap(atom, bonded_atom, Hbond_length = 1.09):
+	"""
+	The equilibrium bond length of C-H bonds, 1.09, is the default.
+	"""
     coords = change_bond_length(bonded_atom.coord, atom.coord, 
                                                     Hbond_length)
     if atom.id == 'N':

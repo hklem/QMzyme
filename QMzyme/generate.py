@@ -80,7 +80,8 @@ class GenerateModel(Structure):
             filename = structure
             structure = BiopythonWrapper.load_structure(structure, id)
             setattr(structure, 'pdb_file', filename)
-        self.__dict__ = structure.__dict__.copy()
+        #self.__dict__ = structure.__dict__.copy()
+        self = structure
 
         Hs_present = False
         for atom in self.get_atoms():
@@ -189,9 +190,8 @@ class GenerateModel(Structure):
 
     def truncate(self, scheme='CA_terminal'):
         '''
-        Function to remove extraneous atoms in preparation for model calculation.
-        This will be performed only on the most recently created model. The added Hydrogens will have a bond length of 1.00 Angstroms, along the bond vector of the
-        original atom the H is replacing.
+        Function to remove extraneous atoms in preparation for model calculation. The added hydrogens 
+        will have a bond length of 1.09 Angstroms (equilibrium CH bond lenght), along the bond vector of the original atom the H is replacing.
 
         :param scheme: See `QMzyme documentation <https://hklem-qmzyme-documentation.readthedocs.io>`_ for explanations of each truncation scheme. Defaults to 'CA_terminal'.
         :type scheme: str
@@ -219,7 +219,12 @@ class GenerateModel(Structure):
                 BiopythonWrapper.cap_terminus(res, 'N')
             if BiopythonWrapper.has_Cterm_neighbor(res) is False:
                 BiopythonWrapper.cap_terminus(res, 'C')
-        self.models[-1] = self.child_list[-1]
+
+        # Add truncated model to models list
+        if len(self.models) == 0: # necessary if within_distance is not used
+            self.models.append(self.child_list[-1])
+        else:
+            self.models[-1] = self.child_list[-1]
 
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
