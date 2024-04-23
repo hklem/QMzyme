@@ -80,8 +80,7 @@ class GenerateModel(Structure):
             filename = structure
             structure = BiopythonWrapper.load_structure(structure, id)
             setattr(structure, 'pdb_file', filename)
-        #self.__dict__ = structure.__dict__.copy()
-        self = structure
+        self.__dict__ = structure.__dict__.copy()
 
         Hs_present = False
         for atom in self.get_atoms():
