@@ -13,7 +13,7 @@ import os
 import json
 import numpy as np
 import datetime
-from QMzyme.Biopython.Data.PDBData import protein_letters_3to1_extended
+#from QMzyme.Biopython.Data.PDBData import protein_letters_3to1_extended
 
 delimeter='---------------------------------------------------------\n'
 solvent_list=['HOH','WAT','T3P','SOL'] 
@@ -32,7 +32,7 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-protein_residues = [r for r in protein_letters_3to1_extended.keys()]
+#protein_residues = [r for r in protein_letters_3to1_extended.keys()]
 
 positive_residues = ['HIP', 'LYS', 'ARG']
 
@@ -307,6 +307,12 @@ def res_charges(residues):
                 charge-=1
 
         return charge
+
+def set_bond_length(mobile_coords, fixed_coords, new_length):
+    M = new_length/np.linalg.norm(fixed_coords-mobile_coords)
+    new_coords = fixed_coords-(M*(fixed_coords-mobile_coords))
+    return new_coords
+
 
 
 class AddArgs:

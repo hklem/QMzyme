@@ -26,7 +26,7 @@ Notes
 
 import os
 import QMzyme
-from QMzyme import BiopythonWrapper
+from QMzyme import MDAnalysisWrapper
 from QMzyme.aqme.qprep import qprep
 
 class CalculateModel():
@@ -90,12 +90,12 @@ class CalculateQM(CalculateModel):
         self.type = 'QM_only'
         self.functional = functional
         self.basis_set = basis_set
-        self.frozen_atoms = BiopythonWrapper.get_atom_idx(model, freeze_atoms)
+        self.frozen_atoms = MDAnalysisWrapper.get_atom_idx(model, freeze_atoms)
         self.status = None 
         self.mem = mem
         self.nprocs = nprocs
         self.program = program
-        self.pdb_file = BiopythonWrapper.write_pdb(model)
+        self.pdb_file = MDAnalysisWrapper.write_pdb(model, 'truncated_model.pdb')
         self.opt = opt
         self.freq = freq
         self.charge = charge

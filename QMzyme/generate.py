@@ -28,14 +28,14 @@ Output options
     *   JSON file containing all model information.
 '''
 
+import os
 import numpy as np
 import json
+import copy
 import inspect
 import warnings
 from QMzyme.calculate import *
-from QMzyme.Biopython.Structure import Structure
-from QMzyme import BiopythonWrapper
-from QMzyme.BiopythonWrapper import res_dispatch
+from QMzyme import MDAnalysisWrapper
 from QMzyme.utils import record_execution
 
 protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
@@ -62,90 +62,97 @@ elements = ['H','He','Li','Be','B','C','N','O','F','Ne',
            'Rf', 'Db', 'Sg', 'Bh','Hs', 'Mt', 'Ds', 'Rg', 'Cn',
            'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
 
-class GenerateModel(Structure):
+class GenerateModel():
 
-    def __init__(self, structure, id=None, model_id=0):
+    def __init__(self, pdb_file, id=None):
         """
         Constructor method for GenerateModel class.
 
-        :param structure: PDB or mmCIF file.  
-        :type structure: str, required
-        :param id: Name to associate structure with, defaults to file name.
+        :param pdb_file: PDB file name.  
+        :type pdb_file: str, required
+        :param id: Name to associate structure with, defaults to file name. Will be used in naming of any files produced.
         :type id: str
-        :param model_id: Model ID to base original structure on, defaults to 0. 
-        :type model_id: int
         """
 
-        if type(structure) == str:
-            filename = structure
-            structure = BiopythonWrapper.load_structure(structure, id)
-            setattr(structure, 'pdb_file', filename)
-        self.__dict__ = structure.__dict__.copy()
-
-        Hs_present = False
-        for atom in self.get_atoms():
-            if atom.element == 'H':
-                Hs_present = True
-        if Hs_present == False:
-            raise Exception("PDB structure does not contain hydrogens. Please pre-process this structure.")
-
-        if not hasattr(self, 'base'):
-            #self.base = self.child_dict[model_id]
-            self.base = self.child_list[model_id]
         self.models = []
         self.QMzyme_calls = {}
+        self.catalytic_center = None
         func = inspect.currentframe().f_code.co_name
+        u = MDAnalysisWrapper.init_universe(pdb_file)
+        if id is None:
+            id = os.path.basename(pdb_file).split('.')[0]
+
+        setattr(self, 'pdb_file', pdb_file)
+        setattr(self, 'universe', u)
         record_execution(self.QMzyme_calls, func)
         setattr(self, 'id', id)
-        delattr(self, 'xtra')
+
+        Hs_present = False
+        for atom in u.atoms:
+            if atom.element == 'H':
+                Hs_present = True
+                break
+        if Hs_present == False:
+            raise Exception("PDB structure does not contain hydrogens. Please pre-process this structure. We recommend using tLeap. See Documentation.")
 
 
     def __repr__(self):
-        return f"<QMzyme Structure id={self._id}>"
+        return f"<QMzyme id={self.id}>"
 
 
     def set_catalytic_center(
-        self, 
+        self,
+        selection, 
         overwrite=True,
-        **kwargs
+        save_pdb=False,
+        filename=None
     ):        
         '''
         Function to define the center of the QMzyme model. This is
-        typically the ligand/substrate. Currently only supports the
-        definition of full residues. To create a catalytic center with multiple
-        residues run set_catalytic_center again with the new residue info
-        and set 'overwrite=False'. This will append the new residue information
-        to the existing catalytic_center attribute. 
+        typically the ligand/substrate. To add onto an already defined catalytic center 
+        run set_catalytic_center again with the new selection and set 'overwrite=False'. 
 
-        :param resname: Three letter code matching residue name.
-        :type resname: str, optional
-
-        :param resnumber: Number matching residue id/seq number.
-        :type resnumber: int, optional
-
-        :param chain: Single letter matching residue chain. May be necessary to uniquely identify a residue.  
-        :type chain: str, optional
+        :param selection: Selection of atoms to be made- based on `MDAnalysis selection command language <https://docs.mdanalysis.org/stable/documentation_pages/selections.html>`_.
+        :type selection: str, required`
 
         :param overwrite: To clear any existing catalytic_center definition. Set to False if you would like to append current catalytic_center. Defaults to True.
-        :type overwrite: bool, required
+        :type overwrite: bool, default: overwrite=True
 
         '''
-        _dict=(kwargs)
-        residues = []
-        for res in self.base.get_residues(): 
-            if False not in [val == res_dispatch[key](res) for key, val in _dict.items()]:
-                residues.append(res)   
+        self.catalytic_center_definition = selection
+        catalytic_center = MDAnalysisWrapper.select_atoms(self.universe, selection) 
+
         if overwrite is True:
-            self.catalytic_center = []
-            self.catalytic_center = residues
+            setattr(self, 'catalytic_center', catalytic_center)
         if overwrite is False:
-            self.catalytic_center += residues
+            self.catalytic_center = self.catalytic_center.concatenate(catalytic_center)
+        if save_pdb is True:
+            pass
+        self.atoms = self.catalytic_center
 
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
 
+        if save_pdb is True:
+            if filename is None:
+                filename=f'{self.id}_catalytic_center.pdb'
+            MDAnalysisWrapper.write_pdb(self.atoms, filename)
 
-    def within_distance(self, distance_cutoff, store_model=True):
+
+    def size_scan(self, minimum_size, save_last_pdb=True, save_all_pdb=False):
+        n_atoms = 0
+        cutoff = 0
+        print(minimum_size)
+        while n_atoms < minimum_size:
+            print(n_atoms, cutoff)
+            cutoff +=1
+            self.within_distance(self, distance_cutoff=cutoff, save_pdb=save_all_pdb)
+            n_atoms = self.atoms.n_atoms
+        if save_last_pdb is True:
+            MDAnalysisWrapper.write_pdb(self.atoms)
+
+
+    def within_distance(self, distance_cutoff, save_pdb=False, filename=None):
         '''
         Function to select all residues that have at least one atom within a
         specified distance to any atom in self.catalytic_center. By default,
@@ -161,38 +168,49 @@ class GenerateModel(Structure):
 
             Notes:
 
-            The cutoff is not done radially, unless your catalytic_center definition 
+            The region will not be spherically selected unless your catalytic_center definition 
             only contains one atom. Therefore, the shape of the selection region depends
             on the shape of the catalytic_center.
         '''
 
-        residues = []
-        center_coords = []
-        for res in self.catalytic_center:
-            for atom in res.get_atoms():
-                center_coords.append(atom.get_coord())
-        neighbors = BiopythonWrapper.get_neighbors(self.base, center_coords, distance_cutoff)
-        residues = [atom.get_parent() for atom in neighbors]
-        residues = list(set(residues))
-        residues = BiopythonWrapper.order_residues(residues)
+        neighbors = MDAnalysisWrapper.get_neighbors(
+            self.universe.select_atoms('all'), 
+            self.catalytic_center, 
+            distance_cutoff
+        )
+
+        self.neighbors = neighbors
+
+        residues = [atom.residue for atom in neighbors]
+        residues = MDAnalysisWrapper.order_residues(residues)
+        atoms = []
+
         method = {'type': inspect.currentframe().f_code.co_name,
                   'cutoff': distance_cutoff, 
-                  'catalytic_center': self.catalytic_center}
-        if store_model is True:
-            self.store_model(residues, method)
-        else:
-            return BiopythonWrapper.init_model(self, residues, method)
+                  'catalytic_center': self.catalytic_center_definition,
+                  'neighbors': neighbors,
+                  'residues': residues}
         
+        self.residues = residues
+        for res in residues:
+            atoms+=[res.atoms]
+        self.atoms = sum(atoms)
+
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
 
+        if save_pdb is True:
+            if filename is None:
+                filename=f'{self.id}_cutoff_{distance_cutoff}.pdb'
+            MDAnalysisWrapper.write_pdb(self.atoms, filename)
 
-    def truncate(self, scheme='CA_terminal'):
+
+    def truncate(self, residues=None, scheme='CA_terminal', filename='truncated_model.pdb', store_result=True):
         '''
         Function to remove extraneous atoms in preparation for model calculation. The added hydrogens 
         will have a bond length of 1.09 Angstroms (equilibrium CH bond lenght), along the bond vector of the original atom the H is replacing.
 
-        :param scheme: See `QMzyme documentation <https://hklem-qmzyme-documentation.readthedocs.io>`_ for explanations of each truncation scheme. Defaults to 'CA_terminal'.
+        :param scheme: See `QMzyme Documentation <https://hklem-qmzyme-documentation.readthedocs.io>`_ for explanations of each truncation scheme. Defaults to 'CA_terminal'.
         :type scheme: str
 
         .. code-block:: text
@@ -211,62 +229,86 @@ class GenerateModel(Structure):
             Additional schemes will be created in the future.
 
         '''
-        for res in self.child_list[-1].get_residues():
+        self.removed_sidechain = []
+        self.removed_Nterm = []
+        self.removed_Cterm = []
+        self.truncated_model = []
+
+        #Need to init new universe so original one isn't overwritten
+        u = MDAnalysisWrapper.init_universe(self.pdb_file)
+        residues = [MDAnalysisWrapper.get_parallel_residue(res, u) for res in self.residues]
+        neighbors = [MDAnalysisWrapper.get_parallel_atom(atom, u) for atom in self.neighbors]
+
+        for i, res in enumerate(residues):
             if res.resname not in protein_residues:
+                self.truncated_model.append(res.atoms)
                 continue
-            if BiopythonWrapper.has_Nterm_neighbor(res) is False and res.resname != 'PRO':
-                BiopythonWrapper.cap_terminus(res, 'N')
-            if BiopythonWrapper.has_Cterm_neighbor(res) is False:
-                BiopythonWrapper.cap_terminus(res, 'C')
+            side_chain_atoms = []
+            keep_sc = False
+            #Loop over side chain atoms. If none are within cutoff distance don't include them
+            for atom in res.atoms:
+                if atom.name not in ['C', 'O', 'N', 'H']:
+                    side_chain_atoms.append(atom)
+                    if atom in neighbors or res.resname == 'GLY':
+                        keep_sc = True
+            if keep_sc is True:
+                self.truncated_model += side_chain_atoms
+            if keep_sc is False:
+                self.removed_sidechain.append(res)
+                CA_atom = MDAnalysisWrapper.get_atom(res, 'CA')
+                CB_atom = MDAnalysisWrapper.get_atom(res, 'CB')
+                HA_atom = MDAnalysisWrapper.get_atom(res, 'HA')
+                self.truncated_model.append(CA_atom)
+                self.truncated_model.append(HA_atom)
+                cap_atom = MDAnalysisWrapper.cap_backbone_CA(CB_atom)
+                self.truncated_model.append(cap_atom)
+            C_atom = MDAnalysisWrapper.get_atom(res, 'C')
+            O_atom = MDAnalysisWrapper.get_atom(res, 'O')
+            try:
+                next_res = residues[i+1]
+                next_N_atom = MDAnalysisWrapper.get_atom(next_res, 'N')
+            except:
+                # last residue, so cap CA at C_atom
+                #MDAnalysisWrapper.cap_backbone_CA(C_atom)
+                C_atom = MDAnalysisWrapper.cap_backbone_CA(C_atom)
+                self.truncated_model.append(C_atom)
+                continue
+            # If very first residue, cap CA at N_atom... unless it's proline
+            if res == self.residues[0]:
+                self.removed_Nterm.append(res)
+                N_atom = MDAnalysisWrapper.get_atom(res, 'N')
+                if res.resname == 'PRO':
+                    cap_atom = MDAnalysisWrapper.cap_backbone_N(N_atom)
+                    self.truncated_model.append(cap_atom)
+                else:
+                    N_cap= MDAnalysisWrapper.cap_backbone_CA(N_atom)
+                    self.truncated_model.append(N_cap)
+            #Look at next residue in list to decide how to treat current C term and next N term
+            # if next res is not in sequence, truncate current res CA at C_atom and
+            # truncate next res CA at N_atom... unless it's proline
+            if res.resid+1 != next_res.resid:
+                self.removed_Cterm.append(res)
+                next_N_atom = MDAnalysisWrapper.get_atom(next_res, 'N')
+                if next_res.resname == 'PRO':
+                    cap_atom = MDAnalysisWrapper.cap_backbone_N(next_N_atom)
+                    self.truncated_model.append(cap_atom)
+                else:
+                    self.removed_Nterm.append(next_res)
+                    C_cap = MDAnalysisWrapper.cap_backbone_CA(C_atom)
+                    self.truncated_model.append(C_cap)
+                    N_cap = MDAnalysisWrapper.cap_backbone_CA(next_N_atom)
+                    self.truncated_model.append(N_cap)
+            #If next res is in sequence keep all C term and next res N term backbone atoms
+            else:
+                self.truncated_model.append(C_atom)
+                self.truncated_model.append(O_atom)
+                self.truncated_model.append(next_N_atom)
+                if next_res.resname != 'PRO':
+                    next_H_atom = MDAnalysisWrapper.get_atom(next_res, 'H')
+                    self.truncated_model.append(next_H_atom)
 
-        # Add truncated model to models list
-        if len(self.models) == 0: # necessary if within_distance is not used
-            self.models.append(self.child_list[-1])
-        else:
-            self.models[-1] = self.child_list[-1]
-
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
-
-
-    def store_model(self, residues, method):
-        """
-        Function to store new model to QMzyme structure object.
-
-        :param residues: List of residue objects that comprise the model.
-        :type residues: list, required
-
-        :param method: Dictionary containing details of how that model was generated.
-        :type method: dict, required
-
-        """
-        m = BiopythonWrapper.init_model(self, residues, method)
-        self.add(m)
-        if self.child_list[0] == self.base:
-            del self.child_list[0]
-            del self.child_dict[0]
-        self.models.append(self.child_list[-1])
-        print(f"Model {self.child_list[-1].id} created by the {method['type']} method has been stored to {self.__repr__()}.")
-
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
-
-    def write_pdb(self, entity=None, filename=""):
-        """
-        Function to write PDB file.
-
-        :param entity: Defaults to last generated model.
-        :type entity: Structure, Model, or Chain
-
-        :param filename: File name (should have '.pdb' suffix). Defaults to object id. 
-        :type filename: str
-        
-        """
-
-        if entity == None:
-            entity = self.models[-1]
-        entity.pdb_file = BiopythonWrapper.write_pdb(entity, filename)
-
+        self.truncated_model = sum(self.truncated_model)
+        MDAnalysisWrapper.write_pdb(self.truncated_model, filename)
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
 
@@ -317,7 +359,7 @@ class GenerateModel(Structure):
         """
 
         if model == None:
-            model = self.child_list[-1]
+            model = self.truncated_model
         if charge != None:
             model.charge = charge
         if mult != None:
@@ -327,31 +369,31 @@ class GenerateModel(Structure):
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
 
-    def write_json(self, filename=None):
-        """
-        Function to write JSON file containing all information regarding QMzyme run.
+    # def write_json(self, filename=None):
+    #     """
+    #     Function to write JSON file containing all information regarding QMzyme run.
 
-        :param filename: File name. Defaults to structure id. 
-        :type filename: str
+    #     :param filename: File name. Defaults to structure id. 
+    #     :type filename: str
 
-        """
-        _dict = {}
-        _dict['Original structure'] = BiopythonWrapper.make_model_dict(self.base)
-        for model in self.models:
-            _dict['Model '+str(model.id)] = BiopythonWrapper.make_model_dict(model)
+    #     """
+    #     _dict = {}
+    #     _dict['Original structure'] = BiopythonWrapper.make_model_dict(self.base)
+    #     for model in self.models:
+    #         _dict['Model '+str(model.id)] = BiopythonWrapper.make_model_dict(model)
     
-        QMzyme_dict = {'id': self._id}
-        QMzyme_dict['Structure file'] = self.pdb_file
-        QMzyme_dict['QMzyme_calls'] = self.QMzyme_calls
-        QMzyme_dict = {**QMzyme_dict,**_dict}
+    #     QMzyme_dict = {'id': self._id}
+    #     QMzyme_dict['Structure file'] = self.pdb_file
+    #     QMzyme_dict['QMzyme_calls'] = self.QMzyme_calls
+    #     QMzyme_dict = {**QMzyme_dict,**_dict}
 
-        if filename == None:
-            filename = self.id+'.json'
-        with open(filename, 'w') as f:
-            json.dump(QMzyme_dict, f, indent=4, sort_keys=True)
+    #     if filename == None:
+    #         filename = self.id+'.json'
+    #     with open(filename, 'w') as f:
+    #         json.dump(QMzyme_dict, f, indent=4, sort_keys=True)
 
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
+    #     func = inspect.currentframe().f_code.co_name
+    #     record_execution(self.QMzyme_calls, func)
 
 
     ########################
