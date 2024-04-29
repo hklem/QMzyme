@@ -144,12 +144,12 @@ class GenerateModel():
         cutoff = 0
         print(minimum_size)
         while n_atoms < minimum_size:
-            print(n_atoms, cutoff)
             cutoff +=1
-            self.within_distance(self, distance_cutoff=cutoff, save_pdb=save_all_pdb)
+            filename = f'{self.id}_size_scan_cutoff_{cutoff}'
+            self.within_distance(distance_cutoff=cutoff, save_pdb=save_all_pdb, filename=filename)
             n_atoms = self.atoms.n_atoms
         if save_last_pdb is True:
-            MDAnalysisWrapper.write_pdb(self.atoms)
+            MDAnalysisWrapper.write_pdb(self.atoms, filename)
 
 
     def within_distance(self, distance_cutoff, save_pdb=False, filename=None):
@@ -408,6 +408,3 @@ class GenerateModel():
 
     def subsystem(self, distance_cutoff=0, output_file=None, save_file=True, starting_pdb=None, include_residues={}, save_json=None, verbose=None):
         warnings.warn("This function is no longer available and has been replaced with 'within_distance'. Revert back to QMzyme 0.9.34 to use the original function.", DeprecationWarning)
-
-    def size_scan(self, threshold=1000, starting_cutoff=6, output_file=None, verbose=True):
-        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)

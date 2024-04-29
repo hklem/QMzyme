@@ -231,39 +231,23 @@ def get_parallel_residue(residue, other_universe):
     for res in other_universe.residues:
         if res.resid == resid:
             return res
+        
+
+def get_parallel_residues(residue_list, other_universe):
+    residues = []
+    for res in residue_list:
+        residues.append(get_parallel_residue(res, other_universe))
+    return residues
+    
 
 def get_parallel_atom(atom, other_universe):
     atom_id = atom.id
     for atom in other_universe.atoms:
         if atom.id == atom_id:
             return atom
-
-
-
-def fix_pdb(original_universe, pdb_file):
-
-    with open(pdb_file) as f:
-        data = f.readlines()
-    u = mda.Universe(pdb_file)
-    for res in u.residues:
-        if 'N' not in res.atoms.names:
-            og_res = get_residue(res, original_universe)
-            a = get_atom(og_res, 'N')
-            new_name = name_cap_H(N_atom.residue)
-            new_atom_dict = {
-                'element': 'H', 
-                'name': new_name, 
-                'position': new_position, 
-                'mass': 1.00794,
-            }
-
-
-            alter_atom()
-
-    for line in data:
-        if line.startswith('ATOM') is False:
-            continue
-        resid = int(line.split()[5])
-
-
-
+        
+def get_parallel_atoms(atom_list, other_universe):
+    atoms = []
+    for atom in atom_list:
+        atoms.append(get_parallel_atom(atom, other_universe))
+    return atoms
