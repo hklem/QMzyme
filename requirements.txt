@@ -2,4 +2,4 @@ aqme
 importlib-resources
 pytest 
 pytest-cov
-biopython
+MDAnalysis
