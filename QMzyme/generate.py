@@ -128,7 +128,6 @@ class GenerateModel():
             self.catalytic_center = self.catalytic_center.concatenate(catalytic_center)
         if save_pdb is True:
             pass
-        self.atoms = self.catalytic_center
 
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
@@ -136,7 +135,7 @@ class GenerateModel():
         if save_pdb is True:
             if filename is None:
                 filename=f'{self.id}_catalytic_center.pdb'
-            MDAnalysisWrapper.write_pdb(self.atoms, filename)
+            self.write_pdb(self.catalytic_center, filename)
 
 
     def size_scan(self, minimum_size, save_last_pdb=True, save_all_pdb=False):
@@ -147,9 +146,9 @@ class GenerateModel():
             cutoff +=1
             filename = f'{self.id}_size_scan_cutoff_{cutoff}'
             self.within_distance(distance_cutoff=cutoff, save_pdb=save_all_pdb, filename=filename)
-            n_atoms = self.atoms.n_atoms
+            n_atoms = self.residues.n_atoms
         if save_last_pdb is True:
-            MDAnalysisWrapper.write_pdb(self.atoms, filename)
+            self.write_pdb(self.residues.atoms, filename)
 
 
     def within_distance(self, distance_cutoff, save_pdb=False, filename=None):
@@ -180,21 +179,23 @@ class GenerateModel():
         )
 
         self.neighbors = neighbors
+        self.distance_cutoff = distance_cutoff
 
-        residues = [atom.residue for atom in neighbors]
-        residues = MDAnalysisWrapper.order_residues(residues)
+        #residues = [atom.residue for atom in neighbors]
+        #residues = MDAnalysisWrapper.order_residues(residues)
+        self.residues = neighbors.residues.sorted_unique
         atoms = []
 
-        method = {'type': inspect.currentframe().f_code.co_name,
-                  'cutoff': distance_cutoff, 
-                  'catalytic_center': self.catalytic_center_definition,
-                  'neighbors': neighbors,
-                  'residues': residues}
+        # method = {'type': inspect.currentframe().f_code.co_name,
+        #           'cutoff': distance_cutoff, 
+        #           'catalytic_center': self.catalytic_center_definition,
+        #           'neighbors': neighbors,
+        #           'residues': residues}
         
-        self.residues = residues
-        for res in residues:
-            atoms+=[res.atoms]
-        self.atoms = sum(atoms)
+        # self.residues = residues
+        # for res in residues:
+        #     atoms+=[res.atoms]
+        # self.atoms = sum(atoms)
 
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
@@ -202,10 +203,10 @@ class GenerateModel():
         if save_pdb is True:
             if filename is None:
                 filename=f'{self.id}_cutoff_{distance_cutoff}.pdb'
-            MDAnalysisWrapper.write_pdb(self.atoms, filename)
+            self.write_pdb(self.residues.atoms, filename)
 
 
-    def truncate(self, residues=None, scheme='CA_terminal', filename='truncated_model.pdb', store_result=True):
+    def truncate(self, residues=None, scheme='CA_terminal', filename=None, save_pdb=False):
         '''
         Function to remove extraneous atoms in preparation for model calculation. The added hydrogens 
         will have a bond length of 1.09 Angstroms (equilibrium CH bond lenght), along the bond vector of the original atom the H is replacing.
@@ -308,9 +309,18 @@ class GenerateModel():
                     self.truncated_model.append(next_H_atom)
 
         self.truncated_model = sum(self.truncated_model)
-        MDAnalysisWrapper.write_pdb(self.truncated_model, filename)
+        if save_pdb is True:
+            if filename is None:
+                filename = f'{self.id}_cutoff_{self.distance_cutoff}_truncated.pdb'
+            self.write_pdb(self.truncated_model, filename)
+
         func = inspect.currentframe().f_code.co_name
         record_execution(self.QMzyme_calls, func)
+
+    def write_pdb(self, AtomGroup, filename):
+        MDAnalysisWrapper.write_pdb(AtomGroup, filename)
+        print(f"File containing {AtomGroup} written to {filename}.")
+
 
 
     def calculateQM(self, model=None, functional=None, 

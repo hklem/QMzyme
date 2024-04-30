@@ -52,7 +52,7 @@ def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
         else:
             atoms.append(atom)
     
-    return atoms
+    return sum(atoms)
 
 def order_residues(residues, remove_duplicates=True):
     """
