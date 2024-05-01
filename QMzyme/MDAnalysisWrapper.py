@@ -1,10 +1,13 @@
 """
 Code to integrate MDAnalysis utilities in QMzyme. 
 """
+import os
 import numpy as np
+from QMzyme import utils
+import warnings
 import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
-from QMzyme import utils
+
 
 def init_universe(topology, traj=None):
     if traj is None:
@@ -80,7 +83,8 @@ def CA_cap(residue, cap_atom_name, Hbond_length=1.09):
     try:       
         coords = utils.set_bond_length(mobile_coords=cap_atom.position, fixed_coords=CA_atom.position, new_length=Hbond_length)
         new_atom = {
-            'element': 'H', 
+            'element': 'H',
+            'type': 'H', 
             'name': 'Hcap', 
             'position': coords, 
             'mass': 1.00794,
@@ -125,7 +129,6 @@ def cap_backbone_C(C_atom, bond_length=1.09, cap='H'):
     :param C_atom: The backbone C Atom bound to the next residue backbone N Atom that will be converted.
     :type C_atom: Universe.Atom, required
     """
-    print(list(get_next_residue(C_atom.residue).atoms))
     N_atom = get_atom(get_next_residue(C_atom.residue), 'N')
     if cap == 'H':
         return cap_H(N_atom, C_atom, bond_length)
@@ -139,13 +142,15 @@ def cap_H(atom, fixed_atom, bond_length):
     new_position = utils.set_bond_length(atom.position, fixed_atom.position, bond_length)
     new_name = name_cap_H(res)
     new_atom_dict = {
-            'element': 'H', 
+            'element': 'H',
+            'type': 'H',  
             'name': new_name, 
             'position': new_position, 
             'mass': 1.00794,
         }
     new_atom = alter_atom(atom, new_atom_dict)
-    return res.atoms.select_atoms(f'name {new_atom.name}')
+    #return res.atoms.select_atoms(f'name {new_atom.name}') #returns AtromGroup with 1 Atom
+    return new_atom
 
 def cap_proline_H(N_atom, bond_length=1.01):
     u = N_atom.universe
@@ -156,6 +161,7 @@ def cap_proline_H(N_atom, bond_length=1.01):
     new_name = name_cap_H(N_atom.residue)
     new_atom_dict = {
             'element': 'H', 
+            'type': 'H',
             'name': new_name, 
             'position': new_position, 
             'mass': 1.00794,
@@ -166,7 +172,8 @@ def cap_proline_H(N_atom, bond_length=1.01):
             'resnum': N_atom.residue.resnum
         }
     new_atom = alter_atom(prev_C_atom, new_atom_dict)
-    return N_atom.residue.atoms.select_atoms(f'name {new_atom.name}')
+    #return N_atom.residue.atoms.select_atoms(f'name {new_atom.name}')
+    return new_atom
 
 def alter_atom(atom, new_atom_dict):
     for key, val in new_atom_dict.items():
@@ -190,8 +197,11 @@ def has_Cterm_neighbor(residue_list, residue):
 def has_Nterm_neighbor(residue_list, residue):
     return check_seq_neighbor(residue_list, residue, -1)
 
-def write_pdb(selection, filename):
-    selection.write(filename)
+def write_pdb(AtomGroup, filename):
+    # suppress some MDAnalysis warnings when writing PDB files
+    warnings.filterwarnings('ignore')
+    AtomGroup.write(filename)
+    print(f"File containing {AtomGroup} written to {filename}.")
 
 def get_atom_idx(atom_group, name_list):
     ids = []
@@ -251,3 +261,73 @@ def get_parallel_atoms(atom_list, other_universe):
     for atom in atom_list:
         atoms.append(get_parallel_atom(atom, other_universe))
     return atoms
+
+def build_universe(atom_list, save_pdb=False, filename=None):
+    """
+    Function to combine a list of atoms into one universe, regardless of if they are from different universes.
+
+    Parameters
+    -----------
+    :param atom_list: List containing MDAnalysis Atom objects that can be from different universes. 
+    :type atom_list: List[Atom]
+
+    Returns
+    --------
+    MDAnalysis Universe
+    """
+    # suppress some MDAnalysis warnings when writing PDB files
+    warnings.filterwarnings('ignore')
+
+    # First, make sure no atoms repeat in atom_list
+    atom_list = np.unique(atom_list)
+
+    # Init empty Universe
+    n_atoms = len(atom_list)
+    u = mda.Universe.empty(
+        n_atoms=n_atoms,  
+        n_residues=n_atoms, # Although this will make u.n_residues return a misleading number, 
+                            #this won't matter after the group has been saved to a PDB and reloaded into a universe.
+        atom_resindex=np.arange(n_atoms), # Doing it this way makes the attribute setting simpler
+        trajectory=True) # Needs to be True so positions can be set
+
+    # Store atom attributes
+    atom_attributes = {}
+    for atom in atom_list:
+        for attr in dir(atom):
+            if attr.startswith('_') or attr.startswith('get'):
+                continue
+            elif attr not in atom_attributes.keys():
+                try:
+                    atom_attributes[attr] = [getattr(atom, attr)]
+                except:
+                    pass
+            else:
+                atom_attributes[attr].append(getattr(atom, attr))
+
+    exclude_attributes = [ #attributes that can't be set as topology attributes
+        'index', 'ix', 'ix_array', 'level', 'position', 'residue', 
+        'resindex', 'segid', 'segindex', 'segment', 'universe'] 
+    
+    # Now load the attributes to the new Universe
+    for attr, val in atom_attributes.items():
+        if attr in exclude_attributes:
+            continue
+        u.add_TopologyAttr(attr, val)
+    u.atoms.positions = atom_attributes['position']
+    u.dimensions = atom_list[0].universe.dimensions # Avoids MDAnalysis raising a warning because PDB format requires this.
+
+    # Create AtomGroup and sort by resids
+    atom_group = sum(list(u.atoms.sort(key='resids')))
+
+    # Save as PDB, then reload to fix n_res inconsistencies
+    if filename is None:
+        filename='temp.pdb'
+    atom_group.write(filename)
+    u = mda.Universe(filename)
+
+    # Clean up
+    if save_pdb is False:
+        os.remove(filename)
+
+    return u
+    

@@ -74,9 +74,6 @@ class GenerateModel():
         :type id: str
         """
 
-        self.models = []
-        self.QMzyme_calls = {}
-        self.catalytic_center = None
         func = inspect.currentframe().f_code.co_name
         u = MDAnalysisWrapper.init_universe(pdb_file)
         if id is None:
@@ -84,7 +81,7 @@ class GenerateModel():
 
         setattr(self, 'pdb_file', pdb_file)
         setattr(self, 'universe', u)
-        record_execution(self.QMzyme_calls, func)
+        #record_execution(self.QMzyme_calls, func)
         setattr(self, 'id', id)
 
         Hs_present = False
@@ -103,7 +100,7 @@ class GenerateModel():
     def set_catalytic_center(
         self,
         selection, 
-        overwrite=True,
+        overwrite=False,
         save_pdb=False,
         filename=None
     ):        
@@ -119,36 +116,35 @@ class GenerateModel():
         :type overwrite: bool, default: overwrite=True
 
         '''
-        self.catalytic_center_definition = selection
+        #self.catalytic_center_definition = selection
         catalytic_center = MDAnalysisWrapper.select_atoms(self.universe, selection) 
 
-        if overwrite is True:
-            setattr(self, 'catalytic_center', catalytic_center)
-        if overwrite is False:
-            self.catalytic_center = self.catalytic_center.concatenate(catalytic_center)
-        if save_pdb is True:
-            pass
+        self.set_region('catalytic_center', atom_list=catalytic_center, overwrite=overwrite)
 
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
+        # func = inspect.currentframe().f_code.co_name
+        # record_execution(self.QMzyme_calls, func)
 
         if save_pdb is True:
             if filename is None:
                 filename=f'{self.id}_catalytic_center.pdb'
-            self.write_pdb(self.catalytic_center, filename)
+            MDAnalysisWrapper.write_pdb(sum(self.catalytic_center), filename)
 
 
-    def size_scan(self, minimum_size, save_last_pdb=True, save_all_pdb=False):
-        n_atoms = 0
-        cutoff = 0
-        print(minimum_size)
-        while n_atoms < minimum_size:
-            cutoff +=1
-            filename = f'{self.id}_size_scan_cutoff_{cutoff}'
-            self.within_distance(distance_cutoff=cutoff, save_pdb=save_all_pdb, filename=filename)
-            n_atoms = self.residues.n_atoms
-        if save_last_pdb is True:
-            self.write_pdb(self.residues.atoms, filename)
+    def size_scan(self, cutoffs=None , minimum_size=None):
+        regions = []
+        if minimum_size is not None:
+            cutoff = 0
+            n_atoms = 0
+            while n_atoms < minimum_size:
+                cutoff +=1
+                filename = f'{self.id}_size_scan_cutoff_{cutoff}'
+                regions.append(self.within_distance(distance_cutoff=cutoff, save_pdb=False))
+                n_atoms = sum(self.residues).n_atoms
+            return regions[-1]
+        else:
+            for cutoff in cutoffs:
+                regions.append(self.within_distance(distance_cutoff=cutoff, save_pdb=False))
+            return regions
 
 
     def within_distance(self, distance_cutoff, save_pdb=False, filename=None):
@@ -172,38 +168,26 @@ class GenerateModel():
             on the shape of the catalytic_center.
         '''
 
+        if not hasattr(self, 'catalytic_center'):
+            raise UserWarning("You must first define a catalytic_center. See method `set_catalytic_center()`.")
+
+
         neighbors = MDAnalysisWrapper.get_neighbors(
             self.universe.select_atoms('all'), 
-            self.catalytic_center, 
+            sum(self.catalytic_center), 
             distance_cutoff
         )
 
-        self.neighbors = neighbors
+        self.neighbors = list(neighbors)
         self.distance_cutoff = distance_cutoff
-
-        #residues = [atom.residue for atom in neighbors]
-        #residues = MDAnalysisWrapper.order_residues(residues)
-        self.residues = neighbors.residues.sorted_unique
-        atoms = []
-
-        # method = {'type': inspect.currentframe().f_code.co_name,
-        #           'cutoff': distance_cutoff, 
-        #           'catalytic_center': self.catalytic_center_definition,
-        #           'neighbors': neighbors,
-        #           'residues': residues}
-        
-        # self.residues = residues
-        # for res in residues:
-        #     atoms+=[res.atoms]
-        # self.atoms = sum(atoms)
-
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
+        self.residues = list(neighbors.residues.sorted_unique)
 
         if save_pdb is True:
             if filename is None:
                 filename=f'{self.id}_cutoff_{distance_cutoff}.pdb'
-            self.write_pdb(self.residues.atoms, filename)
+            MDAnalysisWrapper.write_pdb(sum(self.residues).atoms, filename)
+        
+        return list(sum(self.residues).atoms)
 
 
     def truncate(self, residues=None, scheme='CA_terminal', filename=None, save_pdb=False):
@@ -230,19 +214,20 @@ class GenerateModel():
             Additional schemes will be created in the future.
 
         '''
-        self.removed_sidechain = []
-        self.removed_Nterm = []
-        self.removed_Cterm = []
-        self.truncated_model = []
+        removed_sidechain = []
+        removed_Nterm = []
+        removed_Cterm = []
+        truncated_model = []
+        new_atoms = []
 
-        #Need to init new universe so original one isn't overwritten
+        # Need to init new universe so original one isn't overwritten
         u = MDAnalysisWrapper.init_universe(self.pdb_file)
         residues = [MDAnalysisWrapper.get_parallel_residue(res, u) for res in self.residues]
         neighbors = [MDAnalysisWrapper.get_parallel_atom(atom, u) for atom in self.neighbors]
 
         for i, res in enumerate(residues):
             if res.resname not in protein_residues:
-                self.truncated_model.append(res.atoms)
+                truncated_model += list(res.atoms)
                 continue
             side_chain_atoms = []
             keep_sc = False
@@ -253,16 +238,16 @@ class GenerateModel():
                     if atom in neighbors or res.resname == 'GLY':
                         keep_sc = True
             if keep_sc is True:
-                self.truncated_model += side_chain_atoms
+                truncated_model += side_chain_atoms
             if keep_sc is False:
-                self.removed_sidechain.append(res)
+                removed_sidechain.append(res)
                 CA_atom = MDAnalysisWrapper.get_atom(res, 'CA')
                 CB_atom = MDAnalysisWrapper.get_atom(res, 'CB')
                 HA_atom = MDAnalysisWrapper.get_atom(res, 'HA')
-                self.truncated_model.append(CA_atom)
-                self.truncated_model.append(HA_atom)
+                truncated_model.append(CA_atom)
+                truncated_model.append(HA_atom)
                 cap_atom = MDAnalysisWrapper.cap_backbone_CA(CB_atom)
-                self.truncated_model.append(cap_atom)
+                new_atoms.append(cap_atom)
             C_atom = MDAnalysisWrapper.get_atom(res, 'C')
             O_atom = MDAnalysisWrapper.get_atom(res, 'O')
             try:
@@ -271,56 +256,107 @@ class GenerateModel():
             except:
                 # last residue, so cap CA at C_atom
                 #MDAnalysisWrapper.cap_backbone_CA(C_atom)
-                C_atom = MDAnalysisWrapper.cap_backbone_CA(C_atom)
-                self.truncated_model.append(C_atom)
+                C_cap = MDAnalysisWrapper.cap_backbone_CA(C_atom)
+                #self.truncated_model.append(C_cap)
+                new_atoms.append(C_cap)
                 continue
             # If very first residue, cap CA at N_atom... unless it's proline
             if res == self.residues[0]:
-                self.removed_Nterm.append(res)
+                removed_Nterm.append(res)
                 N_atom = MDAnalysisWrapper.get_atom(res, 'N')
                 if res.resname == 'PRO':
                     cap_atom = MDAnalysisWrapper.cap_backbone_N(N_atom)
-                    self.truncated_model.append(cap_atom)
+                    #self.truncated_model.append(cap_atom)
+                    new_atoms.append(cap_atom)
                 else:
                     N_cap= MDAnalysisWrapper.cap_backbone_CA(N_atom)
-                    self.truncated_model.append(N_cap)
+                    #self.truncated_model.append(N_cap)
+                    new_atoms.append(N_cap)
             #Look at next residue in list to decide how to treat current C term and next N term
             # if next res is not in sequence, truncate current res CA at C_atom and
             # truncate next res CA at N_atom... unless it's proline
             if res.resid+1 != next_res.resid:
-                self.removed_Cterm.append(res)
+                removed_Cterm.append(res)
                 next_N_atom = MDAnalysisWrapper.get_atom(next_res, 'N')
                 if next_res.resname == 'PRO':
                     cap_atom = MDAnalysisWrapper.cap_backbone_N(next_N_atom)
-                    self.truncated_model.append(cap_atom)
+                    #self.truncated_model.append(cap_atom)
+                    new_atoms.append(cap_atom)
                 else:
-                    self.removed_Nterm.append(next_res)
+                    removed_Nterm.append(next_res)
                     C_cap = MDAnalysisWrapper.cap_backbone_CA(C_atom)
-                    self.truncated_model.append(C_cap)
+                    #self.truncated_model.append(C_cap)
+                    new_atoms.append(C_cap)
                     N_cap = MDAnalysisWrapper.cap_backbone_CA(next_N_atom)
-                    self.truncated_model.append(N_cap)
+                    #self.truncated_model.append(N_cap)
+                    new_atoms.append(N_cap)
             #If next res is in sequence keep all C term and next res N term backbone atoms
             else:
-                self.truncated_model.append(C_atom)
-                self.truncated_model.append(O_atom)
-                self.truncated_model.append(next_N_atom)
+                truncated_model.append(C_atom)
+                truncated_model.append(O_atom)
+                truncated_model.append(next_N_atom)
                 if next_res.resname != 'PRO':
                     next_H_atom = MDAnalysisWrapper.get_atom(next_res, 'H')
-                    self.truncated_model.append(next_H_atom)
+                    truncated_model.append(next_H_atom)
 
-        self.truncated_model = sum(self.truncated_model)
+        combined = truncated_model+new_atoms
+        u = MDAnalysisWrapper.build_universe(combined)
+
         if save_pdb is True:
             if filename is None:
                 filename = f'{self.id}_cutoff_{self.distance_cutoff}_truncated.pdb'
-            self.write_pdb(self.truncated_model, filename)
+            MDAnalysisWrapper.write_pdb(u.atoms, filename)
 
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
+        return list(u.atoms)
 
-    def write_pdb(self, AtomGroup, filename):
-        MDAnalysisWrapper.write_pdb(AtomGroup, filename)
-        print(f"File containing {AtomGroup} written to {filename}.")
 
+    def alter_region(self, region, exclude_selection=None, include_selection=None):
+        """
+        Method to alter a region AtomGroup.
+
+        Uses
+        -----
+        - If you used a distance cutoff to specify the region and residue with resid XX wasn't included that you expect from
+        the literature to be important, so you can use `include_selection='resid XX'`.
+        - If the sidechain of residue with resid XX was included in the qm_region selection but it is not expected to be important for QM 
+        properties and you want to limit the qm_region size, you can use `exclude_selection='resid XX and not backbone'`
+
+        Note
+        -----
+        - The exclude_selection parameter is perfomed first, so if any atoms in the exclude_selection are also in the include_selection
+        they will be included. 
+
+        Questions
+        ----------
+        - How to deal with capping
+        """
+        if exclude_selection != None:
+            exc = self.region
+
+
+    def set_region(self, region_name, selection=None, atom_list=None, overwrite=False):
+        """
+        Method to define the QM region. 
+
+        Questions
+        ----------
+        - Should we put any logic into this? I.e., if selection='around 5 and resname LIG' and there are two LIG residues, 
+        raise warning that this might cause issues? 
+        """
+        if hasattr(self, region_name):
+            if overwrite is False:
+                raise UserWarning(f"{self.__repr__} already has a region_name {region_name} and `overwrite=False`."+
+                                  "Either use a different region_name or set `overwrite=True`.")
+        
+        if selection is not None:
+            setattr(self, region_name, self.universe.select_atoms(selection))
+
+        elif atom_list is not None:
+            setattr(self, region_name, atom_list)
+
+        # If both selection and atom_list are None raise issue
+        else:
+            raise UserWarning('User must define either selection or atom_list parameters.')
 
 
     def calculateQM(self, model=None, functional=None, 
@@ -376,8 +412,8 @@ class GenerateModel():
             model.multiplicity = mult
         CalculateQM(model, functional, basis_set, opt, freq, freeze_atoms, charge, mult, mem, nprocs, program, suffix)
 
-        func = inspect.currentframe().f_code.co_name
-        record_execution(self.QMzyme_calls, func)
+        # func = inspect.currentframe().f_code.co_name
+        # record_execution(self.QMzyme_calls, func)
 
     # def write_json(self, filename=None):
     #     """
@@ -404,17 +440,3 @@ class GenerateModel():
 
     #     func = inspect.currentframe().f_code.co_name
     #     record_execution(self.QMzyme_calls, func)
-
-
-    ########################
-    # DEPRECATED FUNCTIONS #
-    ########################
-
-    def QMXTB_input(self, file=None, suffix='', substrate_charge=0, mult=1, qm_atoms='', mem='32GB', nprocs=16, program='orca', qm_input=None, verbose=True):
-        warnings.warn("This function is no longer available. Revert back to QMzyme 0.9.34 to use this function.", DeprecationWarning)
-
-    def catalytic_center(self, sel=None, res_name=None, res_number=None, chain=None, output_file=None, save_file=True, save_json=None, verbose=None):
-        warnings.warn("This function is no longer available and has been replaced with 'set_catalytic_center'. Revert back to QMzyme 0.9.34 to use the original function.", DeprecationWarning)
-
-    def subsystem(self, distance_cutoff=0, output_file=None, save_file=True, starting_pdb=None, include_residues={}, save_json=None, verbose=None):
-        warnings.warn("This function is no longer available and has been replaced with 'within_distance'. Revert back to QMzyme 0.9.34 to use the original function.", DeprecationWarning)
