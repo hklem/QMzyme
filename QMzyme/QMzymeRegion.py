@@ -6,7 +6,9 @@ import copy
 import numpy as np
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
+#from QMzyme.QMzymeResidue import QMzymeResidue
 from MDAnalysis.core.groups import AtomGroup
+from QMzyme import MDAnalysisWrapper as MDAwrapper
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 _AtomGroup = TypeVar("_AtomGroup", bound="AtomGroup")
@@ -16,35 +18,14 @@ class QMzymeRegion:
     def __init__(self, name):
         self.name = name
         self.atoms = []
-        #self.residues = []
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atoms and {self.n_residues} residues>"
-    
-    def _is_unique(self, atom):
-        if atom in self.atoms:
-            return False
-        else:
-            return True
-        
-    # # Do I think an atoms property like this so it can be updated without re-instantiating QMzmeRegion?    
-    # @property
-    # def atoms(self):
-    #     return self._atoms
     
     @property
     def atom_group(self):
         return self.__atom_group
         
-    @property
-    def n_atoms(self):
-        return len(self.atoms)
-    
-    @property
-    def n_residues(self):
-        #self.residues = list(set([atom.resid for atom in self.atoms]))
-        return len(self.resids)
-    
     @property
     def ids(self):
         return [atom.id for atom in self.atoms]
@@ -52,6 +33,28 @@ class QMzymeRegion:
     @property
     def resids(self):
         return list(set([atom.resid for atom in self.atoms]))
+    
+    @property
+    def n_atoms(self):
+        return len(self.atoms)
+    
+    @property
+    def n_residues(self):
+        #self.residues = list(set([atom.resid for atom in self.atoms]))
+        #return len(self.resids)
+        return len(self.residues)
+    
+    @property 
+    def residues(self):
+        residues = []
+        for resid in self.resids:
+            atoms = [atom for atom in self.atoms if atom.resid == resid]
+            resname = atoms[0].resname
+            chain = atoms[0]._get_chain()
+            res = QMzymeResidue(resname, resid, atoms, chain)
+            residues.append(res)
+        return residues
+    
     
     def set_atom_group(self, atom_group):
         self.__atom_group = atom_group
@@ -96,17 +99,58 @@ class QMzymeRegion:
         :param atom: The atom you want to add to the QMzymeRegion. 
         :type atom: _QMzymeAtom. 
         """
+        atom = self.uniquify_atom(atom)
         self.atoms.append(atom)
+        
+    def uniquify_atom(self, atom):
+        while atom.id in self.ids:
+            atom.id += 1
+        if atom.resid in self.resids:
+            residue_atoms = self.get_residue(atom.resid).atoms
+            i = 1
+            while atom.name in [a.name for a in residue_atoms]:
+                atom.name = f"{atom.element}{i}"
+                i += 1
+        return atom
 
-    def get_residue_atoms(self, resid):
-        return [atom for atom in self.atoms if atom.resid == resid]
     
-    def get_resname(self, resid):
-        return self.get_residue_atoms(resid)[0].resname
+    def get_residue(self, resid):
+        for res in self.residues:
+            if res.resid == resid:
+                return res
 
-    def get_residue_atom(self, resid, atom_name):
-        for atom in self.get_residue_atoms(resid):
+
+    def write_file(self, filename=None):
+        # Housekeeping
+        if filename is None:
+            filename = f"{'_'.join(self.name.split(' '))}.pdb"
+        ag = self.convert_to_AtomGroup()
+        ag.write(filename)
+
+    def convert_to_AtomGroup(self):
+        return MDAwrapper.build_universe_from_QMzymeRegion(self)
+
+
+class QMzymeResidue(QMzymeRegion):
+    def __init__(self, resname, resid, atoms, chain=None):
+        self.resname = resname
+        self.resid = resid
+        self.atoms = atoms
+        if chain is not None:
+            self.chain = chain
+        else:
+            self.set_chain(self.atoms[0]._get_chain())
+
+    def __repr__(self):
+        return f"<QMzymeResidue resname: {self.resname}, resid: {self.resid}, chain: {self.chain}>"
+    
+    def get_atom(self, atom_name):
+        for atom in self.atoms:
             if atom.name == atom_name:
                 return atom
+
+    def set_chain(self, value: str):
+        self.set_chain(value)
+
 
 
