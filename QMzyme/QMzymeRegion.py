@@ -56,7 +56,7 @@ class QMzymeRegion:
     def set_atom_group(self, atom_group):
         self.__atom_group = atom_group
     
-    def sort(self, key='id'):
+    def sort(self, key='id', in_place=False):
         sorted_atoms = []
         original_atoms = copy.copy(self.atoms)
         for i in range(self.n_atoms):
@@ -65,12 +65,15 @@ class QMzymeRegion:
             min_index = key_list.index(min)
             sorted_atoms.append(original_atoms[min_index])
             del original_atoms[min_index]
-        self.atoms = sorted_atoms
+        if in_place is True:
+            self.atoms = sorted_atoms
+        else:
+            return sorted_atoms
 
     def add_attr(self, attr_name, attr_value):
         setattr(self, attr_name, attr_value)
     
-    def get_AtomGroup(self):
+    def get_atom_group(self):
         return self.__atom_group
     
     def get_atom(self, id):

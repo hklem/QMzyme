@@ -8,7 +8,8 @@ truncation_schemes = {
 }
 
 
-def CA_terminal(og_region):
+#Fix bug: code currently overwrites the QMzyme region.
+def CA_terminal(og_region): 
     # u = region.get_AtomGroup().universe
     # residues = [MDAnalysisWrapper.get_parallel_residue(res, u) for res in region.get_AtomGroup().residues]
     region = copy.copy(og_region)
@@ -30,6 +31,13 @@ def CA_terminal(og_region):
         if resname != 'PRO':
             Hatom = copy.copy(region.get_residue_atom(resid, 'H'))
         # Remove N terminus of first residue in region
+        if preceding_Catom.id not in region.ids:
+            if resname != 'PRO':
+                cap_bond.append((Natom, CAatom))
+                #remove_atoms.append(Natom)
+                remove_atoms.append(Hatom)
+            else:
+                cap_bond.append((preceding_Catom, Natom))
         if resid == region.resids[0]:
             if resname != 'PRO':
                 cap_bond.append((Natom, CAatom))
@@ -42,13 +50,6 @@ def CA_terminal(og_region):
             cap_bond.append((Catom, CAatom))
             #remove_atoms.append(Catom)
             remove_atoms.append(Oatom)
-        if preceding_Catom.id not in region.ids:
-            if resname != 'PRO':
-                cap_bond.append((Natom, CAatom))
-                #remove_atoms.append(Natom)
-                remove_atoms.append(Hatom)
-            else:
-                cap_bond.append((preceding_Catom, Natom))
         
         for bond in cap_bond:
             cap_H(bond[0], bond[1])
@@ -57,7 +58,7 @@ def CA_terminal(og_region):
         for atom in region.atoms:
             if atom not in remove_atoms:
                 new_region.init_atom(atom)
-        
+
         return new_region.region
     
 
@@ -101,16 +102,14 @@ def name_cap_H(region, resid, name='H1'):
 
 
 def get_preceding_Catom(region, resid):
-    mda_atom = region.get_AtomGroup().universe.select_atoms(f'resid {resid-1} and name C')
+    mda_atom = region.get_atom_group().universe.select_atoms(f'resid {resid-1} and name C')
     atom = RegionBuilder('temp', mda_atom).get_region().atoms[0]
-    print('Catom', resid, atom)
     return atom
 
 
 def get_following_Natom(region, resid):
-    mda_atom = region.get_AtomGroup().universe.select_atoms(f'resid {resid+1} and name N')
+    mda_atom = region.get_atom_group().universe.select_atoms(f'resid {resid+1} and name N')
     atom = RegionBuilder('temp', mda_atom).get_region().atoms[0]
-    print('Natom', resid, atom)
     return atom
 
 

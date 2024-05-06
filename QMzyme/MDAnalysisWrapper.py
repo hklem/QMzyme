@@ -7,6 +7,7 @@ import warnings
 import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
 from QMzyme import utils
+from MDAnalysis.core.universe import Universe
 
 
 def init_universe(topology, traj=None):
@@ -221,3 +222,6 @@ def build_universe(atom_list, save_pdb=False, filename=None):
         os.remove(filename)
 
     return u
+
+def is_universe(object):
+    return isinstance(object, Universe)

@@ -18,20 +18,24 @@ class QMzymeModel:
         return len(self.regions)
     
     def add_region(self, region):
+         setattr(self, region.name, region)
          self.regions.append(region)
 
     def get_region_names(self):
          return [r.name for r in self.regions]
     
     def get_region(self, region_name=None):
-        if region_name in self.get_region_names():
-            return self.regions[self.get_region_names().index(region_name)]
-        else:
+        # if region_name in self.get_region_names():
+        #     return self.regions[self.get_region_names().index(region_name)]
+        try:
+            return getattr(self,region_name)
+        except:
             raise UserWarning(f"Region with name {region_name} does not exist. "+
                               f"Existing regions are: {self.region_names()}")
         
     def has_region(self, region_name):
-        return region_name in self.get_region_names()
+        # return region_name in self.get_region_names()
+        return hasattr(self, region_name)
 
          
         
