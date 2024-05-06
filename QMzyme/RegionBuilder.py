@@ -21,7 +21,7 @@ remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'i
 
 class RegionBuilder:
 
-    def __init__(self, name, atom_group: _AtomGroup | _QMzymeRegion=None):
+    def __init__(self, name, atom_group: _AtomGroup=None):
         self.atom = None
         #self.residue = None
         self.region = QMzymeRegion(name)
@@ -29,9 +29,6 @@ class RegionBuilder:
             self.region.set_atom_group(atom_group)
             for atom in atom_group.atoms:
                 self.init_atom(atom)
-
-    # def init_region(self, name):
-    #     self.region = QMzymeRegion(name)
 
     def init_atom(self, atom):
         warnings.filterwarnings('ignore')

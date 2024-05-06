@@ -9,13 +9,17 @@ from MDAnalysis.lib.pkdtree import *
 from QMzyme import utils
 from MDAnalysis.core.universe import Universe
 
-
 def init_universe(topology, traj=None):
     if traj is None:
-        return mda.Universe(topology)
+        u = mda.Universe(topology)
     else:
-        return mda.Universe(topology, traj)
-    
+        u = mda.Universe(topology, traj)
+    # if hasattr(u, "elements") is False:
+    #     from MDAnalysis.topology.guessers import guess_types
+    #     guessed_elements = guess_types(u.atoms.names)
+    #     u.add_TopologyAttr('elements', guessed_elements)
+    #     warnings.warn("Elements guessed using using MDAnalysis.topology.guessers. Note that results depend on the atom type and may not always be accurate.")
+    return u
 
 def select_atoms(universe, selection):
     """
@@ -154,6 +158,53 @@ def get_next_residue(residue):
     return r
     
 
+def build_universe_from_QMzymeRegion(region):
+    
+    n_atoms = region.n_atoms
+    u = mda.Universe.empty(
+        n_atoms=n_atoms,  
+        n_residues=n_atoms, # Although this will make u.n_residues return a misleading number, 
+                            #this won't matter after the group has been saved to a PDB and reloaded into a universe.
+        atom_resindex=np.arange(n_atoms), # Doing it this way makes the attribute setting simpler
+        trajectory=True) # Needs to be True so positions can be set
+
+    # Store atom attributes
+    atom_attributes = {}
+    for atom in region.atoms:
+        #for attr in dir(atom):
+            #if attr.startswith('_') or attr.startswith('get'):
+        for attr in atom.__dict__:
+            if attr.startswith('_'):
+                continue
+            elif attr not in atom_attributes.keys():
+                try:
+                    atom_attributes[attr] = [getattr(atom, attr)]
+                except:
+                    pass
+            else:
+                atom_attributes[attr].append(getattr(atom, attr))
+    
+    exclude_attributes = [ #attributes that can't be set as topology level attributes
+        'index', 'ix', 'ix_array', 'level', 'position', 'residue', 
+        'resindex', 'segid', 'segindex', 'segment', 'universe', 'region'] 
+    
+    if 'chain' in atom_attributes:
+        atom_attributes['chainID'] = atom_attributes['chain']
+        del atom_attributes['chain']
+    
+    # Now load the attributes to the new Universe
+    for attr, val in atom_attributes.items():
+        if attr in exclude_attributes:
+            continue
+        u.add_TopologyAttr(attr, val)
+    u.atoms.positions = atom_attributes['position']
+
+    # Create AtomGroup and sort by resids
+    atom_group = sum(list(u.atoms.sort(key='resids')))
+
+    return atom_group
+
+
 def build_universe(atom_list, save_pdb=False, filename=None):
     """
     Function to combine a list of atoms into one universe, regardless of if they are from different universes.
@@ -225,3 +276,4 @@ def build_universe(atom_list, save_pdb=False, filename=None):
 
 def is_universe(object):
     return isinstance(object, Universe)
+

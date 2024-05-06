@@ -5,6 +5,7 @@ Concrete builder class to construct QMzymeModel product.
 from QMzyme.MDAnalysisWrapper import init_universe
 from QMzyme.QMzymeModel import QMzymeModel
 from QMzyme.RegionBuilder import RegionBuilder
+from QMzyme.QMzymeRegion import QMzymeRegion
 
 class ModelBuilder:
     # def __init__(self, name, universe):
@@ -18,8 +19,11 @@ class ModelBuilder:
         return self.model
 
     def init_region(self, region_name, atom_group):
-        region = RegionBuilder(region_name, atom_group)
-        self.model.add_region(region.get_region())
+        if atom_group.__class__ == QMzymeRegion:
+            region = atom_group
+        else:
+            region = RegionBuilder(region_name, atom_group).get_region()
+        self.model.add_region(region)
         return self.model.regions[-1]
         #return self
 

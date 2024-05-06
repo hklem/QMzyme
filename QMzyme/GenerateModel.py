@@ -4,7 +4,6 @@ import os
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.utils import translate_selection
 from QMzyme.truncation_schemes import truncation_schemes
-import copy
 
 class GenerateModel(QMzymeModel):
     "The Director, building a complex representation."
@@ -17,17 +16,12 @@ class GenerateModel(QMzymeModel):
         model = self.__model_builder.init_model(name, universe)
         self.__dict__.update(model.__dict__)
 
-        # model = ModelBuilder(model_name, universe).get_model()
-        # self.model = model
-        # self = ModelBuilder(model_name, universe).get_model()
-    
     def set_catalytic_center(self, selection):
-        #selection = translate_selection(selection, self)
         self.set_region('catalytic_center', selection)
         return self.regions[-1]
     
     def set_region(self, region_name, selection):
-        selection = translate_selection(selection, self)
+        selection = translate_selection(selection, self.starting_structure)
         self.__model_builder.init_region(region_name, selection)
         #self.regions.append(selection)
         # self.init_region(region_name, selection)

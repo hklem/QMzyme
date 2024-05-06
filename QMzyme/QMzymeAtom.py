@@ -1,4 +1,3 @@
-
 class QMzymeAtom:
     """
     Required Parameters
@@ -33,7 +32,8 @@ class QMzymeAtom:
         self.resid = resid
         self.resname = resname
         self.id = id
-        self.region = region
+        if region is not None:
+            self._set_region(region)
 
         for attribute, value in kwargs.items():
             setattr(self, attribute, value)
@@ -47,10 +47,18 @@ class QMzymeAtom:
                               "To overwrite this property set `overwrite=True`.")
         setattr(self, name, val)
 
-    def set_neighbor(self, value: bool):
+    def _set_neighbor(self, value: bool):
         self.is_neighbor = value
 
-    # def is_neighbor(self):
-    #     return self.is_neighbor
+    def _set_region(self, value):
+        self.region = value
 
-
+    def _get_chain(self):
+        try:
+            chain = self.chain
+        except:
+            try:
+                chain = self.chainID
+            except:
+                chain = None
+        return chain
