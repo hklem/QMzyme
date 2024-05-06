@@ -64,6 +64,6 @@ def test_init(test_type, atom_input):
 def test_set_neighbor():
     qmz_atom = QMzymeAtom(**atom_dict)
     assert hasattr(qmz_atom, "is_neighbor") == False
-    qmz_atom.set_neighbor(True)
+    qmz_atom._set_neighbor(True)
     assert hasattr(qmz_atom, "is_neighbor") == True
     assert qmz_atom.is_neighbor == True
