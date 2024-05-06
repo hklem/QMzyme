@@ -10,7 +10,7 @@ class GenerateModel(QMzymeModel):
     "The Director, building a complex representation."
     def __init__(self, file, name=None):
         if name is None:
-            name = os.path.basename(file)
+            name = os.path.basename(file).split('.')[0]
         universe = MDAwrapper.init_universe(file)
         #model = ModelBuilder(model_name, universe).get_model()
         self.__model_builder = ModelBuilder()
