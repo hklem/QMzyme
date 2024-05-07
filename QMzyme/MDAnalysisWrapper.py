@@ -9,16 +9,9 @@ from MDAnalysis.lib.pkdtree import *
 from QMzyme import utils
 from MDAnalysis.core.universe import Universe
 
-def init_universe(topology, traj=None):
-    if traj is None:
-        u = mda.Universe(topology)
-    else:
-        u = mda.Universe(topology, traj)
-    # if hasattr(u, "elements") is False:
-    #     from MDAnalysis.topology.guessers import guess_types
-    #     guessed_elements = guess_types(u.atoms.names)
-    #     u.add_TopologyAttr('elements', guessed_elements)
-    #     warnings.warn("Elements guessed using using MDAnalysis.topology.guessers. Note that results depend on the atom type and may not always be accurate.")
+
+def init_universe(topology, **kwargs):
+    u = mda.Universe(topology, **kwargs)
     return u
 
 def select_atoms(universe, selection):
