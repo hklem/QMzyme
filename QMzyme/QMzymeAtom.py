@@ -41,16 +41,16 @@ class QMzymeAtom:
     def __repr__(self):
         return f"<QMzymeAtom {self.id}: {self.name} of resname {self.resname}, resid {self.resid}>"
 
-    def _add_prop(self, name, val, overwrite=False):
-        if overwrite is False and hasattr(self, name):
-            raise UserWarning(f"{self} already has property {name} set with a value of {val}. "+
-                              "To overwrite this property set `overwrite=True`.")
-        setattr(self, name, val)
+    # def _add_prop(self, name, val, overwrite=False):
+    #     if overwrite is False and hasattr(self, name):
+    #         raise UserWarning(f"{self} already has property {name} set with a value of {val}. "+
+    #                           "To overwrite this property set `overwrite=True`.")
+    #     setattr(self, name, val)
 
-    def _set_neighbor(self, value: bool):
+    def set_neighbor(self, value: bool):
         self.is_neighbor = value
 
-    def _set_region(self, value):
+    def set_region(self, value):
         self.region = value
 
     def _get_chain(self):
@@ -62,3 +62,15 @@ class QMzymeAtom:
             except:
                 chain = None
         return chain
+    
+    def set_fixed(self, value: bool=True):
+        """
+        Method to add ``is_fixed=True`` attribute to QMzymeAtom."
+        """
+        self.is_fixed = value
+
+    def set_dummy(self, value: bool=True):
+        """
+        Method to add ``is_dummy=True`` attribute to QMzymeAtom."
+        """
+        self.is_dummy = value
