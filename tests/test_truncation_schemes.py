@@ -15,12 +15,12 @@ pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
     "Test, init_file, region_selection",[
         ('First and last residue in protein: MET1 GLN262', pdb_file, 'resid 1 or resid 262'),
         ('MET1 ASN2', pdb_file, 'resid 1 or resid 2'),
-        #('MET1 LEU3', pdb_file, 'resid 1 or resid 3'),
-        #('ASN2 THR5', pdb_file, 'resid 2 or resid 5'),
-        #('ASN2 LEU3 THR5 ALA6', pdb_file, 'resid 2 or resid 3 or resid 5 or resid 6'),
-        #('PRO4 THR5', pdb_file, 'resid 4 or resid 5'),
-        #('LEU3 PRO4', pdb_file, 'resid 3 or resid 4'),
-        #('Non protein residue: WAT265', pdb_file, 'resid 265'),
+        ('MET1 LEU3', pdb_file, 'resid 1 or resid 3'),
+        ('ASN2 THR5', pdb_file, 'resid 2 or resid 5'),
+        ('ASN2 LEU3 THR5 ALA6', pdb_file, 'resid 2 or resid 3 or resid 5 or resid 6'),
+        ('PRO4 THR5', pdb_file, 'resid 4 or resid 5'),
+        ('LEU3 PRO4', pdb_file, 'resid 3 or resid 4'),
+        ('With Non protein residue: WAT265', pdb_file, 'resid 3 or resid 265'),
     ]
 )
 def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme="CA_terminal"):
@@ -35,12 +35,16 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
 
     if original_first_res.resname != 'PRO':
         removed_atom_name = 'H'
-        # if original_first_res.resid == 1:
-        #     assert all(['H2', 'H3']) in [atom.name for atom in original_first_res.atoms]
-        #     assert all(['H2', 'H3']) in [atom.name for atom in truncated_first_res.atoms]
+        if original_first_res.resid == 1:
+            assert 'H2' in [atom.name for atom in original_first_res.atoms]
+            assert 'H3' in [atom.name for atom in original_first_res.atoms]
+            assert 'H2' in [atom.name for atom in truncated_first_res.atoms]
+            assert 'H3' in [atom.name for atom in truncated_first_res.atoms]
         if original_first_res.resid != 1:
-            assert removed_atom_name in [atom.name for atom in original_first_res.atoms]
-            assert removed_atom_name not in [atom.name for atom in truncated_first_res.atoms]
+            assert 'H' in [atom.name for atom in original_first_res.atoms]
+            assert 'N' in [atom.name for atom in original_first_res.atoms]
+            assert 'H' not in [atom.name for atom in truncated_first_res.atoms]
+            assert 'N' not in [atom.name for atom in truncated_first_res.atoms]
     
     if original_first_res.resname == 'PRO':
         assert 'N' in [atom.name for atom in original_first_res.atoms]
@@ -59,14 +63,14 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
         assert 'C' in [atom.name for atom in original_res.atoms]
         assert 'O' in [atom.name for atom in original_res.atoms]
         assert 'N' in [atom.name for atom in original_next_res.atoms]
-        if original_res.resname != 'PRO':
+        if original_next_res.resname != 'PRO':
             assert 'H' in [atom.name for atom in original_next_res.atoms]
         if resid+1 == next_resid:
             #C term is not removed
             assert 'C' in [atom.name for atom in truncated_res.atoms]
             assert 'O' in [atom.name for atom in truncated_res.atoms]
             assert 'N' in [atom.name for atom in truncated_next_res.atoms]
-            if original_res.resname != 'PRO':
+            if original_next_res.resname != 'PRO':
                 assert 'H' in [atom.name for atom in truncated_next_res.atoms]
         if resid+1 != next_resid:
             #C term is removed
@@ -79,5 +83,10 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
                 assert 'N' not in [atom.name for atom in truncated_next_res.atoms]
             assert 'H1' in [atom.name for atom in truncated_next_res.atoms]
             assert 'H1' in [atom.name for atom in truncated_res.atoms]
+            names = [atom.name for atom in truncated_res.atoms]
+            if 'H1' in names:
+                if original_res.resname != 'PRO':
+                    if 'N' not in names and 'C' not in names:
+                        assert 'H2' in names
 
 

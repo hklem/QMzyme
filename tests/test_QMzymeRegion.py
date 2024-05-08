@@ -51,25 +51,13 @@ def test_QMzymeRegion():
     new_atom = region.get_atom(id=5)
     assert region.n_atoms == 62
     assert 1 in region.resids
-    last_atom = region.atoms[-1]
-    assert last_atom == new_atom
+    assert 5 in region.ids
 
-    # test sorting not in place
-    sorted_region_atoms = region.sort(key='resid', in_place=False)
-    assert sorted_region_atoms[0] == new_atom
-    assert region.atoms[0] != new_atom
-
-    # test sorting in place
-    region.sort(key='resid', in_place=True)
-    assert sorted_region_atoms[0] == new_atom
-    assert region.atoms[0] == new_atom
-
-    # now add the atom again, through QMzymeRegion add_atom() method- it will be changed because it was not unique.
-    region.add_atom(new_atom)
+    # now add the atom again- it will be changed because it was not unique.
+    region_builder.init_atom(new_atom)
     assert region.n_atoms == 63
-    assert region.atoms[-1].id == new_atom.id+1
-    assert region.atoms[-1].name == f"{new_atom.element}1"
-    assert region.atoms[-1].id == max(region.get_residue(new_atom.resid).ids)
+    assert region.atoms[1].name == f"{new_atom.element}1"
+    assert region.atoms[1].id == max(region.get_residue(new_atom.resid).ids)
 
     # test setting fixed atoms
     ids = [20, 30, 60]
