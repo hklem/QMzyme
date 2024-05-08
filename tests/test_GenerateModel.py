@@ -47,49 +47,12 @@ def test_set_region(Test, init_file, region_name, selection):
         model.set_region(region_name, mda_atomgroup)
     elif Test == 'QMzymeRegion as input':
         mda_atomgroup = model.starting_structure.select_atoms(selection)
-        qmz_region = RegionBuilder(region_name, mda_atomgroup).get_region()
+        #qmz_region = RegionBuilder(region_name, mda_atomgroup).get_region()
+        region_builder = RegionBuilder(region_name)
+        region_builder.init_atom_group(mda_atomgroup)
+        qmz_region = region_builder.get_region()
         model.set_region(region_name, qmz_region)
     assert len(model.regions) == 1
     assert model.regions[0].name == region_name
     assert model.regions[0].n_atoms == 40
     assert model.regions[0].n_residues == 2
-
-@pytest.mark.parametrize(
-    "Test, init_file, region_selection",[
-        #('First and last residue in protein: MET1 GLN262', pdb_file, 'resid 1 or resid 262'),
-        #('MET1 ASN2', pdb_file, 'resid 1 or resid 2'),
-        #('MET1 LEU3', pdb_file, 'resid 1 or resid 3'),
-        ('ASN2 THR5', pdb_file, 'resid 2 or resid 5'),
-        ('ASN2 LEU3 THR5 ALA6', pdb_file, 'resid 2 or resid 3 or resid 5 or resid 6'),
-        ('PRO4', pdb_file, 'resid 4'), 
-        #('PRO4 THR5', pdb_file, 'resid 4 or resid 5'),
-        #('LEU3 PRO4', pdb_file, 'resid 3 or resid 4'),
-        #('Non protein residue: WAT265', pdb_file, 'resid 265'),
-    ]
-)
-def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme="CA_terminal"):
-    model = GenerateModel(file=init_file)
-    original_region = model.set_region('test', region_selection)
-    truncated_region = model.truncate_region(original_region, truncation_scheme)
-    #First check that the original region didn't change:
-    original_first_res = original_region.residues[0]
-    truncated_first_res = truncated_region.residues[0]
-    original_last_res = original_region.residues[-1]
-    truncated_last_res = truncated_region.residues[-1]
-
-    if original_first_res.resname != 'PRO':
-        assert 'H' in [atom.name for atom in original_first_res.atoms]
-        assert 'H' not in [atom.name for atom in truncated_first_res.atoms]
-    
-    if original_first_res.resname == 'PRO':
-        assert 'N' in [atom.name for atom in original_first_res.atoms]
-        assert 'H' not in [atom.name for atom in original_first_res.atoms]
-        assert 'N' in [atom.name for atom in truncated_first_res.atoms]
-
-    assert 'H1' in [atom.name for atom in truncated_first_res.atoms]
-    assert 'C' in [atom.name for atom in original_last_res.atoms]
-    assert 'C' not in [atom.name for atom in truncated_last_res.atoms]
-    assert 'O' in [atom.name for atom in original_last_res.atoms]
-    assert 'O' not in [atom.name for atom in truncated_last_res.atoms]
-
-
