@@ -11,7 +11,7 @@ class QMzymeModel:
         self.regions = []
 
     def __repr__(self):
-        return f"<QMzymeModel {self.name} built from {self.starting_structure} contains {self.n_regions} regions>"
+        return f"<QMzymeModel {self.name} built from {self.starting_structure} contains {self.n_regions} region(s)>"
 
     @property
     def n_regions(self):
