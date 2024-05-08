@@ -18,6 +18,7 @@ pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
 def test_init(init_file=pdb_file):
     model = GenerateModel(file=init_file)
+    assert model.__repr__() == "<ModelBuilder: Current QMzymeModel built from <Universe with 4258 atoms> contains 0 region(s)>"
     assert model.name == '1oh0'
     assert model.starting_structure.__class__ == Universe
     assert model.filename == pdb_file
@@ -29,6 +30,9 @@ def test_set_catalytic_center(init_file=pdb_file, selection='resid 263'):
     assert len(model.regions) == 1
     assert model.regions[0].name == 'catalytic_center'
     assert model.regions[0].n_atoms == 37
+
+    model.remove_region(region_index=0)
+    assert len(model.regions) == 0
 
 
 selection_str = 'resid 16 or resid 17'

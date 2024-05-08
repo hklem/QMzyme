@@ -1,6 +1,5 @@
 """
-Tests for the QMzyme AtomBuilder.py ands QMzymeAtom.py code.
-Done together because they are intertwined.
+Tests for the QMzymeAtom.py code.
 """
 
 # Import package, test suite, and other packages as needed
@@ -19,7 +18,6 @@ atom_dict = {
     "resid": "1",
     "resname": "VAL",
     "id": 100,
-    "region": "placeholder",
     "random_property": "placeholder",
 }
 
@@ -53,12 +51,50 @@ def test_init(test_type, atom_input):
         assert qmz_atom.resid == atom_input["resid"]
         assert qmz_atom.resname == atom_input["resname"]
         assert qmz_atom.id == atom_input["id"]
-        #assert qmz_atom.region == atom_input["region"]
         assert qmz_atom.random_property == atom_input["random_property"]
         assert str(qmz_atom.__repr__()) == f'<QMzymeAtom {atom_input["id"]}: {atom_input["name"]} of resname {atom_input["resname"]}, resid {atom_input["resid"]}>'
                 
-def test_set_neighbor():
+def test_setters():
     qmz_atom = QMzymeAtom(**atom_dict)
-    assert hasattr(qmz_atom, "neighbor") == False
-    qmz_atom.set_neighbor(True)
-    assert qmz_atom.neighbor == True
+
+    # name
+    with pytest.raises(AttributeError):
+        qmz_atom.name = 'F'
+    assert qmz_atom.name != 'F'
+    qmz_atom.set_name('F')
+    assert qmz_atom.name == 'F'
+
+    # element
+    with pytest.raises(AttributeError):
+        qmz_atom.element = 'P'
+    assert qmz_atom.element != 'P'
+    qmz_atom.set_element('P')
+    assert qmz_atom.element == 'P'
+
+    # region
+    assert qmz_atom.region is None
+    with pytest.raises(AttributeError):
+        qmz_atom.region = 'placeholder'
+    assert qmz_atom.region != 'placeholder'
+    qmz_atom.set_region('placeholder')
+    assert qmz_atom.region == 'placeholder'
+
+    # is_fixed
+    with pytest.raises(AttributeError):
+        f = qmz_atom.is_fixed
+    qmz_atom.set_fixed()
+    assert qmz_atom.is_fixed
+
+    # is_dummy
+    with pytest.raises(AttributeError):
+        f = qmz_atom.is_dummy
+    qmz_atom.set_dummy()
+    assert qmz_atom.is_dummy
+
+    # is_neighbor
+    with pytest.raises(AttributeError):
+        f = qmz_atom.is_neighbor
+    qmz_atom.set_neighbor()
+    assert qmz_atom.is_neighbor
+
+

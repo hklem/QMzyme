@@ -13,7 +13,7 @@ pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
 @pytest.mark.parametrize(
     "Test, init_file, region_selection",[
-        #('First and last residue in protein: MET1 GLN262', pdb_file, 'resid 1 or resid 262'),
+        ('First and last residue in protein: MET1 GLN262', pdb_file, 'resid 1 or resid 262'),
         ('MET1 ASN2', pdb_file, 'resid 1 or resid 2'),
         #('MET1 LEU3', pdb_file, 'resid 1 or resid 3'),
         #('ASN2 THR5', pdb_file, 'resid 2 or resid 5'),
