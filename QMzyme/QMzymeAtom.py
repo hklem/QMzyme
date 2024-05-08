@@ -49,7 +49,7 @@ class QMzymeAtom:
     @name.setter
     def name(self, value):
         fname = inspect.currentframe().f_code.co_name
-        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}(value).")
+        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
         
     def set_name(self, value):
         self.__name = value
@@ -61,25 +61,28 @@ class QMzymeAtom:
     @element.setter
     def element(self, value):
         fname = inspect.currentframe().f_code.co_name
-        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}(value).")
+        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
         
     def set_element(self, value):
         self.__element = value
-
-    def set_neighbor(self, value: bool):
-        self.neighbor = value
 
     @property
     def region(self):
         return self.__region
     
-    @name.setter
+    @region.setter
     def region(self, value):
         fname = inspect.currentframe().f_code.co_name
-        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}(value).")
+        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
 
     def set_region(self, value):
         self.__region = value
+
+    def set_neighbor(self, value: bool=True):
+        """
+        Method to add ``is_neighbor=True`` attribute to QMzymeAtom."
+        """
+        self.is_neighbor = value
     
     def set_fixed(self, value: bool=True):
         """
