@@ -1,3 +1,2 @@
 [run]
-omit = aqme/*
-omit = QMzyme/aqme/*
+omit = QMzymw/aqme/*
