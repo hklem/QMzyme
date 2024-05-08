@@ -25,7 +25,7 @@ jobs:
           pip install MDAnalysis
           pip install pytest
           pip install pytest-cov
-          pytest -v --color yes --cov=QMzyme --cov-report=html
+          pytest -v --color yes --cov=QMzyme --cov-report=html --cov-config=.coveragerc
       - store_artifacts:
           path: htmlcov
             
