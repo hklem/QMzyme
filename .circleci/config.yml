@@ -28,7 +28,7 @@ jobs:
           pip install -e .
           pip install pytest
           pip install pytest-cov
-          pytest -v --color yes --cov=QMzyme --cov-report=html
+          pytest -v --color yes --cov-config --cov=QMzyme --cov-report=html
       - store_artifacts:
           path: htmlcov
             
