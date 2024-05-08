@@ -6,7 +6,6 @@ import numpy as np
 import warnings
 import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
-from QMzyme import utils
 from MDAnalysis.core.universe import Universe
 
 
@@ -69,86 +68,6 @@ def get_atom(residue, atom):
         return residue.atoms[list(residue.atoms.names).index(atom)]
     if type(atom) is int:
         return residue.atoms[list(residue.atoms.ids).index(atom)]
-
-
-def alter_atom(atom, new_atom_dict):
-    for key, val in new_atom_dict.items():
-        if 'res' in key:
-            setattr(atom.residue, key, val)
-        elif hasattr(atom, key):
-            setattr(atom, key, val)
-    return atom
-
-
-def name_cap_H(residue):
-    if 'H1' not in residue.atoms.names:
-        name = 'H1'
-    elif 'H2' not in residue.atoms.names:
-        name = 'H2'
-    else:
-        name = 'H3'
-    return name
-
-
-def cap_H(atom, fixed_atom, bond_length):
-    """
-    :param atom: The Atom to be converted to hydrogen.
-    :param fixed_atom: The Atom bound to atom that serves as anchor point.
-    """
-    res = atom.residue
-    new_position = utils.set_bond_length(atom.position, fixed_atom.position, bond_length)
-    new_name = name_cap_H(res)
-    new_atom_dict = {
-            'element': 'H',
-            'type': 'H',  
-            'name': new_name, 
-            'position': new_position, 
-            'mass': 1.00794,
-        }
-    new_atom = alter_atom(atom, new_atom_dict)
-    return new_atom
-
-
-def cap_backbone_CA(target_atom, bond_length=1.09, cap='H'):
-    """
-    :param target_atom: The atom bound to CA that will be converted.
-    """
-    CA_atom = get_atom(target_atom.residue, 'CA')
-    if cap == 'H':
-        return cap_H(target_atom, CA_atom, bond_length)
-    
-
-def cap_backbone_N(N_atom, bond_length=1.01, cap='H'):
-    """
-    :param N_atom: The backbone N Atom bound to the preceeding residue backbone C Atom that will be converted.
-    """
-    C_atom = get_atom(get_preceding_residue(N_atom.residue), 'C')
-    if cap == 'H':
-        return cap_H(C_atom, N_atom, bond_length)
-
-
-def cap_backbone_C(C_atom, bond_length=1.09, cap='H'):
-    """
-    :param C_atom: The backbone C Atom bound to the next residue backbone N Atom that will be converted.
-    :type C_atom: Universe.Atom, required
-    """
-    N_atom = get_atom(get_next_residue(C_atom.residue), 'N')
-    if cap == 'H':
-        return cap_H(N_atom, C_atom, bond_length)
-    
-
-def get_preceding_residue(residue):
-    u = residue.universe
-    ids = [res.resid for res in u.residues]
-    r = u.residues[ids.index(residue.resid-1)]
-    return r
-    
-
-def get_next_residue(residue):
-    u = residue.universe
-    ids = [res.resid for res in u.residues]
-    r = u.residues[ids.index(residue.resid+1)]
-    return r
     
 
 def build_universe_from_QMzymeRegion(region):
