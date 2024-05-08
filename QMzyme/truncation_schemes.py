@@ -59,8 +59,6 @@ def CA_terminal(region):
     # for atom in add_atoms:
     #     new_region.init_atom(atom)
     truncated_region = region_builder.get_region()
-    truncated_region.sort(key='id', in_place=True)
-    truncated_region.sort(key='resid', in_place=True)
 
     return truncated_region
     
