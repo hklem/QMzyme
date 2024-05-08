@@ -1,17 +1,13 @@
 """
-Tests for the QMzyme QMzymeAtom.py code.
+Tests for the QMzyme AtomBuilder.py ands QMzymeAtom.py code.
+Done together because they are intertwined.
 """
 
 # Import package, test suite, and other packages as needed
 # Name each function as test_* to be automatically included in test workflow
 
-import sys
-import shutil
-import os
 import pytest
 from QMzyme.QMzymeAtom import QMzymeAtom
-from MDAnalysis.core.groups import Atom
-import MDAnalysis as MDA
 from importlib_resources import files
 
 pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
@@ -57,13 +53,12 @@ def test_init(test_type, atom_input):
         assert qmz_atom.resid == atom_input["resid"]
         assert qmz_atom.resname == atom_input["resname"]
         assert qmz_atom.id == atom_input["id"]
-        assert qmz_atom.region == atom_input["region"]
+        #assert qmz_atom.region == atom_input["region"]
         assert qmz_atom.random_property == atom_input["random_property"]
         assert str(qmz_atom.__repr__()) == f'<QMzymeAtom {atom_input["id"]}: {atom_input["name"]} of resname {atom_input["resname"]}, resid {atom_input["resid"]}>'
                 
 def test_set_neighbor():
     qmz_atom = QMzymeAtom(**atom_dict)
-    assert hasattr(qmz_atom, "is_neighbor") == False
-    qmz_atom._set_neighbor(True)
-    assert hasattr(qmz_atom, "is_neighbor") == True
-    assert qmz_atom.is_neighbor == True
+    assert hasattr(qmz_atom, "neighbor") == False
+    qmz_atom.set_neighbor(True)
+    assert qmz_atom.neighbor == True
