@@ -22,6 +22,7 @@ jobs:
           conda install -y -c conda-forge openbabel
           pip install --upgrade pip
           pip install -e .
+          pip install MDAnalysis
           pip install pytest
           pip install pytest-cov
           pytest -v --color yes --cov=QMzyme --cov-report=html
