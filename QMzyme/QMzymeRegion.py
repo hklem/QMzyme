@@ -1,12 +1,11 @@
 """
-Product of the concrete builder class RegionBuilder.
+Product of the builder class RegionBuilder.
 """
 
 import copy
 import numpy as np
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
-#from QMzyme.QMzymeResidue import QMzymeResidue
 from MDAnalysis.core.groups import AtomGroup
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 
@@ -15,13 +14,18 @@ _AtomGroup = TypeVar("_AtomGroup", bound="AtomGroup")
 
 class QMzymeRegion:
     #def __init__(self, name, atoms: list[_QMzymeAtom], residues, atom_group: _AtomGroup):
-    def __init__(self, name):
+    # def __init__(self, name):
+    def __init__(self, name, atoms: list):
         self.name = name
-        self.atoms = []
+        self.__atoms = atoms
 
     def __repr__(self):
-        return f"<QMzymeRegion {self.name} contains {self.n_atoms} atoms and {self.n_residues} residues>"
+        return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
     
+    @property
+    def atoms(self):
+        return self.__atoms
+        
     @property
     def atom_group(self):
         return self.__atom_group
@@ -50,8 +54,7 @@ class QMzymeRegion:
         for resid in self.resids:
             atoms = [atom for atom in self.atoms if atom.resid == resid]
             resname = atoms[0].resname
-            chain = atoms[0]._get_chain()
-            res = QMzymeResidue(resname, resid, atoms, chain)
+            res = QMzymeResidue(resname, resid, atoms)
             residues.append(res)
         return residues
     
@@ -69,12 +72,10 @@ class QMzymeRegion:
             sorted_atoms.append(original_atoms[min_index])
             del original_atoms[min_index]
         if in_place is True:
-            self.atoms = sorted_atoms
+            #self.atoms = sorted_atoms
+            self.__atoms = sorted_atoms
         else:
             return sorted_atoms
-
-    def add_attr(self, attr_name, attr_value):
-        setattr(self, attr_name, attr_value)
     
     def get_atom_group(self):
         return self.__atom_group
@@ -103,14 +104,20 @@ class QMzymeRegion:
         self.atoms.append(atom)
         
     def uniquify_atom(self, atom):
+        if self.atoms == None:
+            return atom
         while atom.id in self.ids:
             atom.id += 1
         if atom.resid in self.resids:
             residue_atoms = self.get_residue(atom.resid).atoms
-            i = 1
-            while atom.name in [a.name for a in residue_atoms]:
-                atom.name = f"{atom.element}{i}"
-                i += 1
+            atom_names = [a.name for a in residue_atoms]
+            name = atom.name
+            if name in atom_names:
+                i = 0
+                while name in atom_names:
+                    i += 1
+                    name = f"{atom.element}{i}"
+                atom.set_name(name)
         return atom
 
     
@@ -129,28 +136,49 @@ class QMzymeRegion:
 
     def convert_to_AtomGroup(self):
         return MDAwrapper.build_universe_from_QMzymeRegion(self)
+    
+    def set_fixed_atoms(self, ids: list):
+        for id in ids:
+            atom = self.get_atom(id)
+            atom.set_fixed()
 
 
 class QMzymeResidue(QMzymeRegion):
     def __init__(self, resname, resid, atoms, chain=None):
         self.resname = resname
         self.resid = resid
-        self.atoms = atoms
-        if chain is not None:
-            self.chain = chain
-        else:
-            self.set_chain(self.atoms[0]._get_chain())
+        self.__atoms = atoms
+        # self.__atoms = self.set_atoms(atoms)
+        if chain is None:
+            chain = self.atoms[0].get_chain()
+        self.chain = chain
+
+    # def set_atoms(self, atoms):
+    #     return [atom for atom in atoms]
+
+    @property
+    def atoms(self):
+        return self.__atoms
+
+    @atoms.setter
+    def atoms(self, value):
+        self.__atoms = value
 
     def __repr__(self):
-        return f"<QMzymeResidue resname: {self.resname}, resid: {self.resid}, chain: {self.chain}>"
-    
+        rep =  f"<QMzymeResidue resname: {self.resname}, resid: {self.resid}, chain: "
+        if self.chain is None:
+            rep += "Not Specified>"
+        else:
+            rep += f"{self.chain}>"
+        return rep
+
     def get_atom(self, atom_name):
         for atom in self.atoms:
             if atom.name == atom_name:
                 return atom
 
     def set_chain(self, value: str):
-        self.set_chain(value)
+        self.chain = value
 
 
 
