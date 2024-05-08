@@ -104,9 +104,13 @@ class QMzymeRegion:
         self.atoms.append(atom)
         
     def uniquify_atom(self, atom):
+        atom = copy.copy(atom)
         if self.atoms == None:
             return atom
-        while atom.id in self.ids:
+        ids = self.ids
+        print(ids)
+        while atom.id in ids:
+            print(atom.id)
             atom.id += 1
         if atom.resid in self.resids:
             residue_atoms = self.get_residue(atom.resid).atoms
@@ -118,6 +122,7 @@ class QMzymeRegion:
                     i += 1
                     name = f"{atom.element}{i}"
                 atom.set_name(name)
+        print(self.ids)
         return atom
 
     
