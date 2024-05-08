@@ -57,26 +57,26 @@ class RegionBuilder:
         warnings.filterwarnings('ignore')
         atom_props = self.get_atom_properties(atom)
         atom = QMzymeAtom(**atom_props)
-        self.uniquify_atom(atom)
+        #self.uniquify_atom(atom)
         self.atoms.append(atom)
         #self.region.add_atom(atom)
 
     
-    def uniquify_atom(self, atom):
-        temp_region = QMzymeRegion(self.name, self.atoms)
-        while atom.id in temp_region.ids:
-            atom.id += 1
-        if atom.resid in temp_region.resids:
-            residue_atoms = temp_region.get_residue(atom.resid).atoms
-            atom_names = [a.name for a in residue_atoms]
-            name = atom.name
-            if name in atom_names:
-                i = 0
-                while name in atom_names:
-                    i += 1
-                    name = f"{atom.element}{i}"   
-                    atom.set_name(name)
-        return atom
+    # def uniquify_atom(self, atom):
+    #     temp_region = QMzymeRegion(self.name, self.atoms)
+    #     while atom.id in temp_region.ids:
+    #         atom.id += 1
+    #     if atom.resid in temp_region.resids:
+    #         residue_atoms = temp_region.get_residue(atom.resid).atoms
+    #         atom_names = [a.name for a in residue_atoms]
+    #         name = atom.name
+    #         if name in atom_names:
+    #             i = 0
+    #             while name in atom_names:
+    #                 i += 1
+    #                 name = f"{atom.element}{i}"   
+    #                 atom.set_name(name)
+    #     return atom
 
 
     def get_region(self):
