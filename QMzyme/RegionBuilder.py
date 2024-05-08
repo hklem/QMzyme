@@ -73,12 +73,6 @@ class RegionBuilder:
         return atom_props
 
 
-    def sort(self):
-        atoms = self.atoms
-        ids = [atom.id for atom in self.atoms]
-        return [x for _, x in sorted(zip(ids, atoms))]
-
-
     def get_region(self):
         # self.region = QMzymeRegion(self.name, self.atoms)
         # self.region.set_atom_group(self.atom_group)
