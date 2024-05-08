@@ -49,7 +49,7 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
     
     assert 'H1' in [atom.name for atom in truncated_first_res.atoms]
 
-    for i in enumerate(original_region.resids[:-1]):
+    for i in range(original_region.n_residues-1):
         resid = original_region.resids[i]
         next_resid = original_region.resids[i+1] 
         original_res = original_region.get_residue(resid)
