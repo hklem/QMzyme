@@ -10,10 +10,6 @@ jobs:
     docker:
       #- image: cimg/python:3.11-node
       - image: continuumio/miniconda3
-    filters:
-      branches:
-        only:
-          - class_structure_redesign
     steps:
       - checkout
       - python/install-packages:
