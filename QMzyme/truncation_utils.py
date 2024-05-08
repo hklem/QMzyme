@@ -59,7 +59,7 @@ def get_following_Natom(region, resid):
     try:
         atom = RegionBuilder('temp', mda_atom).get_region().atoms[0]
     except:
-        None
+        atom = None
     return atom
 
 
