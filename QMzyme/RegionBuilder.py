@@ -23,65 +23,65 @@ class RegionBuilder:
 
     def __init__(self, name, atom_group = None):
         self.name = name
-        #self.region = QMzymeRegion(name, atoms=[])
-        #self.region = None
         self.atoms = []
         self.atom_group = atom_group
+        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group)
         if atom_group is not None:
             self.init_atom_group(atom_group)
-
 
     def __repr__(self):
         return f"<RegionBuilder: Current QMzymeRegion, {self.name}, "+\
                f"contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
 
-
     @property
     def n_residues(self):
         return len(list(set(atom.resid for atom in self.atoms)))
     
-
     @property
     def n_atoms(self):
         return len(self.atoms)
-
 
     def init_atom_group(self, atom_group):
         for atom in atom_group.atoms:
             self.init_atom(atom)
         self.atom_group = atom_group
-        #self.region.set_atom_group(atom_group)
-        
+        self.region.set_atom_group(atom_group)
+        return self.region
 
     def init_atom(self, atom):
         warnings.filterwarnings('ignore')
         atom_props = self.get_atom_properties(atom)
+        atom = self.uniquify_atom(atom_props)
         atom = QMzymeAtom(**atom_props)
-        #self.uniquify_atom(atom)
+        self.region.add_atom(atom)
         self.atoms.append(atom)
-        #self.region.add_atom(atom)
+        self.atoms = self.region.atoms
 
-    
-    # def uniquify_atom(self, atom):
-    #     temp_region = QMzymeRegion(self.name, self.atoms)
-    #     while atom.id in temp_region.ids:
-    #         atom.id += 1
-    #     if atom.resid in temp_region.resids:
-    #         residue_atoms = temp_region.get_residue(atom.resid).atoms
-    #         atom_names = [a.name for a in residue_atoms]
-    #         name = atom.name
-    #         if name in atom_names:
-    #             i = 0
-    #             while name in atom_names:
-    #                 i += 1
-    #                 name = f"{atom.element}{i}"   
-    #                 atom.set_name(name)
-    #     return atom
+    def uniquify_atom(self, atom_props):
+        temp_region = QMzymeRegion(self.name, self.atoms)
+        resid = atom_props['resid']
+        element = atom_props['element']
+        if resid in temp_region.resids:
+            residue_atoms = temp_region.get_residue(resid).atoms
+            names = [a.name for a in residue_atoms]
+            i = 0
+            while atom_props['name'] in names:
+                i += 1
+                atom_props['name'] = f"{element}{i}" 
+        while atom_props['id'] in temp_region.ids:
+            atom_props['id'] += 1
+        return atom_props
+
+
+    def sort(self):
+        atoms = self.atoms
+        ids = [atom.id for atom in self.atoms]
+        return [x for _, x in sorted(zip(ids, atoms))]
 
 
     def get_region(self):
-        self.region = QMzymeRegion(self.name, self.atoms)
-        self.region.set_atom_group(self.atom_group)
+        # self.region = QMzymeRegion(self.name, self.atoms)
+        # self.region.set_atom_group(self.atom_group)
         return self.region
 
 

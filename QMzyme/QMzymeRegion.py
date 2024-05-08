@@ -15,20 +15,25 @@ _AtomGroup = TypeVar("_AtomGroup", bound="AtomGroup")
 class QMzymeRegion:
     #def __init__(self, name, atoms: list[_QMzymeAtom], residues, atom_group: _AtomGroup):
     # def __init__(self, name):
-    def __init__(self, name, atoms: list):
+    def __init__(self, name, atoms: list, atom_group= None):
         self.name = name
-        self.__atoms = atoms
+        self.atoms = atoms
+        self.atom_group = atom_group
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
     
-    @property
-    def atoms(self):
-        return self.__atoms
+    # @property
+    # def atoms(self):
+    #     return self._atoms
+    
+    # @atoms.setter
+    # def atoms(self, value):
+    #     self.atoms = value
         
-    @property
-    def atom_group(self):
-        return self.__atom_group
+    # @property
+    # def atom_group(self):
+    #     return self.atom_group
         
     @property
     def ids(self):
@@ -57,28 +62,12 @@ class QMzymeRegion:
             res = QMzymeResidue(resname, resid, atoms)
             residues.append(res)
         return residues
-    
-    
+
     def set_atom_group(self, atom_group):
-        self.__atom_group = atom_group
-    
-    def sort(self, key='id', in_place=False):
-        sorted_atoms = []
-        original_atoms = copy.copy(self.atoms)
-        for i in range(self.n_atoms):
-            key_list = [getattr(atom, key) for atom in original_atoms]
-            min = np.min(key_list)
-            min_index = key_list.index(min)
-            sorted_atoms.append(original_atoms[min_index])
-            del original_atoms[min_index]
-        if in_place is True:
-            #self.atoms = sorted_atoms
-            self.__atoms = sorted_atoms
-        else:
-            return sorted_atoms
-    
+        self.atom_group = atom_group
+        
     def get_atom_group(self):
-        return self.__atom_group
+        return self.atom_group
     
     def get_atom(self, id):
         for i in self.atoms:
@@ -100,30 +89,32 @@ class QMzymeRegion:
         :param atom: The atom you want to add to the QMzymeRegion. 
         :type atom: _QMzymeAtom. 
         """
-        atom = self.uniquify_atom(atom)
         self.atoms.append(atom)
+        self.atoms = self.sort_atoms()
+
+    def sort_atoms(self):
+        atoms = self.atoms
+        ids = [atom.id for atom in self.atoms]
+        return [x for _, x in sorted(zip(ids, atoms))]
         
-    def uniquify_atom(self, atom):
-        atom = copy.copy(atom)
-        if self.atoms == None:
-            return atom
-        ids = self.ids
-        print(ids)
-        while atom.id in ids:
-            print(atom.id)
-            atom.id += 1
-        if atom.resid in self.resids:
-            residue_atoms = self.get_residue(atom.resid).atoms
-            atom_names = [a.name for a in residue_atoms]
-            name = atom.name
-            if name in atom_names:
-                i = 0
-                while name in atom_names:
-                    i += 1
-                    name = f"{atom.element}{i}"
-                atom.set_name(name)
-        print(self.ids)
-        return atom
+    # def uniquify_atom(self, atom):
+    #     atom = copy.copy(atom)
+    #     if self.atoms == None:
+    #         return atom
+    #     ids = self.ids
+    #     while atom.id in ids:
+    #         atom.id += 1
+    #     if atom.resid in self.resids:
+    #         residue_atoms = self.get_residue(atom.resid).atoms
+    #         atom_names = [a.name for a in residue_atoms]
+    #         name = atom.name
+    #         if name in atom_names:
+    #             i = 0
+    #             while name in atom_names:
+    #                 i += 1
+    #                 name = f"{atom.element}{i}"
+    #             atom.set_name(name)
+    #     return atom
 
     
     def get_residue(self, resid):
@@ -132,7 +123,7 @@ class QMzymeRegion:
                 return res
 
 
-    def write_file(self, filename=None):
+    def write(self, filename=None):
         # Housekeeping
         if filename is None:
             filename = f"{'_'.join(self.name.split(' '))}.pdb"
@@ -152,8 +143,7 @@ class QMzymeResidue(QMzymeRegion):
     def __init__(self, resname, resid, atoms, chain=None):
         self.resname = resname
         self.resid = resid
-        self.__atoms = atoms
-        # self.__atoms = self.set_atoms(atoms)
+        self.atoms = atoms
         if chain is None:
             chain = self.atoms[0].get_chain()
         self.chain = chain
@@ -161,13 +151,13 @@ class QMzymeResidue(QMzymeRegion):
     # def set_atoms(self, atoms):
     #     return [atom for atom in atoms]
 
-    @property
-    def atoms(self):
-        return self.__atoms
+    # @property
+    # def atoms(self):
+    #     return self.__atoms
 
-    @atoms.setter
-    def atoms(self, value):
-        self.__atoms = value
+    # @atoms.setter
+    # def atoms(self, value):
+    #     self.__atoms = value
 
     def __repr__(self):
         rep =  f"<QMzymeResidue resname: {self.resname}, resid: {self.resid}, chain: "
