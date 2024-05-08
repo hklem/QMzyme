@@ -31,7 +31,7 @@ class QMzymeModel:
             return getattr(self,region_name)
         except:
             raise UserWarning(f"Region with name {region_name} does not exist. "+
-                              f"Existing regions are: {self.region_names()}")
+                              f"Existing regions are: {self.get_region_names()}")
         
     def has_region(self, region_name):
         # return region_name in self.get_region_names()
