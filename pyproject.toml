@@ -23,7 +23,8 @@ requires-python = ">=3.11"
 dependencies = [
     "importlib_resources",
     "MDAnalysis",
-    "aqme"
+    "aqme",
+    "rdkit-pypi"
 ]
 
 # Update the urls once the hosting is set up.
