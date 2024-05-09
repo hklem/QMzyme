@@ -42,16 +42,20 @@ class RegionBuilder:
         return len(self.atoms)
 
     def init_atom_group(self, atom_group):
+        """
+        It is assumed that the atoms in the atom_group are already unique. 
+        """
         for atom in atom_group.atoms:
-            self.init_atom(atom)
+            self.init_atom(atom, uniquify=False)
         self.atom_group = atom_group
         self.region.set_atom_group(atom_group)
         return self.region
 
-    def init_atom(self, atom):
+    def init_atom(self, atom, uniquify=True):
         warnings.filterwarnings('ignore')
         atom_props = self.get_atom_properties(atom)
-        atom = self.uniquify_atom(atom_props)
+        if uniquify is True:
+            atom = self.uniquify_atom(atom_props)
         atom = QMzymeAtom(**atom_props)
         self.region.add_atom(atom)
         self.atoms.append(atom)
@@ -89,7 +93,10 @@ class RegionBuilder:
             except:
                 pass
         if isinstance(atom, Atom):
-            atom_attr_dict['chain'] = atom_attr_dict['chainID']
+            try:
+                atom_attr_dict['chain'] = atom_attr_dict['chainID']
+            except:
+                atom_attr_dict['chain'] = 'X'
             d = copy.copy(atom_attr_dict)
             for attr in d:
                 if attr in remove_mda_atom_props:
