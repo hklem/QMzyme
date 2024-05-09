@@ -9,8 +9,8 @@ from MDAnalysis.lib.pkdtree import *
 from MDAnalysis.core.universe import Universe
 
 
-def init_universe(topology, **kwargs):
-    u = mda.Universe(topology, **kwargs)
+def init_universe(*args, **kwargs):
+    u = mda.Universe(*args, **kwargs)
     return u
 
 def select_atoms(universe, selection):
@@ -97,9 +97,9 @@ def build_universe_from_QMzymeRegion(region):
                 atom_attributes[attr].append(getattr(atom, attr))
     
     # avoid attributes that can't be set as topology level attributes
-    exclude_attributes = [ 
-        'index', 'ix', 'ix_array', 'level', 'position', 'residue', 
-        'resindex', 'segid', 'segindex', 'segment', 'universe', 'region'] 
+    # exclude_attributes = [ 
+    #     'index', 'ix', 'ix_array', 'level', 'position', 'residue', 
+    #     'resindex', 'segid', 'segindex', 'segment', 'universe', 'region'] 
     
     if 'chain' in atom_attributes:
         atom_attributes['chainID'] = atom_attributes['chain']
@@ -107,9 +107,13 @@ def build_universe_from_QMzymeRegion(region):
     
     # Now load the attributes to the new Universe
     for attr, val in atom_attributes.items():
-        if attr in exclude_attributes:
-            continue
-        u.add_TopologyAttr(attr, val)
+        # if attr in exclude_attributes:
+        #     continue
+        # u.add_TopologyAttr(attr, val)
+        try:
+            u.add_TopologyAttr(attr, val)
+        except:
+            pass
     u.atoms.positions = atom_attributes['position']
 
     # Create AtomGroup and sort by resids
