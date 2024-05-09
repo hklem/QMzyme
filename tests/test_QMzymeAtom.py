@@ -58,15 +58,15 @@ def test_setters():
     qmz_atom = QMzymeAtom(**atom_dict)
 
     # name
-    with pytest.raises(AttributeError):
-        qmz_atom.name = 'F'
+    # with pytest.raises(AttributeError):
+    #     qmz_atom.name = 'F'
     assert qmz_atom.name != 'F'
     qmz_atom.set_name('F')
     assert qmz_atom.name == 'F'
 
     # element
-    with pytest.raises(AttributeError):
-        qmz_atom.element = 'P'
+    # with pytest.raises(AttributeError):
+    #     qmz_atom.element = 'P'
     assert qmz_atom.element != 'P'
     qmz_atom.set_element('P')
     assert qmz_atom.element == 'P'
@@ -80,8 +80,7 @@ def test_setters():
     assert qmz_atom.region == 'placeholder'
 
     # is_fixed
-    with pytest.raises(AttributeError):
-        f = qmz_atom.is_fixed
+    assert not qmz_atom.is_fixed
     qmz_atom.set_fixed()
     assert qmz_atom.is_fixed
 

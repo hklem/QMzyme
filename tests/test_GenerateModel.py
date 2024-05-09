@@ -16,16 +16,16 @@ from importlib_resources import files
 
 pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
-def test_init(init_file=pdb_file):
-    model = GenerateModel(file=init_file)
+def test_init():
+    model = GenerateModel(pdb_file)
     assert model.__repr__() == "<ModelBuilder: Current QMzymeModel built from <Universe with 4258 atoms> contains 0 region(s)>"
     assert model.name == '1oh0'
-    assert model.starting_structure.__class__ == Universe
+    assert model.universe.__class__ == Universe
     assert model.filename == pdb_file
     assert model.regions == []
 
-def test_set_catalytic_center(init_file=pdb_file, selection='resid 263'):
-    model = GenerateModel(file=init_file)
+def test_set_catalytic_center(selection='resid 263'):
+    model = GenerateModel(pdb_file)
     model.set_catalytic_center(selection)
     assert len(model.regions) == 1
     assert model.regions[0].name == 'catalytic_center'
@@ -43,7 +43,7 @@ selection_str = 'resid 16 or resid 17'
          ('QMzymeRegion as input', pdb_file, 'test', selection_str),]
 )
 def test_set_region(Test, init_file, region_name, selection):
-    model = GenerateModel(file=init_file)
+    model = GenerateModel(init_file)
     if Test == 'Selection string as input':
         model.set_region(region_name, selection)
     elif Test == 'MDA AtomGroup as input':

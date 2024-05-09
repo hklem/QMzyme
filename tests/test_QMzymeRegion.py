@@ -59,8 +59,11 @@ def test_QMzymeRegion():
     assert region.atoms[1].name == f"{new_atom.element}1"
     assert region.atoms[1].id == max(region.get_residue(new_atom.resid).ids)
 
+    # test getting atom ids for all CA atoms
+    ids = region.get_ids(attribute='name', value='CA')
+    assert ids == [5, 22, 36, 63, 69]
+
     # test setting fixed atoms
-    ids = [20, 30, 60]
     region.set_fixed_atoms(ids=ids)
     for id in ids:
         assert region.get_atom(id).is_fixed
