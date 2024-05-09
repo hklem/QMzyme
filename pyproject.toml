@@ -22,7 +22,8 @@ requires-python = ">=3.11"
 # Declare any run-time dependencies that should be installed with the package.
 dependencies = [
     "importlib_resources",
-    "MDAnalysis"
+    "MDAnalysis",
+    "aqme"
 ]
 
 # Update the urls once the hosting is set up.
