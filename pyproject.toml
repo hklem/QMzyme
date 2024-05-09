@@ -24,8 +24,8 @@ dependencies = [
     "importlib_resources",
     "MDAnalysis",
     "aqme", #bc lots of dependencies
-    "rdkit-pypi", #doesn't get installed with aqme for some reason even though it's a dependency
-    "openbabel" #doesn't get installed with aqme for some reason even though it's a dependency
+    "rdkit-pypi", # dependency of aqme but doesn't get installed with pip install aqme
+    #"openbabel" #doesn't work to install this way... need to do conda install -c conda-forge openbabel in config.yml
 ]
 
 # Update the urls once the hosting is set up.

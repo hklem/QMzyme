@@ -18,6 +18,7 @@ jobs:
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
+          conda install -c conda-forge openbabel
           conda activate qmzyme
           pip install -e .
           pip install pytest
