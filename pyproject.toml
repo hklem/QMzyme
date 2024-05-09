@@ -23,8 +23,9 @@ requires-python = ">=3.11"
 dependencies = [
     "importlib_resources",
     "MDAnalysis",
-    "aqme",
-    "rdkit-pypi"
+    "aqme", #bc lots of dependencies
+    "rdkit-pypi", #doesn't get installed with aqme for some reason even though it's a dependency
+    "openbabel" #doesn't get installed with aqme for some reason even though it's a dependency
 ]
 
 # Update the urls once the hosting is set up.
