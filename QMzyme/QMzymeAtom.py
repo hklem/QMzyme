@@ -28,13 +28,14 @@ class QMzymeAtom:
     :param is_neighbor: optional
     """
     def __init__(self, name, element, position, resid, resname, id=1, region=None, **kwargs):
-        self.__name = name
-        self.__element = element
+        self.name = name
+        self.element = element
         self.position = position
         self.resid = resid
         self.resname = resname
         self.id = id
         self.__region = region
+        self.is_fixed = False
         
         for attr, val in kwargs. items():
             setattr(self, attr, val)
@@ -42,29 +43,29 @@ class QMzymeAtom:
     def __repr__(self):
         return f"<QMzymeAtom {self.id}: {self.name} of resname {self.resname}, resid {self.resid}>"
 
-    @property 
-    def name(self):
-        return self.__name
+    # @property 
+    # def name(self):
+    #     return self.name
 
-    @name.setter
-    def name(self, value):
-        fname = inspect.currentframe().f_code.co_name
-        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
+    # @name.setter
+    # def name(self, value):
+    #     fname = inspect.currentframe().f_code.co_name
+    #     raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
         
     def set_name(self, value):
-        self.__name = value
+        self.name = value
     
-    @property
-    def element(self):
-        return self.__element
+    # @property
+    # def element(self):
+    #     return self.element
     
-    @element.setter
-    def element(self, value):
-        fname = inspect.currentframe().f_code.co_name
-        raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
+    # @element.setter
+    # def element(self, value):
+    #     fname = inspect.currentframe().f_code.co_name
+    #     raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
         
     def set_element(self, value):
-        self.__element = value
+        self.element = value
 
     @property
     def region(self):
