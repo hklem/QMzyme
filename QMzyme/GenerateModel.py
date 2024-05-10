@@ -38,7 +38,7 @@ class GenerateModel(QMzymeModel):
 
 
     def __repr__(self):
-        return f"<ModelBuilder: Current QMzymeModel built from {self.starting_structure} contains {self.n_regions} region(s)>"
+        return f"<ModelBuilder: Current QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
 
 
     def set_catalytic_center(self, selection):
@@ -55,11 +55,10 @@ class GenerateModel(QMzymeModel):
         """
         Method to a QMzymeRegion. Accepted input includes (i) str that can be 
         interpreted by the MDAnalysis selection command, (ii) an 
-        MDAnalysis.core.groups.AtomGroup, (iii) a QMzyme.QMzymeRegion.
+        MDAnalysis.core.groups.AtomGroup, or (iii) a QMzyme.QMzymeRegion.
         """
         selection = translate_selection(selection, self.universe)
         region_builder = RegionBuilder(region_name)
-        #region = region_builder.init_atom_group(selection).get_region()
         region_builder.init_atom_group(selection)
         region = region_builder.get_region()
         self.add_region(region)

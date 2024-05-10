@@ -7,16 +7,18 @@
 Product of the ModelBuilder class.
 """
 
+import os
+
 class QMzymeModel:
     # def __init__(self, name, starting_structure, regions=[]):
     def __init__(self, name, universe):
         self.name = name
-        self.starting_structure = universe
+        self.universe = universe
         self.filename = universe.filename
         self.regions = []
 
     def __repr__(self):
-        return f"<QMzymeModel {self.name} built from {self.starting_structure} contains {self.n_regions} region(s)>"
+        return f"<QMzymeModel {self.name} built from {self.universe} contains {self.n_regions} region(s)>"
 
     @property
     def n_regions(self):
@@ -41,6 +43,42 @@ class QMzymeModel:
     def has_region(self, region_name):
         # return region_name in self.get_region_names()
         return hasattr(self, region_name)
+    
+    def pymol_visualize(self, region_colors=['cyan', 'orange', 'purple', 'green']):
+        """
+        Creates a QMzymeModel_visualize.py script that you can load into PyMol.
+        """
+        lines = ''
+        starting_structure = self.name
+        self.universe.atoms.write(f"{self.name}.pdb")
+        file = os.path.abspath(f'{self.name}.pdb')
+        lines += f"cmd.load('{file}', '{self.name}')\n"
+        #lines += f"cmd.color('gray70', self.name)\n"
+        lines += f"cmd.orient()\n"
+        lines += f"cmd.scene('Starting Structure', 'store')\n"
+        n_atoms = [region.n_atoms for region in self.regions]
+        ordered_regions = [x for _, x in sorted(zip(n_atoms, self.regions))]
+        for i,region in enumerate(ordered_regions):
+            region.write(f'{region.name}.pdb')
+            file = os.path.abspath(f'{region.name}.pdb')
+            lines += f"cmd.load('{file}', '{region.name}')\n"
+            lines += f"cmd.show_as('sticks', '{region.name}')\n"
+            #lines += f"cmd.color('cyan','Catalytic_Center')\n"
+            lines += f"cmd.hide('everything', '{self.name}')\n"
+            lines += f"cmd.zoom('visible')\n"
+            lines += f"cmd.orient('visible')\n"
+            lines += f"cmd.scene('{region.name}', 'store')\n"
+
+        with open ('QMzymeModel_visualize.py', 'w+') as f:
+            f.write(lines)
+
+
+
+
+
+            
+
+
 
          
         
