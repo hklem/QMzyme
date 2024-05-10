@@ -173,12 +173,17 @@ class QM_Region(object):
             self.qm_input = f"{self.functional} {self.qm_input}"
         
         # check if any atoms have is_fixed=True
-        self.freeze = self.region.get_indices('is_fixed', True)
+        self.freeze_atoms = self.region.get_indices('is_fixed', True)
 
         # create pdb file that will be read by aqme qprep
         #we could also just input the atoms and coords separately
         file = self.region.write(filename)
         self.files = file
+        # self.atom_types = [atom.element for atom in self.atoms]
+        # self.cartesians = []
+        # for atom in self.atoms:
+        #     for xyz in atom.position:
+        #         self.cartesians.append(xyz)
 
         # object attributes that don't correspeond to aqme qprep keywords.
         exclude = ['region', 'atoms', 'basis_set', 'functional']
@@ -187,12 +192,16 @@ class QM_Region(object):
             del calc_info[info]
         
         # use qprep to write input file
-        qprep(program='gaussian', **calc_info)
+        qprep(program=program, **calc_info)
 
         # clean up file name because AQME QPREP adds _conf ending.
-        calc_file = f"./QCALC/{file.split('.pdb')[0]}.com"
+        if program == 'orca':
+            end = 'inp'
+        if program == 'gaussian':
+            end = 'com'
+        calc_file = f"./QCALC/{file.split('.pdb')[0]}.{end}"
         try:
-            os.rename(f"./QCALC/{file.split('.pdb')[0]}_conf_1.com", calc_file)
+            os.rename(f"./QCALC/{file.split('.pdb')[0]}_conf_1.{end}", calc_file)
         except:
             pass
             
