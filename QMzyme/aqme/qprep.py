@@ -422,7 +422,7 @@ class qprep:
         fileout.write(header)
 
         for atom_idx in range(0, len(qprep_data["atom_types"])):
-            if self.args.freeze_atoms != []:
+            if self.args.freeze_atoms != [] and self.args.program == 'gaussian':
                 # writes atom flags
                 if atom_idx in self.args.freeze_atoms:
                     atom_flag='-1'
