@@ -1,3 +1,16 @@
+###############################################################################
+# Code written by Heidi Klem while at
+# Colorado State University as a graduate student
+# in the Paton and McCullagh groups and at the
+# National Institute of Standards and Technology
+# as an NRC Postdoc (Fed).
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+"""
+Module in charge of generating the QMzymeModel given a starting structure. 
+"""
+
 from QMzyme.RegionBuilder import RegionBuilder
 from QMzyme.QMzymeModel import QMzymeModel
 import os
@@ -6,8 +19,19 @@ from QMzyme.utils import translate_selection
 from QMzyme.truncation_schemes import truncation_schemes
 
 class GenerateModel(QMzymeModel):
-    "The Director, building a complex representation."
+
     def __init__(self, *args, name=None, universe=None, **kwargs):
+        """
+        GenerateModel can be instantiated with an MDAnalysis Universe directly,
+        or any combination of parameters that MDAnalysis.core.universe.Universe
+        accepts to create a Universe i.e., (example.prmtop, example.dcd, dt=5).
+        See https://userguide.mdanalysis.org/stable/universe.html for details.
+
+        :param name: Name of QMzymeModel.
+        :type name: str, default=None
+        :param universe: MDAnalysis Universe object.
+        :type universe: MDAnalysis.core.universe.Universe, default=None
+        """
         if universe is None:
             universe = MDAwrapper.init_universe(*args, **kwargs)
         self.universe = universe
@@ -22,11 +46,21 @@ class GenerateModel(QMzymeModel):
 
 
     def set_catalytic_center(self, selection):
+        """
+        Method to create a QMzymeRegion called 'catalytic_center'. Accepted input
+        includes (i) str that can be interpreted by the MDAnalysis selection 
+        command, (ii) an MDAnalysis.core.groups.AtomGroup, (iii) a QMzyme.QMzymeRegion.
+        """
         self.set_region('catalytic_center', selection)
         return self.regions[-1]
 
 
     def set_region(self, region_name='no_name', selection=None):
+        """
+        Method to a QMzymeRegion. Accepted input includes (i) str that can be 
+        interpreted by the MDAnalysis selection command, (ii) an 
+        MDAnalysis.core.groups.AtomGroup, (iii) a QMzyme.QMzymeRegion.
+        """
         selection = translate_selection(selection, self.universe)
         region_builder = RegionBuilder(region_name)
         #region = region_builder.init_atom_group(selection).get_region()
@@ -37,14 +71,16 @@ class GenerateModel(QMzymeModel):
     
 
     def truncate_region(self, region, truncation_scheme='CA_terminal'):
+        """
+        Method to truncate a QMzymeRegion. This will create a new region, and leave
+        the original region unchanged.
+        """
         new_region = truncation_schemes[truncation_scheme](region)
         self.add_region(new_region)
         return new_region
 
     def remove_region(self, region_index):
+        """
+        Method to remove a region from the QMzymeModel.
+        """
         del self.regions[region_index]
-
-    # def add_region(self, region):
-    #     self.regions.append(region)
-
-
