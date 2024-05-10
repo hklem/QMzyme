@@ -47,10 +47,10 @@ def test_set_region(Test, init_file, region_name, selection):
     if Test == 'Selection string as input':
         model.set_region(region_name, selection)
     elif Test == 'MDA AtomGroup as input':
-        mda_atomgroup = model.starting_structure.select_atoms(selection)
+        mda_atomgroup = model.universe.select_atoms(selection)
         model.set_region(region_name, mda_atomgroup)
     elif Test == 'QMzymeRegion as input':
-        mda_atomgroup = model.starting_structure.select_atoms(selection)
+        mda_atomgroup = model.universe.select_atoms(selection)
         #qmz_region = RegionBuilder(region_name, mda_atomgroup).get_region()
         region_builder = RegionBuilder(region_name)
         region_builder.init_atom_group(mda_atomgroup)

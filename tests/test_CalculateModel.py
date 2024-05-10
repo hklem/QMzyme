@@ -1,4 +1,3 @@
-from QMzyme.CalculateModel import CalculateModel
 from QMzyme.CalculateModel import QM_Region
 from QMzyme.GenerateModel import GenerateModel
 from importlib_resources import files
@@ -20,8 +19,13 @@ def restore_directory():
             except:
                 shutil.rmtree(name)
 
-def test_QM_Region():
-
+@pytest.mark.parametrize(
+    "Test, model, program",[
+        ('Gaussian Test', model, 'gaussian'),
+        ('Orca Test', model, 'orca'),
+    ]
+)
+def test_QM_Region(Test, model, program):
     # check basis_set info is set for all atoms
     bs1 = '6-31g(d)'
     ids = model.cutoff_3.get_ids('name', 'CA')
@@ -37,17 +41,12 @@ def test_QM_Region():
     for fnc in [atom.functional for atom in r1.atoms]:
         assert fnc == functional
 
-    # # check basis_set info is set only for selection
-    # bs2 = '6-31+g(d)'
-    # r1.set_basis_set(bs2, 'element O')
-    # assert r1.region.get_atom(4005).basis_set == bs1
-    # assert r1.region.get_atom(4006).basis_set == bs2
-
     r1.set_charge(-1)
     r1.set_multiplicity(1)
-    calc_info = r1.write_qm_input(program='gaussian')
 
-    assert calc_info['freeze'] == model.cutoff_3.get_idxs_from_ids(ids)
+    calc_info = r1.write_qm_input(program=program)
 
-    restore_directory()
+    assert calc_info['freeze_atoms'] == model.cutoff_3.get_idxs_from_ids(ids)
+
+    #restore_directory()
 
