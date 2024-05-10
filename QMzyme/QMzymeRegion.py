@@ -1,5 +1,10 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
 """
-Product of the builder class RegionBuilder.
+Product of the RegionBuilder class.
 """
 
 import copy

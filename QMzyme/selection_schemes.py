@@ -1,8 +1,22 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+"""
+Module containing functions to define a QMzymeRegion based on some logic/workflow.
+"""
+
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.RegionBuilder import RegionBuilder
 
-def within_distance(model, distance_cutoff, include_whole_residues=True):
+def distance_cutoff(model, distance_cutoff, include_whole_residues=True):
+    """
+    Function to select QMzymeRegion based on ``distance_cutoff``. Ad hoc approach
+    that is often used to create multiple models that will be evaluated for 
+    converge of relevant properties to validate region choice.
+    """
     if not model.has_region('catalytic_center'):
         raise UserWarning("You must first define a catalytic_center. See method `set_catalytic_center()`.")
     
@@ -30,7 +44,3 @@ def within_distance(model, distance_cutoff, include_whole_residues=True):
     setattr(region, 'catalytic_center', model.get_region('catalytic_center'))
     return region
         
-    
-
-
-

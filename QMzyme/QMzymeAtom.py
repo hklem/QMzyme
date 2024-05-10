@@ -1,3 +1,8 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
 import inspect
 
 class QMzymeAtom:
@@ -14,17 +19,15 @@ class QMzymeAtom:
     Optional Parameters
     --------------------
     :param type: optional
-    :param is_fixed: optional
     :param force: optional
     :param velocity: optional
     :param id: optional
     :param bfactor: optional
-    :param resid: 
-    :param resname:
     :param segid: optional
     :param chain: optional
     :param record_type: optional
     :param charge: optional
+    :param is_fixed: optional
     :param is_neighbor: optional
     """
     def __init__(self, name, element, position, resid, resname, id=1, region=None, **kwargs):

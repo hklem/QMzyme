@@ -1,3 +1,8 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
 """
 Code to integrate MDAnalysis utilities in QMzyme. 
 """

@@ -1,3 +1,12 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+"""
+Module containing broad functionality utilized throughout the package.
+"""
+
 import numpy as np
 from functools import singledispatch
 import QMzyme.MDAnalysisWrapper as MDAwrapper
@@ -10,7 +19,6 @@ protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
                     'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
                     'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP',
                     'SEC', 'PYL']
-
 
 @singledispatch
 def translate_selection(selection, universe):

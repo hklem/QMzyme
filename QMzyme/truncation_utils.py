@@ -1,3 +1,12 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+"""
+Module containing functions utilized by truncation_schemes.py.
+"""
+
 import numpy as np
 from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.RegionBuilder import RegionBuilder

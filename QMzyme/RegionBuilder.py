@@ -1,5 +1,10 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
 """
-Concrete builder class to construct QMzymeRegion.
+Class to build a QMzymeRegion object.
 """
 
 import warnings

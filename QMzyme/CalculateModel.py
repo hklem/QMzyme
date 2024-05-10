@@ -1,4 +1,9 @@
-'''
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+"""
 Module in charge of creating input files for QM-only or QM/MM calculations. This 
 module integrates the `AQME QPREP <https://aqme.readthedocs.io/en/latest/API/aqme.qprep.html>`_ 
 workflow.
@@ -6,7 +11,7 @@ workflow.
 Notes
 ...............
     *   Currently optimized to generate QM-only Gaussian input files.
-'''
+"""
 
 import copy
 import os

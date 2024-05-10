@@ -1,5 +1,10 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
 """
-Product of the concrete builder class ModelBuilder.
+Product of the ModelBuilder class.
 """
 
 class QMzymeModel:

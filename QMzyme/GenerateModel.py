@@ -1,9 +1,5 @@
 ###############################################################################
-# Code written by Heidi Klem while at
-# Colorado State University as a graduate student
-# in the Paton and McCullagh groups and at the
-# National Institute of Standards and Technology
-# as an NRC Postdoc (Fed).
+# Code written by Heidi Klem.
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 

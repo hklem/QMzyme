@@ -1,3 +1,12 @@
+###############################################################################
+# Code written by Heidi Klem.
+# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+###############################################################################
+
+"""
+Module containing functions to truncate a QMzymeRegion based on some logic/workflow.
+"""
+
 from QMzyme.utils import protein_residues
 from QMzyme.RegionBuilder import RegionBuilder
 from QMzyme.QMzymeAtom import QMzymeAtom
@@ -12,6 +21,11 @@ truncation_schemes = {
 
 # init atoms to new region directly? Currently the atom names for cap atoms are not ensured to be unique.
 def CA_terminal(region): 
+    """
+    Function to truncate a QMzymeRegion accoring to the CA_terminal scheme. 
+    See Documentation for scheme descriptions.
+    *I still need to write up some documentation about how various schemes works."
+    """
     # u = region.get_AtomGroup().universe
     # residues = [MDAnalysisWrapper.get_parallel_residue(res, u) for res in region.get_AtomGroup().residues]
     remove_atoms = []
@@ -64,5 +78,10 @@ def CA_terminal(region):
     
 
 def CA_all(region):
+    """
+    Function to truncate a QMzymeRegion accoring to the CA_all scheme. 
+    See Documentation for scheme descriptions.
+    *I still need to write up some documentation about how various schemes works."
+    """
     raise UserWarning("This method is currently under development.")        
         
