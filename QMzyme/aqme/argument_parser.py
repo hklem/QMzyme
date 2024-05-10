@@ -70,7 +70,7 @@ var_dict = {
     "gen_atoms": [],
     "bs_nogen": "",
     "bs_gen": "",
-    "freeze": [],
+    "freeze_atoms": [],
     "lowest_only": False,
     "lowest_n": None,
     "e_threshold_qprep": None,
