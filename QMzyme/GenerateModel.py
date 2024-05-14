@@ -39,7 +39,7 @@ class GenerateModel(QMzymeModel):
 
 
     def __repr__(self):
-        return f"<ModelBuilder: Current QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
+        return f"<QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
 
 
     def set_catalytic_center(self, selection):
