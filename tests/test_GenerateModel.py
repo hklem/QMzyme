@@ -18,7 +18,7 @@ pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
 def test_init():
     model = GenerateModel(pdb_file)
-    assert model.__repr__() == "<ModelBuilder: Current QMzymeModel built from <Universe with 4258 atoms> contains 0 region(s)>"
+    assert model.__repr__() == "<QMzymeModel built from <Universe with 4258 atoms> contains 0 region(s)>"
     assert model.name == '1oh0'
     assert model.universe.__class__ == Universe
     assert model.filename == pdb_file
