@@ -55,6 +55,7 @@ class RegionBuilder:
             self.init_atom(atom, uniquify=False)
         self.atom_group = atom_group
         self.region.set_atom_group(atom_group)
+        self.region.sort_atoms()
         return self.region
 
     def init_atom(self, atom, uniquify=True):
@@ -65,6 +66,7 @@ class RegionBuilder:
         atom = QMzymeAtom(**atom_props)
         self.region.add_atom(atom)
         self.atoms.append(atom)
+        self.region.sort_atoms()
         self.atoms = self.region.atoms
 
     def uniquify_atom(self, atom_props):
@@ -81,12 +83,6 @@ class RegionBuilder:
         while atom_props['id'] in temp_region.ids:
             atom_props['id'] += 1
         return atom_props
-
-
-    def get_region(self):
-        # self.region = QMzymeRegion(self.name, self.atoms)
-        # self.region.set_atom_group(self.atom_group)
-        return self.region
 
 
     def get_atom_properties(self, atom: _Atom):
@@ -112,6 +108,12 @@ class RegionBuilder:
         except:
             pass
         return atom_attr_dict
+
+
+    def get_region(self):
+        # self.region = QMzymeRegion(self.name, self.atoms)
+        # self.region.set_atom_group(self.atom_group)
+        return self.region
 
 
 
