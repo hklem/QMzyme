@@ -31,7 +31,7 @@ def test_set_catalytic_center(selection='resid 263'):
     assert model.regions[0].name == 'catalytic_center'
     assert model.regions[0].n_atoms == 37
 
-    model.remove_region(region_index=0)
+    model.remove_region("catalytic_center")
     assert len(model.regions) == 0
 
 

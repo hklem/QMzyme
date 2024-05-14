@@ -25,13 +25,13 @@ pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 )
 def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme="CA_terminal"):
     model = GenerateModel(init_file)
-    original_region = model.set_region('test', region_selection)
-    truncated_region = model.truncate_region(original_region, truncation_scheme)
+    model.set_region('region', region_selection)
+    model.truncate_region(model.region, truncation_scheme)
     #First check that the original region didn't change:
-    original_first_res = original_region.residues[0]
-    truncated_first_res = truncated_region.residues[0]
-    original_last_res = original_region.residues[-1]
-    truncated_last_res = truncated_region.residues[-1]
+    original_first_res = model.region.residues[0]
+    truncated_first_res = model.region_truncated.residues[0]
+    original_last_res = model.region.residues[-1]
+    truncated_last_res = model.region_truncated.residues[-1]
 
     if original_first_res.resname != 'PRO':
         removed_atom_name = 'H'
@@ -53,13 +53,13 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
     
     assert 'H1' in [atom.name for atom in truncated_first_res.atoms]
 
-    for i in range(original_region.n_residues-1):
-        resid = original_region.resids[i]
-        next_resid = original_region.resids[i+1] 
-        original_res = original_region.get_residue(resid)
-        original_next_res = original_region.get_residue(next_resid)
-        truncated_res = truncated_region.get_residue(resid)
-        truncated_next_res = truncated_region.get_residue(next_resid)
+    for i in range(model.region.n_residues-1):
+        resid = model.region.resids[i]
+        next_resid = model.region.resids[i+1] 
+        original_res = model.region.get_residue(resid)
+        original_next_res = model.region.get_residue(next_resid)
+        truncated_res = model.region_truncated.get_residue(resid)
+        truncated_next_res = model.region_truncated.get_residue(next_resid)
         assert 'C' in [atom.name for atom in original_res.atoms]
         assert 'O' in [atom.name for atom in original_res.atoms]
         assert 'N' in [atom.name for atom in original_next_res.atoms]
