@@ -88,8 +88,9 @@ class QM_Region(object):
         for atom in atom_group.atoms:
             qmz_atom = self.region.get_atom(atom.id)
             self.assign_bs_to_atom(basis_set, atom)
-        self.get_atoms = elements
+        self.gen_atoms = elements
         self.bs_nogen = self.basis_set
+        self.bs_gen = basis_set
         
     def set_functional(self, functional: str):
         """
