@@ -13,6 +13,7 @@ import os
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.utils import translate_selection
 from QMzyme.truncation_schemes import truncation_schemes
+from QMzyme.selection_schemes import selection_schemes
 
 class GenerateModel(QMzymeModel):
 
@@ -48,7 +49,7 @@ class GenerateModel(QMzymeModel):
         command, (ii) an MDAnalysis.core.groups.AtomGroup, (iii) a QMzyme.QMzymeRegion.
         """
         self.set_region('catalytic_center', selection)
-        return self.regions[-1]
+        #return self.regions[-1]
 
 
     def set_region(self, region_name='no_name', selection=None):
@@ -62,7 +63,7 @@ class GenerateModel(QMzymeModel):
         region_builder.init_atom_group(selection)
         region = region_builder.get_region()
         self.add_region(region)
-        return self.regions[-1]
+        #return self.regions[-1]
     
 
     def truncate_region(self, region, truncation_scheme='CA_terminal'):
@@ -72,10 +73,12 @@ class GenerateModel(QMzymeModel):
         """
         new_region = truncation_schemes[truncation_scheme](region)
         self.add_region(new_region)
-        return new_region
+        #return new_region
 
-    def remove_region(self, region_index):
+    def selection_scheme(self, selection_scheme: str='distance_cutoff', **kwargs):
         """
-        Method to remove a region from the QMzymeModel.
+        Method to call a selection scheme to identify what atoms to include in the QMzymeRegion.
+        If selection_scheme='distance_cutoff', the keyword argument cutoff must also be supplied.
         """
-        del self.regions[region_index]
+        new_region = selection_schemes[selection_scheme](self, kwargs['cutoff'])
+        self.add_region(new_region)
