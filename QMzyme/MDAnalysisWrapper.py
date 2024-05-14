@@ -15,7 +15,13 @@ from MDAnalysis.core.universe import Universe
 
 
 def init_universe(*args, **kwargs):
+    warnings.filterwarnings('ignore')
     u = mda.Universe(*args, **kwargs)
+    if not hasattr(u.atoms, "elements"):
+        from MDAnalysis.topology.guessers import guess_types
+        guessed_elements = guess_types(u.atoms.names)
+        u.add_TopologyAttr("elements", guessed_elements)
+        warnings.warn("Element information was missing from input. MDAnalysis.topology.guessers.guess_types was used to infer element types.", UserWarning)
     return u
 
 def select_atoms(universe, selection):
@@ -28,32 +34,32 @@ def select_atoms(universe, selection):
     return u
 
 
-# def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
-#     """
-#     Returns list of atoms in distance based atom group.
-#     """
-#     # Using the fast C based code
-#     tree = PeriodicKDTree()
-#     atoms = []
-#     full_system = ag1
-#     sub_system = ag2
+def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
+    """
+    Returns list of atoms in distance based atom group.
+    """
+    # Using the fast C based code
+    tree = PeriodicKDTree()
+    atoms = []
+    full_system = ag1
+    sub_system = ag2
 
-#     # To ensure bigger atom group selection is used to set_coords
-#     if len(ag2) > len(ag1):
-#         full_system = ag2
-#         sub_system = ag1
-#     tree.set_coords(full_system.positions)
-#     pairs = tree.search_tree(sub_system.positions, radius)
+    # To ensure bigger atom group selection is used to set_coords
+    if len(ag2) > len(ag1):
+        full_system = ag2
+        sub_system = ag1
+    tree.set_coords(full_system.positions)
+    pairs = tree.search_tree(sub_system.positions, radius)
 
-#     for pair in pairs:
-#         atom = full_system[pair[1]]
-#         if remove_duplicates is True:
-#             if atom not in atoms:
-#                 atoms.append(atom)
-#         else:
-#             atoms.append(atom)
+    for pair in pairs:
+        atom = full_system[pair[1]]
+        if remove_duplicates is True:
+            if atom not in atoms:
+                atoms.append(atom)
+        else:
+            atoms.append(atom)
     
-#     return sum(atoms)
+    return sum(atoms)
 
 
 # def get_parallel_residue(residue, other_universe):
