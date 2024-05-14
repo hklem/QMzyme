@@ -80,8 +80,14 @@ class QMzymeModel:
         :param region_name: Name of the region to be removed.
         :type region_name: str, required 
         """
-        del self.regions[region_name]
+        #del self.regions[region_idx]
         delattr(self, region_name)
+        n_regions = len(self.regions)
+        for i in range(n_regions):
+            if self.regions[i].name == region_name:
+                del self.regions[i]
+                break
+
 
 
 
