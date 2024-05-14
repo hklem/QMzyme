@@ -59,7 +59,7 @@ class QMzymeRegion:
     
     @property
     def resids(self):
-        return list(set([atom.resid for atom in self.atoms]))
+        return sorted(list(set([atom.resid for atom in self.atoms])))
     
     @property
     def n_atoms(self):
