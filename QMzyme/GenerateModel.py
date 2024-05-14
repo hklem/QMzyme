@@ -17,7 +17,7 @@ from QMzyme.selection_schemes import selection_schemes
 
 class GenerateModel(QMzymeModel):
 
-    def __init__(self, *args, name=None, universe=None, **kwargs):
+    def __init__(self, *args, name=None, universe=None, frame=0, **kwargs):
         """
         GenerateModel can be instantiated with an MDAnalysis Universe directly,
         or any combination of parameters that MDAnalysis.core.universe.Universe
@@ -28,9 +28,13 @@ class GenerateModel(QMzymeModel):
         :type name: str, default=None
         :param universe: MDAnalysis Universe object.
         :type universe: MDAnalysis.core.universe.Universe, default=None
+        :param frame: If trajectory was provided, specify a frame to base coordinates on
+        :type frame: int, default=0
         """
         if universe is None:
             universe = MDAwrapper.init_universe(*args, **kwargs)
+        if frame != 0:
+            universe.trajectory[frame]
         self.universe = universe
         if name is None:
             name = os.path.basename(self.universe.filename).split('.')[0]
