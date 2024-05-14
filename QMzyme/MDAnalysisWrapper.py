@@ -15,7 +15,6 @@ from MDAnalysis.core.universe import Universe
 
 
 def init_universe(*args, **kwargs):
-    warnings.filterwarnings('ignore')
     u = mda.Universe(*args, **kwargs)
     if not hasattr(u.atoms, "elements"):
         from MDAnalysis.topology.guessers import guess_types
