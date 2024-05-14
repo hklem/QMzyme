@@ -25,6 +25,8 @@ class QMzymeModel:
         return len(self.regions)
     
     def add_region(self, region):
+         if hasattr(self, region.name):
+             raise UserWarning(f"Region with name {region.name} already exists in QMzymeModel {self.name}. Please use a different region name or remove the existing region via remove_region({region.name}).")
          setattr(self, region.name, region)
          self.regions.append(region)
 
@@ -71,6 +73,15 @@ class QMzymeModel:
 
         with open ('QMzymeModel_visualize.py', 'w+') as f:
             f.write(lines)
+
+    def remove_region(self, region_name):
+        """
+        Method to remove a region from the QMzymeModel.
+        :param region_name: Name of the region to be removed.
+        :type region_name: str, required 
+        """
+        del self.regions[region_name]
+        delattr(self, region_name)
 
 
 
