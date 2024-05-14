@@ -66,7 +66,7 @@ def test_QMzymeRegion():
     # test setting fixed atoms
     region.set_fixed_atoms(ids=ids)
     for id in ids:
-        assert region.get_atom(id).is_fixed
+        assert region.get_atom(id).is_fixed == True
 
 def test_QMzymeResidue():
     region_builder = RegionBuilder(name='test')

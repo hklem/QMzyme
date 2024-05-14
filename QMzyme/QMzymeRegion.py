@@ -153,9 +153,10 @@ class QMzymeRegion:
         return MDAwrapper.build_universe_from_QMzymeRegion(self)
     
     def set_fixed_atoms(self, ids: list):
-        for id in ids:
-            atom = self.get_atom(id)
-            atom.set_fixed()
+        for atom in self.atoms:
+            if atom.id in ids:
+                #atom.set_fixed(value = True)
+                setattr(atom, "is_fixed", True)
 
     def get_ids(self, attribute: str, value):
         """
