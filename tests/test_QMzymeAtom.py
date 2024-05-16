@@ -84,11 +84,11 @@ def test_setters():
     qmz_atom.set_fixed()
     assert qmz_atom.is_fixed
 
-    # is_dummy
-    with pytest.raises(AttributeError):
-        f = qmz_atom.is_dummy
-    qmz_atom.set_dummy()
-    assert qmz_atom.is_dummy
+    # is_point_charge
+    assert qmz_atom.is_point_charge == False
+    with pytest.raises(UserWarning):
+        qmz_atom.set_point_charge()
+    #assert qmz_atom.is_point_charge
 
     # is_neighbor
     with pytest.raises(AttributeError):

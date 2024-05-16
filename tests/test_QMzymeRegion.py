@@ -56,12 +56,12 @@ def test_QMzymeRegion():
     # now add the atom again- it will be changed because it was not unique.
     region_builder.init_atom(new_atom)
     assert region.n_atoms == 63
-    assert region.atoms[1].name == f"{new_atom.element}1"
-    assert region.atoms[1].id == max(region.get_residue(new_atom.resid).ids)
+    assert region.atoms[-1].name == f"{new_atom.element}1"
+    assert region.atoms[-1].id == max(region.get_residue(new_atom.resid).ids)
 
     # test getting atom ids for all CA atoms
     ids = region.get_ids(attribute='name', value='CA')
-    assert ids == [5, 22, 36, 63, 69]
+    assert sorted(ids) == [5, 22, 36, 63, 69]
 
     # test setting fixed atoms
     region.set_fixed_atoms(ids=ids)

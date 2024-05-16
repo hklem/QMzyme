@@ -25,7 +25,7 @@ pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 )
 def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme="CA_terminal"):
     model = GenerateModel(init_file)
-    model.set_region('region', region_selection)
+    model.set_region(region_name='region', selection=region_selection, layer='High')
     model.truncate_region(model.region, truncation_scheme)
     #First check that the original region didn't change:
     original_first_res = model.region.residues[0]
