@@ -27,13 +27,14 @@ remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'i
 
 class RegionBuilder:
 
-    def __init__(self, name, atom_group = None):
+    def __init__(self, name, atom_group = None, layer = None):
         self.name = name
         self.atoms = []
+        self.region = None
         self.atom_group = atom_group
-        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group)
         if atom_group is not None:
             self.init_atom_group(atom_group)
+        self.layer = layer
 
     def __repr__(self):
         return f"<RegionBuilder: Current QMzymeRegion, {self.name}, "+\
@@ -52,11 +53,11 @@ class RegionBuilder:
         It is assumed that the atoms in the selection are already unique. 
         """
         for atom in atom_group.atoms:
-            self.init_atom(atom, uniquify=False)
+            self.init_atom(atom, uniquify=True)
+            #self.init_atom(atom, uniquify=False)
         self.atom_group = atom_group
-        self.region.set_atom_group(atom_group)
-        self.region.sort_atoms()
-        return self.region
+        region = self.get_region()
+        return region
 
     def init_atom(self, atom, uniquify=True):
         warnings.filterwarnings('ignore')
@@ -64,10 +65,7 @@ class RegionBuilder:
         if uniquify is True:
             atom = self.uniquify_atom(atom_props)
         atom = QMzymeAtom(**atom_props)
-        self.region.add_atom(atom)
         self.atoms.append(atom)
-        self.region.sort_atoms()
-        self.atoms = self.region.atoms
 
     def uniquify_atom(self, atom_props):
         temp_region = QMzymeRegion(self.name, self.atoms)
@@ -83,7 +81,6 @@ class RegionBuilder:
         while atom_props['id'] in temp_region.ids:
             atom_props['id'] += 1
         return atom_props
-
 
     def get_atom_properties(self, atom: _Atom):
         atom_attr_dict = {}
@@ -109,12 +106,6 @@ class RegionBuilder:
             pass
         return atom_attr_dict
 
-
     def get_region(self):
-        # self.region = QMzymeRegion(self.name, self.atoms)
-        # self.region.set_atom_group(self.atom_group)
+        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group, self.layer)
         return self.region
-
-
-
-
