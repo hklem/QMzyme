@@ -55,18 +55,21 @@ def create_new_atom(atom, new_atom_dict):
 
 
 def get_preceding_Catom(region, resid):
-    mda_atom = region.get_atom_group().universe.select_atoms(f'resid {resid-1} and name C')
-    try:
-        atom = RegionBuilder('temp', mda_atom).get_region().atoms[0]
-    except:
-        atom = None
+    if resid == 1:
+        return None
+    mda_atom = region.get_atom_group().universe.select_atoms(f'resid {resid-1} and name C').atoms[0]
+    rb = RegionBuilder(name='temp')
+    rb.init_atom(mda_atom)
+    atom = rb.atoms[0]
     return atom
 
 
 def get_following_Natom(region, resid):
-    mda_atom = region.get_atom_group().universe.select_atoms(f'resid {resid+1} and name N')
     try:
-        atom = RegionBuilder('temp', mda_atom).get_region().atoms[0]
+        mda_atom = region.get_atom_group().universe.select_atoms(f'resid {resid+1} and name N').atoms[0]
+        rb = RegionBuilder(name='temp')
+        rb.init_atom(mda_atom)
+        atom = rb.atoms[0]
     except:
         atom = None
     return atom
