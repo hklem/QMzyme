@@ -16,30 +16,18 @@ import warnings
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
-_AtomGroup = TypeVar("_AtomGroup", bound="AtomGroup")
 
 class QMzymeRegion:
-    #def __init__(self, name, atoms: list[_QMzymeAtom], residues, atom_group: _AtomGroup):
-    # def __init__(self, name):
-    def __init__(self, name, atoms: list, atom_group= None):
+    def __init__(self, name, atoms: list, atom_group = None, layer = None):
         self.name = name
         self.atoms = atoms
         self.atom_group = atom_group
+        self.layer = layer
+        self.method = None
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
     
-    # @property
-    # def atoms(self):
-    #     return self._atoms
-    
-    # @atoms.setter
-    # def atoms(self, value):
-    #     self.atoms = value
-        
-    # @property
-    # def atom_group(self):
-    #     return self.atom_group
         
     @property
     def ids(self):
@@ -80,6 +68,15 @@ class QMzymeRegion:
             res = QMzymeResidue(resname, resid, atoms)
             residues.append(res)
         return residues
+    
+    def set_layer(self, value: str):
+        """
+        Accepted layer values are "QM", "xTB" and "point_charges".
+        """
+        value = value.lower()
+        if value not in ["qm", "xtb", "point_charges"]:
+            raise UserWarning('Accepted layer values are QM, xTB and point_charges.')
+        self.layer = value
 
     def set_atom_group(self, atom_group):
         self.atom_group = atom_group
@@ -114,26 +111,6 @@ class QMzymeRegion:
         atoms = self.atoms
         ids = [atom.id for atom in self.atoms]
         return [x for _, x in sorted(zip(ids, atoms))]
-        
-    # def uniquify_atom(self, atom):
-    #     atom = copy.copy(atom)
-    #     if self.atoms == None:
-    #         return atom
-    #     ids = self.ids
-    #     while atom.id in ids:
-    #         atom.id += 1
-    #     if atom.resid in self.resids:
-    #         residue_atoms = self.get_residue(atom.resid).atoms
-    #         atom_names = [a.name for a in residue_atoms]
-    #         name = atom.name
-    #         if name in atom_names:
-    #             i = 0
-    #             while name in atom_names:
-    #                 i += 1
-    #                 name = f"{atom.element}{i}"
-    #             atom.set_name(name)
-    #     return atom
-
     
     def get_residue(self, resid):
         for res in self.residues:
@@ -190,7 +167,9 @@ class QMzymeRegion:
         if missing != []:
             raise UserWarning(f"The following atoms are missing {attr} information: {missing}")
         
-
+    def set_method(self, method_dict, type):
+        method_dict["type"] = "type"
+        self.method = method_dict
 
 class QMzymeResidue(QMzymeRegion):
     def __init__(self, resname, resid, atoms, chain=None):
@@ -200,17 +179,6 @@ class QMzymeResidue(QMzymeRegion):
         if chain is None:
             chain = self.atoms[0].get_chain()
         self.chain = chain
-
-    # def set_atoms(self, atoms):
-    #     return [atom for atom in atoms]
-
-    # @property
-    # def atoms(self):
-    #     return self.__atoms
-
-    # @atoms.setter
-    # def atoms(self, value):
-    #     self.__atoms = value
 
     def __repr__(self):
         rep =  f"<QMzymeResidue resname: {self.resname}, resid: {self.resid}, chain: "
