@@ -60,7 +60,12 @@ zip-safe = false
 #include-package-data = false
 [tool.setuptools.packages.find]
 #namespaces = false
+<<<<<<< class_structure_redesign
 where = [".","QMzyme/data"] # use "." and not "QMzyme" so pytest can find tests.
+=======
+#where = [".","data"]
+where = ["QMzyme","data"]
+>>>>>>> main
 
 # Ref https://setuptools.pypa.io/en/latest/userguide/datafiles.html#package-data
 [tool.setuptools.package-data]
