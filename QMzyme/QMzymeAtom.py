@@ -29,6 +29,7 @@ class QMzymeAtom:
     :param charge: optional
     :param is_fixed: optional
     :param is_neighbor: optional
+    :param is_point_charge: optional
     """
     def __init__(self, name, element, position, resid, resname, id=1, region=None, **kwargs):
         self.name = name
@@ -39,6 +40,7 @@ class QMzymeAtom:
         self.id = id
         self.__region = region
         self.is_fixed = False
+        self.is_point_charge = False
         
         for attr, val in kwargs. items():
             setattr(self, attr, val)
@@ -94,11 +96,14 @@ class QMzymeAtom:
         """
         self.is_fixed = value
 
-    def set_dummy(self, value: bool=True):
+    def set_point_charge(self, value: bool=True):
         """
-        Method to add ``is_dummy=True`` attribute to QMzymeAtom."
+        Method to set ``is_point_charge=True`` to QMzymeAtom.
+        Note: only works if atom has charge attribute.
         """
-        self.is_dummy = value
+        if not hasattr(self, "charge"):
+            raise UserWarning(f"Cannot set atom {self} as point_charge because no charge information found.")
+        self.is_point_charge = value
 
     def get_chain(self):
         chain = None
