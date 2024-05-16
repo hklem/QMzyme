@@ -22,13 +22,12 @@ jobs:
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
+          conda install -c conda-forge openbabel
           conda activate qmzyme
-          conda install -y -c conda-forge openbabel
-          pip install --upgrade pip
           pip install -e .
           pip install pytest
           pip install pytest-cov
-          pytest -v --color yes --cov=QMzyme --cov-report=html
+          pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report html
       - store_artifacts:
           path: htmlcov
             

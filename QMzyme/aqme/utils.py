@@ -242,7 +242,7 @@ def command_line_args():
         "constraints_dist",
         "constraints_angle",
         "constraints_dihedral",
-        "freeze",
+        "freeze_atoms",
         "atom_types",
         "cartesians",
         "nmr_atoms",
