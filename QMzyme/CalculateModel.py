@@ -13,225 +13,248 @@ Notes
     *   Currently optimized to generate QM-only Gaussian input files.
 """
 
-import copy
 import os
 from QMzyme.aqme.qprep import qprep
+import numpy as np
 
 
-# class MultiscaleCalculation:
-#     """
-#     Class to prepare input for a multiscale calculateion (i.e., QM1/QM2 or QM/MM).
-#     """
-#     def __init__(self, low_layer, high_layer):
-#         self.set_layers()
-#         for layer, region in self.layers.items():
-#             if 'QM' in layer:
-#                 # prepare QM calc
-#                 self.write_qm_input(region)
-
-#     def set_layers(self):
-#         self.layers = {}
-#         for region in self.regions:
-#             while region.layer in self.layers:
-#                 count = int(region.layer[-1])
-#                 region.layer = f"{region.layer[:2]}{count+1}"
-#             self.layers[region.layer] = region
+qm_params = {
+        "program": None,
+        "qm_input": None,
+        "qm_end": None,
+        "charge": None,
+        "mult": None,
+        "chk": None,
+        "chk_path": None,
+        "mem": None,
+        "nprocs": None,
+        "gen_atoms": None,
+        "bs_gen": None,
+        "bs_nogen": None,
+        "freeze": None
+    }
 
 
-class QM_Region(object):
+def write_QM(layer):
+    qprep(**layer.method)
+    # clean up file name because AQME QPREP adds _conf ending.
+    rename_file(layer.method["files"], layer.method["program"])
+
+def write_QMxTB(filename, high_layer, low_layer, total_charge, program='orca', **kwargs):
     """
-    Class to prepare a QMzymeRegion for a QM calculation.
+    !QM/XTB WB97X-D3 DEF2-TZVP
+    %QMMM
+      QMATOMS {2:3} {6:13} END
+
+    Need to add check for charge and mult. If xTB and QM region have no atom overlap then just add 
+    charge and mult. If xTB contains the entire QM region then just just xTB region charge and mult.
+    But if there is partial overlap between the two regions, raise warning. 
     """
-    def __init__(self, region):
+    qprep(**kwargs)
+    # clean up file name because AQME QPREP adds _conf ending.
+    filename = rename_file(filename, kwargs["program"])
+    qmmm_section = ""
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    high_level_atoms = get_atom_range(high_level_atoms)
+    qmmm_section = "%QMMM\n"
+    qmmm_section += f" QMATOMS {high_level_atoms} END\n"
+    qmmm_section += f" Charge_Total {total_charge} END\n"
+
+    new_lines = []
+    for i, line in enumerate(lines):
+        if line.startswith("!"):
+            if "QM/XTB" not in line:
+                new_lines.append(f"{line[0]} QM/XTB {line[1:]}")
+            new_lines.append(qmmm_section)
+        else:
+            new_lines.append(line)
+    with open(filename, "w+") as f:
+        f.writelines(new_lines)
+
+def write_QMQM(filename, high_layer, low_layer, program='orca', **kwargs):
+    """
+    !QM/QM2 WB97X-D3 DEF2-TZVP
+    %QMMM QM2CUSTOMMETHOD "PBE D3BJ DEF2-SVP"
+      QMATOMS {2:3} {6:13} END
+    """
+    qprep(**kwargs)
+    # clean up file name because AQME QPREP adds _conf ending.
+    filename = rename_file(filename, kwargs["program"])
+    qmqm2_section = ""
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+
+    high_level_atoms = get_atom_range(high_level_atoms)
+    qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_layer['qm_input']}'\n"
+    qmmm_section += f" QMATOMS {high_level_atoms} END\n"
+
+    new_lines = []
+    for i, line in enumerate(lines):
+        if line.startswith("!"):
+            if "QM/QM2" not in line:
+                new_lines.append(f"{line[0]} QM/QM2 {line[1:]}")
+            new_lines.append(qmmm_section)
+        else:
+            new_lines.append(line)
+    with open(filename, "w+") as f:
+        f.writelines(new_lines)
+
+def write_QMMM(high_layer, low_layer):
+    """
+    This method will need a QM method assignment for the high_layer, and then 
+    takes the point charges for the low_layer. 
+    One prerequisite for this is that charges will need to be defined at the atom level.
+    """
+    write_QM(high_layer, high_layer.method)
+    # remove any qm_atoms from low_layer then proceed
+    write_charge_field()
+    # add line '% pointcharges "pointcharges.pc"' to QM input file
+
+def write_charge_field(region):
+    """
+    3 # number of point charges
+     -0.834  -1.3130   0.0000  -0.0310 # charge in a.u. x y z in Ang
+      0.417  -1.8700   0.7570   0.1651
+      0.417  -1.8700  -0.7570   0.1651
+
+    From Orca manual: 
+    However, it should be noted that ORCA treats point charges from an external 
+    file differently than “Q” atoms. When using an external point charge file, 
+    the interaction between the point charges is not included in the nuclear energy. 
+    This behavior originates from QM/MM, where the interactions among the point charges 
+    is done by the MM program. These programs typically use an external point charge 
+    file when generating the ORCA input. To add the interaction of the point charges 
+    to the nuclear energy, the DoEQ keyword is used either in the simple input or the 
+    %method block as shown below.
+
+    # A non QM/MM pointcharge calculation
+    ! DoEQ
+    
+    %pointcharges "pointcharges.pc"
+
+    %method
+        DoEQ true
+    end
+    """
+    for atom in region:
+        atom.set_point_charge()
+    # write pointcharges.pc
+
+
+def get_atom_range(atom_indices: list):
+    """
+    Utility function used for ORCA file input.
+    """
+    range = ''
+    for i in np.arange(1, np.max(atom_indices)+1):
+        if i in atom_indices:
+            if i-1 not in atom_indices:
+                range += "{"+str(i)
+                if i+1 not in atom_indices:
+                    range += "} "
+            elif i+1 not in atom_indices:
+                range += f":{i}"+"} "
+    return range
+
+
+def rename_file(filename, program):
+    """
+    Function that cleans up aqme file naming convention.
+    """
+    if program == 'orca':
+        end = 'inp'
+    if program == 'gaussian':
+        end = 'com'
+    calc_file = f"./QCALC/{filename.split('.pdb')[0]}.{end}"
+    try:
+        os.rename(f"./QCALC/{filename.split('.pdb')[0]}_conf_1.{end}", calc_file)
+        with open(calc_file, "r") as f:
+            lines = f.readlines()
+        for i,line in enumerate(lines):
+            if "_conf_1" in line:
+                print(lines[i])
+                lines[i] = line.replace("_conf_1", "")
+                print(lines[i])
+        with open(calc_file, "w+") as f:
+            f.writelines(lines)
+    except:
+        pass
+    return calc_file
+
+        
+class xTB:
+    """
+    Class to prepare a QMzymeRegion for xTB treatment.
+    """
+    def __init__(self, region, charge, mult):
+        """
+        :param region: QMzyme region to treat at the xTB level.
+        :type region: QMzymeRegion
+        :param charge: Charge of the region.
+        :type charge: int
+        :param mult: Multiplicity of the region.
+        :type mult: int
+        """
+        self.charge = charge
+        self.multiplicity = mult
+        self.freeze_atoms = []
+        
+        self._set_constraints(self, region)
+        region._set_method(self.__dict__, type="xTB")
+
+class ChargeField:
+    pass
+
+class QM:
+    """
+    Class to prepare a QMzymeRegion for QM treatment.
+    
+    Required Parameters
+    ====================
+    region: QMzymeRegion to apply method to
+    basis_set: str, defines basis set to use for calculation
+    functional: str, defines functional to use for calculation
+    charge: int, charge of the region
+    mult: int, multiplicity of the region
+
+    Optional Parameters 
+    ====================
+    qm_input: str, default = ""
+        Keywords to include in the input file route line to 
+        declare any details beyond the basis set and functional.
+        E.g. "EmpiricalDispersion=GD3BJ opt freq". Not including anything
+        here means the calculation will be a single-point energy calculation.
+    qm_end: str, default = ""
+        Final line(s) in the input file
+
+    """
+    def __init__(self, region, basis_set, functional, charge, mult, qm_input="", qm_end="", program='orca'):
         """
         :param region: QMzyme region to treat at the QM level.
         :type region: QMzymeRegion
         """
-        region.layer = 'QM1'
-        self.atoms = copy.copy(region.atoms)
-        self.region = copy.copy(region)
-        self.qm_input = ''
-
-    def set_basis_set(self, basis_set: str, overwrite=False):
-        """
-        Method to assign basis set to region.
-        
-        :param basis_set: Basis set to assign
-        :type basis_set: str, required
-        :param overwrite: Option to assign a different basis_set once one has already been assigned.
-        :type overwrite: bool, default=False
-        """
-        if hasattr(self, 'basis_set') and overwrite is False:
-            raise UserWarning(f"QM_Region already has basis_set defined as "+
-                              f"{self.basis_set}. To overwrite, set overwrite=False. If "+
-                              f"you want to use two basis sets, see set_gen_basis_set().")
-        else:
-            self.basis_set = basis_set
-            for atom in self.atoms:
-                self._assign_bs_to_atom(basis_set, atom)
-    
-    def _assign_bs_to_atom(self, basis_set, atom):
-        atom.basis_set = basis_set
-
-    def set_gen_atoms(self, elements: list, basis_set: str):
-        """
-        Method to define what elements to assign a 2nd basis set to.
-
-        :param elements: A list of element names for atoms to be treated with the gen(ECP).
-        :type elements: list[str], required
-        :param basis_set: Basis set used for gen(ECP) atoms (i.e. 'def2svp')
-        :type basis_set: str, required
-        """
-        elements = ' '.join(elements)
-        sel = 'element ' + elements
-        atom_group = self.region.convert_to_AtomGroup().select_atoms(sel)
-        for atom in atom_group.atoms:
-            qmz_atom = self.region.get_atom(atom.id)
-            self.assign_bs_to_atom(basis_set, atom)
-        self.gen_atoms = elements
-        self.bs_nogen = self.basis_set
-        self.bs_gen = basis_set
-        
-    def set_functional(self, functional: str):
-        """
-        Method to assign functional.
-        :param functional: The QM level of theory to use.
-        :param type: str, required
-        """
+        self.qm_input = qm_input
+        self.basis_set = basis_set
         self.functional = functional
-        for atom in self.atoms:
-            atom.functional = self.functional
-    
-    def set_charge(self, charge: int):
-        """
-        Method to assign charge to region.
-        :param charge: Cumulative atomic charge of the region.
-        :type charge: int, required
-        """
         self.charge = charge
-
-    def set_multiplicity(self, mult: int):
-        """
-        Method to assign multiplicity to region.
-        :param mult: Multiplicity of the region.
-        :type mult: int, required
-        """
         self.mult = mult
+        self.qm_input = qm_input
+        self.qm_end = qm_end
+        self.freeze_atoms = []
+        self.program = program
+        self.files = region.write()
 
-    def set_qm_input(self, input: str):
-        """
-        Keywords line for new input files (i.e. 'opt freq').
-        The functional and basis set will be included automatically after 
-        being set. 
-        """
-        self.qm_input = input
+        self._set_qm_input()
+        self._set_constraints(region)
+        region.set_method(self.__dict__, type="QM")
 
-    def set_qm_end(self, input: str):
-        """
-        Final line(s) in the new input files.
-        """
-        self.qm_end = input
+    def _set_constraints(self, region):
+        self.freeze_atoms = region.get_indices('is_fixed', True)
 
-    def set_chk(self, value: bool):
-        """
-        Include the chk input line in input file for Gaussian calculations.
-        """
-        self.chk = value
-
-    def set_chk_path(self, value: str):
-        """
-        PATH to store CHK files. For example, if chk_path='root/user, the 
-        chk line of the input file would be %chk=root/user/FILENAME.chk.
-        """
-        self.chk_path = value
-
-    def set_memory(self, value: str):
-        """
-        Memory for the QM calculations (i) Gaussian: total memory; 
-        (ii) ORCA: memory per processor. Must include units.
-        """
-        self.mem = value
-
-    def set_n_processors(self, value: int):
-        """
-        Number of processors used in the QM calculations.
-        """
-        self.n_procs = value
-
-    def check_missing_attr(self, *args):
-        for attr in args:
-            if not hasattr(self, attr):
-                raise UserWarning(f"The current region is missing {attr} information. Run set_{attr}() to fulfill.")
-            
-    def write_qm_input(self, program, filename=None):
-        # check necessary args have been set
-        self.check_missing_attr('basis_set', 'functional', 'charge', 'mult')
-
-        # combine basis_set and functional into qm_input
-        if self.basis_set not in self.qm_input:
-            self.qm_input = f"{self.basis_set} {self.qm_input}"
-        if self.functional not in self.qm_input:
-            self.qm_input = f"{self.functional} {self.qm_input}"
-        
-        # check if any atoms have is_fixed=True
-        self.freeze_atoms = self.region.get_indices('is_fixed', True)
-
-        # create pdb file that will be read by aqme qprep
-        #we could also just input the atoms and coords separately
-        file = self.region.write(filename)
-        self.files = file
-        # self.atom_types = [atom.element for atom in self.atoms]
-        # self.cartesians = []
-        # for atom in self.atoms:
-        #     for xyz in atom.position:
-        #         self.cartesians.append(xyz)
-
-        # object attributes that don't correspeond to aqme qprep keywords.
-        exclude = ['region', 'atoms', 'basis_set', 'functional']
-        calc_info = self.__dict__
-        for info in exclude:
-            del calc_info[info]
-        
-        # use qprep to write input file
-        qprep(program=program, **calc_info)
-
-        # clean up file name because AQME QPREP adds _conf ending.
-        if program == 'orca':
-            end = 'inp'
-        if program == 'gaussian':
-            end = 'com'
-        calc_file = f"./QCALC/{file.split('.pdb')[0]}.{end}"
-        try:
-            os.rename(f"./QCALC/{file.split('.pdb')[0]}_conf_1.{end}", calc_file)
-        except:
-            pass
-            
-        return calc_info
-
-
-# class MM_Region:
-#     def __init__(self, region):
-#         self.region = region
-#         self.atoms = region.atoms
-#         self.layer = 'MM1'
-#         self.force_field = []
-
-#     def set_program(self, name: str):
-#         self.program = name
+    def _set_qm_input(self):
+        for info in [self.functional, self.basis_set]:
+            if info not in self.qm_input:
+                self.qm_input = f"{info} {self.qm_input}"
     
-#     def set_charge(self, charge: int):
-#         self.charge = charge
-
-#     def set_multiplicity(self, mult: int):
-#         self.multiplicity = mult
-
-#     def set_force_field(self, force_field: str, selection='all'):
-#         self.force_field.append(force_field)
-#         ids = self.region.ids
-#         if selection != 'all':
-#             atom_group = self.region.convert_to_AtomGroup().select_atoms(selection)
-#             ids = atom_group.ids
-#         for id in ids:
-#             atom = self.region.get_atom(id)
-#             atom.force_field = force_field
-
