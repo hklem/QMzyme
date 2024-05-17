@@ -9,9 +9,7 @@ Module containing functions to truncate a QMzymeRegion based on some logic/workf
 
 from QMzyme.data import protein_residues
 from QMzyme.RegionBuilder import RegionBuilder
-from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.truncation_utils import *
-import copy
 
 truncation_schemes = {
     'CA_terminal': lambda region: CA_terminal(region),
