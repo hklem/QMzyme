@@ -7,7 +7,6 @@
 Module containing broad functionality utilized throughout the package.
 """
 
-import numpy as np
 from functools import singledispatch
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.QMzymeRegion import QMzymeRegion

@@ -7,11 +7,8 @@
 Product of the RegionBuilder class.
 """
 
-import copy
-import numpy as np
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
-from MDAnalysis.core.groups import AtomGroup
 import warnings
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 

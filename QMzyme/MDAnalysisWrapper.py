@@ -6,12 +6,10 @@
 """
 Code to integrate MDAnalysis utilities in QMzyme. 
 """
-import os
 import numpy as np
 import warnings
 import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
-from MDAnalysis.core.universe import Universe
 
 
 def init_universe(*args, **kwargs):

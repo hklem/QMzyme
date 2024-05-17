@@ -13,7 +13,6 @@ from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.QMzymeAtom import QMzymeAtom
 from MDAnalysis.core.groups import Atom
 from MDAnalysis.core.groups import AtomGroup
-from QMzyme import utils
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
 
