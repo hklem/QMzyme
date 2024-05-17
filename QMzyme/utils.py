@@ -13,13 +13,6 @@ import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.QMzymeRegion import QMzymeRegion
 from MDAnalysis.core.groups import AtomGroup
 
-
-protein_residues = ['ALA', 'ARG', 'ASH', 'ASN', 'ASP', 'CYM', 'CYS', 'CYX',
-                    'GLH', 'GLN', 'GLU', 'GLY', 'HIS', 'HID', 'HIE', 'HIP',
-                    'HYP', 'ILE', 'LEU', 'LYN', 'LYS', 'MET', 'PHE', 'PRO',
-                    'SER', 'THR', 'TRP', 'TYR', 'VAL', 'HSE', 'HSD', 'HSP',
-                    'SEC', 'PYL']
-
 @singledispatch
 def translate_selection(selection, universe):
     """

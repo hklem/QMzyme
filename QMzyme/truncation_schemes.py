@@ -7,7 +7,7 @@
 Module containing functions to truncate a QMzymeRegion based on some logic/workflow.
 """
 
-from QMzyme.utils import protein_residues
+from QMzyme.data import protein_residues
 from QMzyme.RegionBuilder import RegionBuilder
 from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.truncation_utils import *
