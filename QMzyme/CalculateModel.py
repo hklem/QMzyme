@@ -204,6 +204,7 @@ class xTB:
         self._set_constraints(self, region)
         region._set_method(self.__dict__, type="xTB")
 
+
 class ChargeField:
     pass
 
@@ -248,7 +249,8 @@ class QM:
 
         self._set_qm_input()
         self._set_constraints(region)
-        region.set_method(self.__dict__, type="QM")
+        #return self
+        #region.set_method(self.__dict__, type="QM")
 
     def _set_constraints(self, region):
         self.freeze_atoms = region.get_indices('is_fixed', True)
