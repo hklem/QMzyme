@@ -1,1 +1,7 @@
-
+"importlib_resources",
+"MDAnalysis",
+"PyYAML", #aqme dependency
+"rdkit-pypi", # dependency of aqme but doesn't get installed with pip install aqme
+"openbabel-wheel", #this works! And you don't have to add conda install -c conda-forge openbabel to config.yml, which makes testing faster (by like 30%)
+"pytest",
+"pytest-cov"
