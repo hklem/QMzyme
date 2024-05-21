@@ -164,9 +164,11 @@ class QMzymeRegion:
         if missing != []:
             raise UserWarning(f"The following atoms are missing {attr} information: {missing}")
         
-    def set_method(self, method_dict, type):
-        method_dict["type"] = "type"
-        self.method = method_dict
+    def set_method(self, method, _type):
+        if type(method) != dict:
+            method = method.__dict__
+        method["type"] = _type
+        self.method = method
 
 class QMzymeResidue(QMzymeRegion):
     def __init__(self, resname, resid, atoms, chain=None):

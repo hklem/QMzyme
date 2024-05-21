@@ -250,7 +250,7 @@ class QM:
         self._set_qm_input()
         self._set_constraints(region)
         #return self
-        region.set_method(self.__dict__, type="QM")
+        region.set_method(self.__dict__, _type="QM")
 
     def _set_constraints(self, region):
         self.freeze_atoms = region.get_indices('is_fixed', True)
