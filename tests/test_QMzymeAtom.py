@@ -7,9 +7,7 @@ Tests for the QMzymeAtom.py code.
 
 import pytest
 from QMzyme.QMzymeAtom import QMzymeAtom
-from importlib_resources import files
 
-pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
 atom_dict = {
     "name": "CA",

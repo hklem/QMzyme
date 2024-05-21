@@ -1,12 +1,13 @@
 from QMzyme.CalculateModel import QM, write_QM
 from QMzyme.GenerateModel import GenerateModel
-from importlib_resources import files
+#from importlib_resources import files
+from QMzyme.data import PDB
 import os
 import shutil
 import pytest
 
-pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
-model = GenerateModel(pdb_file)
+#pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
+model = GenerateModel(PDB)
 region_name = 'cutoff_3'
 model.set_region(region_name=region_name, selection='byres around 3 resid 263', layer=None)
 

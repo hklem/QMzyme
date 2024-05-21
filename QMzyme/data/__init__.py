@@ -1,3 +1,12 @@
+from importlib import resources
+
+_data_ref = resources.files('QMzyme.data')
+
+PDB = (_data_ref / '1oh0.pdb').as_posix()
+TOP = (_data_ref / '1oh0_equ.prmtop').as_posix()
+RST = (_data_ref / '1oh0_equ.rst7').as_posix()
+
+
 protein_residues = {
     'ALA': 0,
     'ARG': 1,

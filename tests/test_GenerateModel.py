@@ -5,27 +5,24 @@ Tests for the QMzyme GenerateModel.py code.
 # Import package, test suite, and other packages as needed
 # Name each function as test_* to be automatically included in test workflow
 
-import os
 from QMzyme.GenerateModel import GenerateModel
 import pytest
-from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.RegionBuilder import RegionBuilder
 from MDAnalysis.core.universe import Universe
-import MDAnalysis as MDA
-from importlib_resources import files
+#from importlib_resources import files
+from QMzyme.data import PDB
 
-pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
 def test_init():
-    model = GenerateModel(pdb_file)
+    model = GenerateModel(PDB)
     assert model.__repr__() == "<QMzymeModel built from <Universe with 4258 atoms> contains 0 region(s)>"
     assert model.name == '1oh0'
     assert model.universe.__class__ == Universe
-    assert model.filename == pdb_file
+    assert model.filename == PDB
     assert model.regions == []
 
 def test_set_catalytic_center(selection='resid 263'):
-    model = GenerateModel(pdb_file)
+    model = GenerateModel(PDB)
     model.set_catalytic_center(selection)
     assert len(model.regions) == 1
     assert model.regions[0].name == 'catalytic_center'
@@ -38,9 +35,9 @@ def test_set_catalytic_center(selection='resid 263'):
 selection_str = 'resid 16 or resid 17'
 @pytest.mark.parametrize(
         "Test, init_file, region_name, selection",
-        [('Selection string as input', pdb_file, 'test', selection_str), 
-         ('MDA AtomGroup as input', pdb_file, 'test', selection_str), 
-         ('QMzymeRegion as input', pdb_file, 'test', selection_str),]
+        [('Selection string as input', PDB, 'test', selection_str), 
+         ('MDA AtomGroup as input', PDB, 'test', selection_str), 
+         ('QMzymeRegion as input', PDB, 'test', selection_str),]
 )
 def test_set_region(Test, init_file, region_name, selection):
     model = GenerateModel(init_file)

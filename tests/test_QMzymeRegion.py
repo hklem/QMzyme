@@ -6,15 +6,12 @@ Tests for the QMzyme RegionBuilder.py ands QMzymeRegion.py code.
 # Name each function as test_* to be automatically included in test workflow
 
 
-import pytest
 import numpy as np
-from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.RegionBuilder import RegionBuilder
 import MDAnalysis as mda
-from importlib_resources import files
+from QMzyme.data import PDB
 
-pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
-u = mda.Universe(pdb_file)
+u = mda.Universe(PDB)
 atom_group = u.select_atoms('resid 2-5')
 id1 = atom_group.atoms[0].id
 
