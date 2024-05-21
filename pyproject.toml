@@ -23,9 +23,9 @@ requires-python = ">=3.11"
 dependencies = [
     "importlib_resources",
     "MDAnalysis",
-    "aqme", #bc lots of dependencies
+    #"aqme", #bc lots of dependencies
     "rdkit-pypi", # dependency of aqme but doesn't get installed with pip install aqme
-    "openbabel-wheel" #checking to see if this will work
+    "openbabel-wheel" #this works! And you don't have to add conda install -c conda-forge openbabel to config.yml, which makes testing faster (by like 30%)
     #"openbabel" #doesn't work to install this way... need to do conda install -c conda-forge openbabel in config.yml
 ]
 
