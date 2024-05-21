@@ -23,7 +23,7 @@ jobs:
           conda create -n qmzyme python=3.11
           source activate base 
           conda activate qmzyme
-          pip install .[test]
+          pip install -e .[test]
           pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=html 
       - store_artifacts:
           path: htmlcov
