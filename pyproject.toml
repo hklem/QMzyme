@@ -30,6 +30,10 @@ dependencies = [
     "openbabel-wheel" #this works! And you don't have to add conda install -c conda-forge openbabel to config.yml, which makes testing faster (by like 30%)
     #"openbabel" #doesn't work to install this way... need to do conda install -c conda-forge openbabel in config.yml
 ]
+test = [
+    "pytest",
+    "pytest-cov"
+]
 
 # Update the urls once the hosting is set up.
 #[project.urls]
@@ -37,10 +41,10 @@ dependencies = [
 #"Documentation" = "https://QMzyme.readthedocs.io/"
 
 [project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov"
-]
+#test = [
+#    "pytest",
+#    "pytest-cov"
+#]
 
 
 [tool.setuptools]
