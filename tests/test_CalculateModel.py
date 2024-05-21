@@ -36,7 +36,6 @@ def test_QM(Test, model, program):
     r1 = QM(region, basis_set, functional, charge, mult)
     
     # check region method:
-    print(r1.__dict__)
     assert hasattr(region, "method")
     assert region.method["basis_set"] == basis_set
     assert region.method["functional"] == functional
