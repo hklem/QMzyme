@@ -12,6 +12,23 @@ import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.QMzymeRegion import QMzymeRegion
 from MDAnalysis.core.groups import AtomGroup
 
+def compare_regions():
+    """
+    Under development.
+
+    Function to identify what atoms/residues are in common.
+
+    Returns common objects
+    """
+
+def region_difference():
+    """
+    Under development.
+
+    Function to subtract two regions and returns atom list difference
+    (do subtraction both ways then unite difference atoms)
+    """
+
 @singledispatch
 def translate_selection(selection, universe):
     """
