@@ -213,6 +213,100 @@ def get_info_input(file):
             line = next(_iter).strip()
     return atoms_and_coords, charge, mult
 
+
+def substituted_mol(self, mol, checkI):
+    """
+    Returns a molecule object in which all metal atoms specified in args.metal_atoms
+    are replaced by Iodine and the charge is set depending on the number of
+    neighbors.
+
+    """
+
+    self.args.metal_idx = []
+    self.args.complex_coord = []
+    self.args.metal_sym = []
+
+    for _ in self.args.metal_atoms:
+        self.args.metal_idx.append(None)
+        self.args.complex_coord.append(None)
+        self.args.metal_sym.append(None)
+
+    Neighbors2FormalCharge = dict()
+    for i, j in zip(range(2, 9), range(-3, 4)):
+        Neighbors2FormalCharge[i] = j
+
+    for atom in mol.GetAtoms():
+        symbol = atom.GetSymbol()
+        if symbol in self.args.metal_atoms:
+            self.args.metal_sym[self.args.metal_atoms.index(symbol)] = symbol
+            self.args.metal_idx[self.args.metal_atoms.index(symbol)] = atom.GetIdx()
+            self.args.complex_coord[self.args.metal_atoms.index(symbol)] = len(
+                atom.GetNeighbors()
+            )
+            if checkI == "I":
+                atom.SetAtomicNum(53)
+                n_neighbors = len(atom.GetNeighbors())
+                if n_neighbors > 1:
+                    formal_charge = Neighbors2FormalCharge[n_neighbors]
+                    atom.SetFormalCharge(formal_charge)
+
+    return self.args.metal_idx, self.args.complex_coord, self.args.metal_sym
+
+def set_metal_atomic_number(mol, metal_idx, metal_sym):
+    """
+    Changes the atomic number of the metal atoms using their indices.
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.Mol
+        RDKit molecule object
+    metal_idx : list
+        sorted list that contains the indices of the metal atoms in the molecule
+    metal_sym : list
+        sorted list (same order as metal_idx) that contains the symbols of the metals in the molecule
+    """
+
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() in metal_idx:
+            re_symbol = metal_sym[metal_idx.index(atom.GetIdx())]
+            atomic_number = periodic_table().index(re_symbol)
+            atom.SetAtomicNum(atomic_number)
+            atom.SetFormalCharge(0)
+
+
+def get_conf_RMS(mol1, mol2, c1, c2, heavy, max_matches_rmsd):
+    """
+    Takes in two rdkit.Chem.Mol objects and calculates the RMSD between them.
+    (As side efect mol1 is left in the aligned state, if heavy is specified
+    the side efect will not happen)
+
+    Parameters
+    ----------
+    mol1 : rdkit.Chem.Mol
+        Probe molecule
+    mol2 : rdkit.Chem.Mol
+        Target molecule. The probe is aligned to the target to compute the RMSD
+    c1 : int
+        Conformation of mol1 to use for the RMSD
+    c2 : int
+        Conformation of mol2 to use for the RMSD
+    heavy : bool
+        If True it will ignore the H atoms when computing the RMSD
+    max_matches_rmsd : int
+        Max number of matches found in a SubstructMatch()
+
+    Returns
+    -------
+    float
+        Returns the best RMSD found
+    """
+
+    if heavy:
+        mol1 = RemoveHs(mol1)
+        mol2 = RemoveHs(mol2)
+    return GetBestRMS(mol1, mol2, c1, c2, maxMatches=max_matches_rmsd)
+
+
 def command_line_args():
     """
     Load default and user-defined arguments specified through command lines. Arrguments are loaded as a dictionary
