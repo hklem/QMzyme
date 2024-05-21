@@ -37,6 +37,10 @@ dependencies = [
 #"Documentation" = "https://QMzyme.readthedocs.io/"
 
 [project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov"
+]
 
 
 [tool.setuptools]
