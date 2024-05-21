@@ -23,6 +23,7 @@ requires-python = ">=3.11"
 dependencies = [
     "importlib_resources",
     "MDAnalysis",
+    "jupyterlab", #not super necessary, but helpful to follow along with examples
     "PyYAML", #aqme dependency
     #"aqme", #bc lots of dependencies
     "rdkit-pypi", # dependency of aqme but doesn't get installed with pip install aqme
