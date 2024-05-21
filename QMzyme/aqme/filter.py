@@ -5,7 +5,7 @@
 
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms, Descriptors
-from aqme.utils import periodic_table, get_conf_RMS
+from QMzyme.aqme.utils import periodic_table, get_conf_RMS
 
 # Aux functions of the geometry filter
 # def is_carbene_like(neighbours):
