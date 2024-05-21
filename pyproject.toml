@@ -25,6 +25,7 @@ dependencies = [
     "MDAnalysis",
     "aqme", #bc lots of dependencies
     "rdkit-pypi", # dependency of aqme but doesn't get installed with pip install aqme
+    "openbabel-wheel" #checking to see if this will work
     #"openbabel" #doesn't work to install this way... need to do conda install -c conda-forge openbabel in config.yml
 ]
 
