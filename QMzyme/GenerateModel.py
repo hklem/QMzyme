@@ -14,7 +14,9 @@ import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.utils import translate_selection
 from QMzyme.truncation_schemes import truncation_schemes
 from QMzyme.selection_schemes import selection_schemes
-from QMzyme.CalculateModel import write_QM, write_QMMM
+from QMzyme.CalculateModel import CalculateModel
+from QMzyme import Writers
+
 
 class GenerateModel(QMzymeModel):
 
@@ -53,11 +55,12 @@ class GenerateModel(QMzymeModel):
         includes (i) str that can be interpreted by the MDAnalysis selection 
         command, (ii) an MDAnalysis.core.groups.AtomGroup, (iii) a QMzyme.QMzymeRegion.
         """
-        self.set_region(layer=None, selection=selection, region_name='catalytic_center',)
+        self.set_region(selection=selection, region_name='catalytic_center',)
         #return self.regions[-1]
+        return self
 
 
-    def set_region(self, layer, selection, region_name="None"):
+    def set_region(self, selection, region_name="None"):
         """
         Method to a QMzymeRegion. Accepted input includes (i) str that can be 
         interpreted by the MDAnalysis selection command, (ii) an 
@@ -69,6 +72,7 @@ class GenerateModel(QMzymeModel):
         region = region_builder.get_region()
         self.add_region(region)
         #return self.regions[-1]
+        return self
     
 
     def truncate_region(self, region, truncation_scheme='CA_terminal'):
@@ -79,6 +83,7 @@ class GenerateModel(QMzymeModel):
         new_region = truncation_schemes[truncation_scheme](region)
         self.add_region(new_region)
         #return new_region
+        return self
 
     def selection_scheme(self, selection_scheme: str='distance_cutoff', **kwargs):
         """
@@ -87,27 +92,11 @@ class GenerateModel(QMzymeModel):
         """
         new_region = selection_schemes[selection_scheme](self, kwargs['cutoff'])
         self.add_region(new_region)
+        return self
 
 
-    def calculate(self, filename):
-        write_file = {
-            "QMQM": write_QM()
-        }
-        layers = {}
-        methods = []
-        for region in self.regions:
-            if region.layer == None:
-                continue
-            if region.method == None:
-                raise UserWarning(f"Calculation method not set for {region}.")
-            layers[region.layer] = region
-            methods.append(region.method[type])
-        method = "".join(methods)
-
-    def _check_layers(self):
-        regions = [r for r in self.regions if r.layer != None]
-        layers = []
-        for r in regions:
-            if r.layer in layers:
-                raise UserWarning(f"Region {r} is already set as the {r.layer} layer.")
-
+    def write_input(self, filename=None):
+        if filename is None:
+            filename = self.name+'_QMzyme'
+        writer = "".join(CalculateModel.calculation)+"Writer"
+        getattr(Writers, writer).write(filename=filename)
