@@ -42,17 +42,17 @@ selection_str = 'resid 16 or resid 17'
 def test_set_region(Test, init_file, region_name, selection):
     model = GenerateModel(init_file)
     if Test == 'Selection string as input':
-        model.set_region(region_name=region_name, selection=selection, layer=None)
+        model.set_region(region_name=region_name, selection=selection)
     elif Test == 'MDA AtomGroup as input':
         mda_atomgroup = model.universe.select_atoms(selection)
-        model.set_region(region_name=region_name, selection=mda_atomgroup, layer=None)
+        model.set_region(region_name=region_name, selection=mda_atomgroup)
     elif Test == 'QMzymeRegion as input':
         mda_atomgroup = model.universe.select_atoms(selection)
         #qmz_region = RegionBuilder(region_name, mda_atomgroup).get_region()
         region_builder = RegionBuilder(region_name)
         region_builder.init_atom_group(mda_atomgroup)
         qmz_region = region_builder.get_region()
-        model.set_region(region_name=region_name, selection=qmz_region, layer=None)
+        model.set_region(region_name=region_name, selection=qmz_region)
     assert len(model.regions) == 1
     assert model.regions[0].name == region_name
     assert model.regions[0].n_atoms == 40

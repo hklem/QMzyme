@@ -26,14 +26,13 @@ remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'i
 
 class RegionBuilder:
 
-    def __init__(self, name, atom_group = None, layer = None):
+    def __init__(self, name, atom_group = None):
         self.name = name
         self.atoms = []
         self.region = None
         self.atom_group = atom_group
         if atom_group is not None:
             self.init_atom_group(atom_group)
-        self.layer = layer
 
     def __repr__(self):
         return f"<RegionBuilder: Current QMzymeRegion, {self.name}, "+\
@@ -106,5 +105,5 @@ class RegionBuilder:
         return atom_attr_dict
 
     def get_region(self):
-        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group, self.layer)
+        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group)
         return self.region
