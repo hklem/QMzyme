@@ -11,15 +11,15 @@ from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
 import warnings
 from QMzyme import MDAnalysisWrapper as MDAwrapper
+from QMzyme.data import protein_residues
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
 class QMzymeRegion:
-    def __init__(self, name, atoms: list, atom_group = None, layer = None):
+    def __init__(self, name, atoms: list, atom_group = None):
         self.name = name
         self.atoms = atoms
         self.atom_group = atom_group
-        self.layer = layer
         self.method = None
 
     def __repr__(self):
@@ -30,17 +30,17 @@ class QMzymeRegion:
     def ids(self):
         """
         Returns a list of the atom numbers/ids from the original starting structure. An atom id
-        of an atom from the starting structure should not change. See idxs as an alternative.
+        of an atom from the starting structure should not change. See ix_array as an alternative.
         """
         return [atom.id for atom in self.atoms]
     
     @property
-    def idxs(self):
+    def ix_array(self):
         """
-        Returns a list of the atom indices starting from 0. If the order of atoms changes the idx 
+        Returns a list of the atom indices starting from 0. If the order of atoms changes the ix 
         assigned to an atom will change. See ids as an alternative.
         """
-        return [idx for idx in range(self.n_atoms)]
+        return [ix for ix in range(self.n_atoms)]
     
     @property
     def resids(self):
@@ -66,14 +66,14 @@ class QMzymeRegion:
             residues.append(res)
         return residues
     
-    def set_layer(self, value: str):
-        """
-        Accepted layer values are "QM", "xTB" and "point_charges".
-        """
-        value = value.lower()
-        if value not in ["qm", "xtb", "point_charges"]:
-            raise UserWarning('Accepted layer values are QM, xTB and point_charges.')
-        self.layer = value
+    # def set_layer(self, value: str):
+    #     """
+    #     Accepted layer values are "QM", "xTB" and "point_charges".
+    #     """
+    #     value = value.lower()
+    #     if value not in ["qm", "xtb", "point_charges"]:
+    #         raise UserWarning('Accepted layer values are QM, xTB and point_charges.')
+    #     self.layer = value
 
     def set_atom_group(self, atom_group):
         self.atom_group = atom_group
@@ -144,17 +144,17 @@ class QMzymeRegion:
     
     def get_indices(self, attribute: str, value):
         ids = self.get_ids(attribute, value)
-        return self.get_idxs_from_ids(ids)
+        return self.get_ix_array_from_ids(ids)
 
-    def get_idxs_from_ids(self, ids):
+    def get_ix_array_from_ids(self, ids):
         """
         Example: get_ids(attribute='type', value='CA')
         """
-        idxs = []
-        for idx, atom in enumerate(self.atoms):
+        ix_array = []
+        for ix, atom in enumerate(self.atoms):
             if atom.id in ids:
-                idxs.append(idx)
-        return idxs
+                ix_array.append(ix)
+        return ix_array
     
     def check_missing_attr(self, attr):
         missing = []
@@ -169,6 +169,87 @@ class QMzymeRegion:
             method = method.__dict__
         method["type"] = _type
         self.method = method
+
+    def guess_charge(self):
+        if hasattr(self.atoms[0], "charge"):
+            self.read_charges()
+            return
+        print(f"Estimating total charge for QMzymeRegion {self.name} based on protein residue naming conventions...")
+        unk_res = []
+        chrg = 0
+        for res in self.residues:
+            if res.resname not in protein_residues:
+                if res.resname in ["WAT", "SOL"]:
+                    continue
+                unk_res.append(res)
+                print(res, f"Charge: UNK")
+            else: 
+                q = protein_residues[res.resname.upper()]
+                chrg += q
+                print(res, f"Charge: {q}")
+        self.charge = chrg
+        if unk_res == []:
+            print(f"\nQMzymeRegion {self.name} has an estimated charge of {chrg}.")
+        else:    
+            print(f"\n!!!Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}. Ignoring unknown residues in charge estimation!!!")
+            print(f"\nQMzymeRegion {self.name} has an estimated total charge of {chrg}.")
+
+
+    def read_charges(self):
+        print(f"Calculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'....")
+        chrg = 0
+        for atom in self.atoms:
+            chrg += atom.charge
+        self.charge = round(chrg)
+        print(f"\nQMzymeRegion {self.name} has a total charge of {chrg}.")
+
+
+    def combine(self, other, name = ''):
+        """
+        Combine QMzymeRegion with another QMzymeRegion. 
+        Duplicates are not retained.
+
+        Parameters
+        -----------
+        other : QMzymeRegion
+        name : Name of new QMzymeRegion.
+
+        Returns
+        ---------
+        QMzymeRegion
+            Combined QMzymeRegion
+        """
+        combined_atoms = self.atoms
+        for atom in other.atoms:
+            if not self.is_within(atom):
+                combined_atoms.append(atom)
+        combined_region = QMzymeRegion(name=name, atoms=combined_atoms)
+        return combined_region
+    
+
+    def is_within(self, atom):
+        """
+        Returns True if the same atom is present. Used to avoid duplication.
+        """
+        try:
+            self_atom = self.get_atom(id=atom.id)
+        except:
+            return False
+        for k in self_atom.__dict__:
+                if 'region' in k:
+                    continue
+                elif atom.__dict__[k] != self_atom.__dict__[k]:
+                    return False
+        return True
+
+    
+    def guess_bonds():
+        """
+        Method under development.
+        """
+        pass
+
+
 
 class QMzymeResidue(QMzymeRegion):
     def __init__(self, resname, resid, atoms, chain=None):
