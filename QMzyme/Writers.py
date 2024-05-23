@@ -100,7 +100,6 @@ class QMQM2Writer:
             combined.method['qm_input'] = 'QM/QM2 '+combined.method['qm_input']
 
         qm_atoms = '{'+f'0:{high_region.n_atoms}'+'}'
-        low_region.method['qm_input'] = low_region.method['qm_input'].strip()
         qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_region.method['qm_input']}'\n"
         qmmm_section += f" QMATOMS {qm_atoms} END\n"
         if total_charge is None:
@@ -195,7 +194,8 @@ class QMXTBWriter:
             total_charge = low_region.charge + high_region.charge
         qmmm_section += f" Charge_Total {total_charge} END"
 
-        combined.method['qm_input'] += f'\n{qmmm_section}'
+        if qmmm_section not in combined.method['qm_input']:
+            combined.method['qm_input'] += f'\n{qmmm_section}'
 
         qprep(**qprep_dict(combined.method), mem=Writer.memory, nprocs=Writer.nprocs)
         print_details(filename, 'inp')

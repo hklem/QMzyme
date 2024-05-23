@@ -125,7 +125,7 @@ class QM_Method(CalculationBase):
         for info in [self.functional, self.basis_set]:
             if info not in self.qm_input:
                 self.qm_input = f"{info} {self.qm_input}"
-        self.qm_input.strip()
+        self.qm_input = self.qm_input.strip()
 
     # def _set_charge(self, region, charge):
     #     if charge is None:
