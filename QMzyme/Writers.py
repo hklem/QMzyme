@@ -1,70 +1,131 @@
+"""
+Module responsible for converting one or more QMzymeRegion objects 
+"""
+
 from QMzyme.aqme.qprep import qprep
 import os
+import copy
 import numpy as np
 from QMzyme.CalculateModel import CalculateModel
+from QMzyme.utils import check_filename
 
+writers = {
+    'QM': lambda Writer: QMWriter.write(Writer),
+    'QMQM2': lambda Writer: QMQM2Writer.write(Writer),
+    'QMXTB': lambda Writer: QMXTBWriter.write(Writer),
+    'QMChargeField': lambda Writer: QMMMWriter.write(Writer),
+}
+
+class Writer:
+    """
+    Base Writer class that configures common calculation input information and then
+    sends information to more specific writer classes to deal with remaining information.
+
+    Parameters
+    -----------
+    :param model: QMzymeModel containing information needed to write calculation input.
+    :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel` (required)
+    
+    :param filename: Name to be given to calculation input file. 
+    Does not need to contain file format suffix.
+    :type filename: str (required) Example: filename='1oh0_cutoff3'
+
+    :param writer: Tells the class what format of input file to create. Options
+    are entries in the writers dict found in Writers.py
+    :type writer: str (required), options: 'QM', 'QMQM2', 'QMXTB', 'QMChargeField'
+
+    :param memory: Memory for the QM calculation 
+    (i) Gaussian: total memory; (ii) ORCA: memory per processor.
+    :type memory: str (optional, default memory='24GB')
+
+    :param nprocs: Number of processors used in the QM calculation.
+    :type nprocs: int (optional, default nprocs=12)
+
+    """
+    def __init__(self, filename, writer, memory, nprocs):
+        if memory == None:
+            memory = '24GB'
+        if nprocs == None:
+            nprocs = 12
+        self.filename = filename
+        self.memory = memory
+        self.nprocs = nprocs
+        writers[writer](self)
+
+
+def print_details(filename, format):
+    filename = check_filename(filename, format)
+    pth = os.path.join(os.path.abspath(''), 'QCALC')
+    print(f"File {os.path.join(pth, filename)} created.")
 
 class QMWriter:
-    def write(region, memory='24GB', nprocs=12):
+    def write(Writer, region=None):
         if region is None:
             region = CalculateModel.calculation['QM']
-        qprep(**qprep_dict(region.method), mem=memory, nprocs=nprocs)
-        # clean up file name because AQME QPREP adds _conf ending.
-        rename_file(filename=region.method["files"], program=region.method["program"])
-        return 
+        filename = region.write(Writer.filename)
+        region.method["starting_file"] = filename
+        qprep(**qprep_dict(region.method), mem=Writer.memory, nprocs=Writer.nprocs)
+        if region.method["program"] == 'orca':
+            format = '.inp'
+        if region.method["program"] == 'gaussian':
+            format = '.com'
+        print_details(filename, format)
+        
     
 class QMQM2Writer:
     """
     !QM/QM2 WB97X-D3 DEF2-TZVP
     %QMMM QM2CUSTOMMETHOD "PBE D3BJ DEF2-SVP"
     QMATOMS {2:3} {6:13} END
+
+    Note: The charge and mult above the coordinates section is assigned to the high region (QM atoms).
     """
-    def write(high_layer=None, low_layer=None, program='orca', **kwargs):
-        if high_layer is None:
-            high_layer = CalculateModel.calculation['QM']
-        if low_layer is None:
-            low_layer = CalculateModel.calculation['QM2']
+    def write(Writer, high_region=None, low_region=None, total_charge=None):
+        if high_region is None:
+            high_region = CalculateModel.calculation['QM']
+        if low_region is None:
+            low_region = CalculateModel.calculation['QM2']
 
-        if filename is None:
-            low_layer.method["files"]
+        if high_region.method["program"] != 'orca':
+            raise UserWarning("QM/QM2 calculation only supported for ORCA program.")
 
-        qprep(**qprep_dict(high_layer.method))
-        # clean up file name because AQME QPREP adds _conf ending.
-        filename = rename_file(filename, low_layer.method["program"])
-        qmqm2_section = ""
-        with open(filename, 'r') as f:
-            lines = f.readlines()
+        combined = high_region.combine(low_region)
+        combined.name = high_region.name+'_'+low_region.name
+        filename = combined.write(Writer.filename)
+        combined.method = high_region.method
+        combined.method["starting_file"] = filename
+        combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        high_level_atoms = get_atom_range(high_level_atoms)
-        qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_layer['qm_input']}'\n"
-        qmmm_section += f" QMATOMS {high_level_atoms} END\n"
+        if 'QM/QM2' not in combined.method['qm_input']:
+            combined.method['qm_input'] = 'QM/QM2 '+combined.method['qm_input']
 
-        new_lines = []
-        for i, line in enumerate(lines):
-            if line.startswith("!"):
-                if "QM/QM2" not in line:
-                    new_lines.append(f"{line[0]} QM/QM2 {line[1:]}")
-                new_lines.append(qmmm_section)
-            else:
-                new_lines.append(line)
-        with open(filename, "w+") as f:
-            f.writelines(new_lines)
+        qm_atoms = '{'+f'0:{high_region.n_atoms}'+'}'
+        low_region.method['qm_input'] = low_region.method['qm_input'].strip()
+        qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_region.method['qm_input']}'\n"
+        qmmm_section += f" QMATOMS {qm_atoms} END\n"
+        if total_charge is None:
+            total_charge = low_region.charge + high_region.charge
+        qmmm_section += f" Charge_Total {total_charge} END"
+        combined.method['qm_input'] += f'\n{qmmm_section}'
+
+        qprep(**qprep_dict(high_region.method), mem=Writer.memory, nprocs=Writer.nprocs)
+        print_details(filename, 'inp')
 
 
 class QMMMWriter:
-    def write(high_layer=None, low_layer=None):
+    def write(Writer, high_region=None, low_region=None):
         """
-        This method will need a QM method assignment for the high_layer, and then 
-        takes the point charges for the low_layer. 
+        This method will need a QM method assignment for the high_region, and then 
+        takes the point charges for the low_region. 
         One prerequisite for this is that charges will need to be defined at the atom level.
         """
-        if high_layer is None:
-            high_layer = CalculateModel.calculation['QM']
-        if low_layer is None:
-            low_layer = CalculateModel.calculation['ChargeField']
-        QMWriter.write(high_layer)
-        # remove any qm_atoms from low_layer then proceed
-        ChargeFieldWriter.write(low_layer)
+        if high_region is None:
+            high_region = CalculateModel.calculation['QM']
+        if low_region is None:
+            low_region = CalculateModel.calculation['ChargeField']
+        QMWriter.write(high_region)
+        # remove any qm_atoms from low_region then proceed
+        ChargeFieldWriter.write(low_region)
         # add line '% pointcharges "pointcharges.pc"' to QM input file
 
 class ChargeFieldWriter:
@@ -93,7 +154,7 @@ class ChargeFieldWriter:
         DoEQ true
     end
     """
-    def write(region):
+    def write(Writer, region):
         for atom in region:
             atom.set_point_charge()
         # write pointcharges.pc
@@ -104,83 +165,83 @@ class QMXTBWriter:
     %QMMM
     QMATOMS {2:3} {6:13} END
 
-    Need to add check for charge and mult. If xTB and QM region have no atom overlap then just add 
-    charge and mult. If xTB contains the entire QM region then just just xTB region charge and mult.
-    But if there is partial overlap between the two regions, raise warning. 
-    """
-    def write(high_layer=None, low_layer=None, total_charge=None, program='orca', **kwargs):
-        if high_layer is None:
-            high_layer = CalculateModel.calculation['QM']
-        if low_layer is None:
-            low_layer = CalculateModel.calculation['XTB']
-        qprep(**kwargs)
-        # clean up file name because AQME QPREP adds _conf ending.
-        filename = rename_file(filename, kwargs["program"])
-        qmmm_section = ""
-        with open(filename, 'r') as f:
-            lines = f.readlines()
+    Note: The charge and mult above the coordinates section is assigned to the high region (QM atoms).
 
-        high_level_atoms = get_atom_range(high_level_atoms)
+    """
+    def write(Writer, high_region=None, low_region=None, total_charge=None):
+        if high_region is None:
+            high_region = CalculateModel.calculation['QM']
+        if low_region is None:
+            low_region = CalculateModel.calculation['XTB']
+        if high_region.method["program"] != 'orca':
+            raise UserWarning("QMXTB calculation only supported for ORCA program.")
+
+        combined = high_region.combine(low_region)
+        combined.name = high_region.name+'_'+low_region.name
+        filename = combined.write(Writer.filename)
+        combined.method = high_region.method
+        combined.method["starting_file"] = filename
+        combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
+
+        if 'QM/XTB' not in combined.method['qm_input']:
+            combined.method['qm_input'] = 'QM/XTB '+combined.method['qm_input']
+
+        #high_level_atoms = get_atom_range(high_region.ix_array)
+        qm_atoms = '{'+f'0:{high_region.n_atoms}'+'}'
         qmmm_section = "%QMMM\n"
-        qmmm_section += f" QMATOMS {high_level_atoms} END\n"
-        qmmm_section += f" Charge_Total {total_charge} END\n"
+        #qmmm_section += f" QMATOMS {high_level_atoms} END\n"
+        qmmm_section += f" QMATOMS {qm_atoms} END\n"
+        if total_charge is None:
+            total_charge = low_region.charge + high_region.charge
+        qmmm_section += f" Charge_Total {total_charge} END"
 
-        new_lines = []
-        for i, line in enumerate(lines):
-            if line.startswith("!"):
-                if "QM/XTB" not in line:
-                    new_lines.append(f"{line[0]} QM/XTB {line[1:]}")
-                new_lines.append(qmmm_section)
-            else:
-                new_lines.append(line)
-        with open(filename, "w+") as f:
-            f.writelines(new_lines)
+        combined.method['qm_input'] += f'\n{qmmm_section}'
 
+        qprep(**qprep_dict(combined.method), mem=Writer.memory, nprocs=Writer.nprocs)
+        print_details(filename, 'inp')
+        
+        # high_level_atoms = get_atom_range(high_region.ix_array)
+        # qmmm_section = "%QMMM\n"
+        # qmmm_section += f" QMATOMS {high_level_atoms} END\n"
+        # if total_charge is None:
+        #     total_charge = low_region.charge + high_region.charge
+        # qmmm_section += f" Charge_Total {total_charge} END\n"
 
-def rename_file(filename, program):
-    """
-    Function that cleans up aqme file naming convention.
-    """
-    if program == 'orca':
-        end = 'inp'
-    if program == 'gaussian':
-        end = 'com'
-    calc_file = f"./QCALC/{filename.split('.pdb')[0]}.{end}"
-    try:
-        os.rename(f"./QCALC/{filename.split('.pdb')[0]}_conf_1.{end}", calc_file)
-        with open(calc_file, "r") as f:
-            lines = f.readlines()
-        for i,line in enumerate(lines):
-            if "_conf_1" in line:
-                print(lines[i])
-                lines[i] = line.replace("_conf_1", "")
-                print(lines[i])
-        with open(calc_file, "w+") as f:
-            f.writelines(lines)
-    except:
-        pass
-    return calc_file
+        # with open(filename, "r") as f:
+        #     lines = f.readlines()
+        # new_lines = []
+        # for i, line in enumerate(lines):
+        #     if line.startswith("!"):
+        #         if "QM/XTB" not in line:
+        #             new_lines.append(f"{line[0]} QM/XTB {line[1:]}")
+        #         new_lines.append(qmmm_section)
+        #     else:
+        #         new_lines.append(line)
+        # with open(filename, "w+") as f:
+        #     f.writelines(new_lines)
+
 
 def qprep_dict(method_dict):
-    d = method_dict
-    for key in ["type", "basis_set", "functional"]:
+    d = copy.copy(method_dict)
+    d["files"] = method_dict["starting_file"] # qprep has files keyword
+    for key in ["type", "basis_set", "functional", "starting_file"]:
         if key in d:
             del d[key]
     return d
 
-def get_atom_range(atom_indices: list):
-    """
-    Utility function used for ORCA file input.
-    """
-    range = ''
-    for i in np.arange(1, np.max(atom_indices)+1):
-        if i in atom_indices:
-            if i-1 not in atom_indices:
-                range += "{"+str(i)
-                if i+1 not in atom_indices:
-                    range += "} "
-            elif i+1 not in atom_indices:
-                range += f":{i}"+"} "
-    return range
+# def get_atom_range(atom_indices: list):
+#     """
+#     Utility function used for ORCA file input.
+#     """
+#     range = ''
+#     for i in np.arange(1, np.max(atom_indices)+1):
+#         if i in atom_indices:
+#             if i-1 not in atom_indices:
+#                 range += "{"+str(i)
+#                 if i+1 not in atom_indices:
+#                     range += "} "
+#             elif i+1 not in atom_indices:
+#                 range += f":{i}"+"} "
+#     return range
 
 

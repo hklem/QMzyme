@@ -15,11 +15,10 @@ from QMzyme.utils import translate_selection
 from QMzyme.truncation_schemes import truncation_schemes
 from QMzyme.selection_schemes import selection_schemes
 from QMzyme.CalculateModel import CalculateModel
-from QMzyme import Writers
+from QMzyme.Writers import Writer
 
 
 class GenerateModel(QMzymeModel):
-
     def __init__(self, *args, name=None, universe=None, frame=0, **kwargs):
         """
         GenerateModel can be instantiated with an MDAnalysis Universe directly,
@@ -34,6 +33,7 @@ class GenerateModel(QMzymeModel):
         :param frame: If trajectory was provided, specify a frame to base coordinates on
         :type frame: int, default=0
         """
+        CalculateModel._reset()
         if universe is None:
             universe = MDAwrapper.init_universe(*args, **kwargs)
         if frame != 0:
@@ -47,7 +47,6 @@ class GenerateModel(QMzymeModel):
 
     def __repr__(self):
         return f"<QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
-
 
     def set_catalytic_center(self, selection):
         """
@@ -95,8 +94,7 @@ class GenerateModel(QMzymeModel):
         return self
 
 
-    def write_input(self, filename=None):
-        if filename is None:
-            filename = self.name+'_QMzyme'
-        writer = "".join(CalculateModel.calculation)+"Writer"
-        getattr(Writers, writer).write(filename=filename)
+    def write_input(self, filename=None, memory=None, nprocs=None):
+        writer = "".join(CalculateModel.calculation)
+        Writer(filename, writer, memory, nprocs)
+
