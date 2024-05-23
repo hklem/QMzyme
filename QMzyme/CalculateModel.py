@@ -23,11 +23,69 @@ class CalculateModel:
     def _add(self, calc, region):
         if calc in CalculateModel.calculation:
             if calc == 'QM':
+                if 'QM2' in CalculateModel.calculation:
+                    raise UserWarning("Two QM regions have already been defined."
+                                      "QMzyme currently only supports a maximum "
+                                      "of two QM regions in a single calculation.")
                 calc = 'QM2'
-                print(f"WARNING: A QM region already defined. Setting {region} as QM2.")
+                region.method["type"] = 'QM2'
+                print(f"WARNING: A QM region already defined. Setting QMzymeRegion {region.name} as QM2.")
+        
         CalculateModel.calculation[calc] = region
+    
+        if len(CalculateModel.calculation) > 1:
+            self._check_overlap(region)
+    
+    def _check_overlap(self, region):
+        if 'QM' in CalculateModel.calculation:    
+            high_region = CalculateModel.calculation['QM']
+            low_region = region
+        elif region.method["type"] == 'QM':
+            high_region = region
+            try:
+                low_region = CalculateModel.calculation['XTB']
+            except:
+                low_region = CalculateModel.calculation['ChargeField']
 
-class QM:
+        common_atoms = high_region.get_overlap(low_region)
+        if len(common_atoms) != 0:
+            #residues = [atom.resname+str(atom.resid) for atom in common_atoms]
+            residues = [atom.resid for atom in common_atoms]
+            residues = [high_region.get_residue(resid) for resid in list(set(residues))]
+            print(f"\nWARNING: Region overlap detected. The following residue(s) were found in both regions: {list(set(residues))}.")
+            print(f"Removing duplicate atoms from {low_region.name} and recalculating charge.")
+            subtracted = low_region.subtract(high_region)
+            subtracted.guess_charge()
+            subtracted.method = low_region.method
+            subtracted.method["charge"] = subtracted.charge
+            subtracted.method["freeze_atoms"] = subtracted.get_indices(attribute='is_fixed', value=True)
+            subtracted.name = low_region.name
+            CalculateModel.calculation[low_region.method["type"]] = subtracted
+
+
+    def _reset():
+        CalculateModel.calculation = {}
+    
+class CalculationBase:
+    def assign_to_region(self, region, charge=None, mult=1):
+        self._set_constraints(region)
+        self.mult = mult
+        region.set_method(self.__dict__)
+        region = CalculateModel()._add(calc=self.type, region=region)
+        self._set_charge(CalculateModel.calculation[self.type], charge)
+
+    def _set_charge(self, region, charge):
+        if charge is None:
+            if not hasattr(region, "charge"):
+                region.guess_charge()
+            self.charge = region.charge
+        else:
+            self.charge = charge
+
+    def _set_constraints(self, region):
+        self.freeze_atoms = region.get_indices('is_fixed', True)
+
+class QM_Method(CalculationBase):
     """
     Class to prepare a QMzymeRegion for QM treatment.
     
@@ -48,77 +106,56 @@ class QM:
         here means the calculation will be a single-point energy calculation.
     qm_end: str, default = ""
         Final line(s) in the input file
-
     """
-    def __init__(self, region, basis_set, functional, charge=None, mult=1, qm_input="", qm_end="", program='orca'):
+    def __init__(self, basis_set, functional, qm_input="", qm_end="", program='orca'):
         """
         :param region: QMzyme region to treat at the QM level.
         :type region: QMzymeRegion
         """
-
+        self.type = 'QM'
         self.qm_input = qm_input
         self.basis_set = basis_set
         self.functional = functional
-        if charge is None:
-            if not hasattr(region, "charge"):
-                region.guess_charge()
-            self.charge = region.charge
-        self.charge = charge
-        self.mult = mult
         self.qm_input = qm_input
         self.qm_end = qm_end
-        self.freeze_atoms = []
         self.program = program
-        self.files = region.write()
-    
         self._set_qm_input()
-        self._set_constraints(region)
-        #return self
-        region.set_method(self.__dict__, _type="QM")
-        CalculateModel()._add(calc='QM', region=region)
-    
-    def _set_constraints(self, region):
-        self.freeze_atoms = region.get_indices('is_fixed', True)
 
     def _set_qm_input(self):
         for info in [self.functional, self.basis_set]:
             if info not in self.qm_input:
                 self.qm_input = f"{info} {self.qm_input}"
+        self.qm_input.strip()
 
-class XTB:
-    def __init__(self, region):
-        CalculateModel()._add(calc='XTB', region=region)
+    # def _set_charge(self, region, charge):
+    #     if charge is None:
+    #         if not hasattr(region, "charge"):
+    #             region.guess_charge()
+    #         self.charge = region.charge
+    #     else:
+    #         self.charge = charge
 
-class ChargeField:
-    def __init__(self, region):
-        CalculateModel()._add(calc='ChargeField', region=region)
+    # def _set_constraints(self, region):
+    #     self.freeze_atoms = region.get_indices('is_fixed', True)
 
-
-
-        
-class xTB:
+    # def assign_to_region(self, region, charge=None, mult=1):
+    #     self._set_constraints(region)
+    #     self._set_charge(region, charge)
+    #     self.mult = mult
+    #     region.set_method(self.__dict__, _type="QM")
+    #     CalculateModel()._add(calc='QM', region=region)
+    
+class XTB_Method(CalculationBase):
     """
     Class to prepare a QMzymeRegion for xTB treatment.
     """
-    def __init__(self, region, charge, mult):
-        """
-        :param region: QMzyme region to treat at the xTB level.
-        :type region: QMzymeRegion
-        :param charge: Charge of the region.
-        :type charge: int
-        :param mult: Multiplicity of the region.
-        :type mult: int
-        """
-        self.charge = charge
-        self.multiplicity = mult
-        self.freeze_atoms = []
-        
-        self._set_constraints(self, region)
-        region._set_method(self.__dict__, type="xTB")
-
+    def __init__(self):
+        self.type = 'XTB'
 
 class ChargeField:
-    pass
-
-
+    """
+    Class to prepare a QMzymeRegion for ChargeField treatment.
+    """
+    def __init__(self):
+        self.type = 'ChargeField'
     
