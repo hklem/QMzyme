@@ -31,7 +31,6 @@ def test_set_catalytic_center(selection='resid 263'):
     model.remove_region("catalytic_center")
     assert len(model.regions) == 0
 
-
 selection_str = 'resid 16 or resid 17'
 @pytest.mark.parametrize(
         "Test, init_file, region_name, selection",
