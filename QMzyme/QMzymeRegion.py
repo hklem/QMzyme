@@ -10,8 +10,10 @@ Product of the RegionBuilder class.
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
 import warnings
+import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import protein_residues
+from QMzyme.utils import check_filename
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
@@ -113,12 +115,16 @@ class QMzymeRegion:
         for res in self.residues:
             if res.resid == resid:
                 return res
+            
+    def rename(self, name):
+        self.name = name
 
-    def write(self, filename=None):
+    def write(self, filename=None, format='pdb'):
         warnings.filterwarnings('ignore')
         # Housekeeping
         if filename is None:
-            filename = f"{'_'.join(self.name.split(' '))}.pdb"
+            filename = f"{'_'.join(self.name.split(' '))}.{format}"
+        filename = check_filename(filename, format)
         ag = self.convert_to_AtomGroup()
         ag.write(filename)
         return filename
@@ -126,21 +132,39 @@ class QMzymeRegion:
     def convert_to_AtomGroup(self):
         return MDAwrapper.build_universe_from_QMzymeRegion(self)
     
-    def set_fixed_atoms(self, ids: list):
-        for atom in self.atoms:
-            if atom.id in ids:
-                #atom.set_fixed(value = True)
+    def set_fixed_atoms(self, ids: list= None, atoms=None):
+        if atoms is not None:
+            for atom in atoms:
                 setattr(atom, "is_fixed", True)
+        elif ids is not None:
+            for atom in self.atoms:
+                if atom.id in ids:
+                    #atom.set_fixed(value = True)
+                    setattr(atom, "is_fixed", True)
 
     def get_ids(self, attribute: str, value):
         """
         Example: get_ids(attribute='type', value='CA')
+
+        Returns List[int]
         """
         ids = []
         for atom in self.atoms:
             if getattr(atom, attribute) == value:
                 ids.append(atom.id)
         return ids
+    
+    def get_atoms(self, attribute: str, value):
+        """
+        Example: get_atoms(attribute='type', value='CA')
+
+        Returns List[QMzymeAtom]
+        """
+        atoms = []
+        for atom in self.atoms:
+            if getattr(atom, attribute) == value:
+                atoms.append(atom)
+        return atoms
     
     def get_indices(self, attribute: str, value):
         ids = self.get_ids(attribute, value)
@@ -164,17 +188,23 @@ class QMzymeRegion:
         if missing != []:
             raise UserWarning(f"The following atoms are missing {attr} information: {missing}")
         
-    def set_method(self, method, _type):
+    def set_method(self, method):
         if type(method) != dict:
             method = method.__dict__
-        method["type"] = _type
         self.method = method
+
+    def set_charge(self, charge):
+        self.charge = charge
+        try:
+            self.method["charge"] = charge
+        except:
+            pass
 
     def guess_charge(self):
         if hasattr(self.atoms[0], "charge"):
             self.read_charges()
             return
-        print(f"Estimating total charge for QMzymeRegion {self.name} based on protein residue naming conventions...")
+        print(f"\nEstimating total charge for QMzymeRegion {self.name} based on protein residue naming conventions...")
         unk_res = []
         chrg = 0
         for res in self.residues:
@@ -187,21 +217,22 @@ class QMzymeRegion:
                 q = protein_residues[res.resname.upper()]
                 chrg += q
                 print(res, f"Charge: {q}")
-        self.charge = chrg
+        self.set_charge(chrg)
         if unk_res == []:
             print(f"\nQMzymeRegion {self.name} has an estimated charge of {chrg}.")
         else:    
             print(f"\n!!!Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}. Ignoring unknown residues in charge estimation!!!")
-            print(f"\nQMzymeRegion {self.name} has an estimated total charge of {chrg}.")
+            print(f"QMzymeRegion {self.name} has an estimated total charge of {chrg}.")
 
 
     def read_charges(self):
-        print(f"Calculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'....")
+        print(f"\nCalculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'...")
         chrg = 0
         for atom in self.atoms:
             chrg += atom.charge
-        self.charge = round(chrg)
-        print(f"\nQMzymeRegion {self.name} has a total charge of {chrg}.")
+        chrg = round(chrg)
+        self.set_charge(chrg)
+        print(f"QMzymeRegion {self.name} has a total charge of {chrg}.")
 
 
     def combine(self, other, name = ''):
@@ -219,28 +250,40 @@ class QMzymeRegion:
         QMzymeRegion
             Combined QMzymeRegion
         """
-        combined_atoms = self.atoms
+        combined_atoms = copy.copy(self.atoms)
         for atom in other.atoms:
-            if not self.is_within(atom):
+            if not atom.is_within(self):
                 combined_atoms.append(atom)
         combined_region = QMzymeRegion(name=name, atoms=combined_atoms)
         return combined_region
     
+    def subtract(self, other, name = ''):
+        """
+        Subtract components found in other QMzymeRegion. 
 
-    def is_within(self, atom):
+        Parameters
+        -----------
+        other : QMzymeRegion
+        name : Name of new QMzymeRegion.
+
+        Returns
+        ---------
+        QMzymeRegion
+            Subtracted QMzymeRegion
         """
-        Returns True if the same atom is present. Used to avoid duplication.
-        """
-        try:
-            self_atom = self.get_atom(id=atom.id)
-        except:
-            return False
-        for k in self_atom.__dict__:
-                if 'region' in k:
-                    continue
-                elif atom.__dict__[k] != self_atom.__dict__[k]:
-                    return False
-        return True
+        atoms = []
+        for atom in self.atoms:
+            if not atom.is_within(other):
+                atoms.append(atom)
+        region = QMzymeRegion(name=name, atoms=atoms)
+        return region
+    
+    def get_overlap(self, other):
+        atoms = []
+        for atom in self.atoms:
+            if atom.is_within(other):
+                atoms.append(atom)
+        return atoms
 
     
     def guess_bonds():
@@ -248,7 +291,6 @@ class QMzymeRegion:
         Method under development.
         """
         pass
-
 
 
 class QMzymeResidue(QMzymeRegion):
