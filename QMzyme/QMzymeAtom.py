@@ -111,3 +111,23 @@ class QMzymeAtom:
             if hasattr(self, name):
                 chain = getattr(self, name)
         return chain
+    
+    def is_within(self, region):
+        """
+        Returns True if the same atom is found in Region. Used to avoid duplication.
+        """
+        atom = region.get_atom(id=self.id)
+        if atom is None:
+            return False
+        for k in ['name', 'resid', 'resname', 'element']:
+            if self.__dict__[k] != atom.__dict__[k]:
+                return False
+        # for k in atom.__dict__:
+        #     print(self.__dict__[k])
+        #     if 'region' in k or k.startswith('set'):
+        #         continue
+        #     elif k == 'position':
+        #         continue
+        #     elif self.__dict__[k] != atom.__dict__[k]:
+        #         return False
+        return True
