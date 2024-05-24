@@ -28,10 +28,9 @@ jobs:
           pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=html 
       - store_artifacts:
           path: htmlcov
+      - codecov/upload
             
 workflows:
   build-and-test:
     jobs:
       - build-and-test
-      - checkout 
-      - codecov/upload
