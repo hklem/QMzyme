@@ -29,19 +29,15 @@ jobs:
           df -h
           ulimit -a
 
-      # More info on options: https://github.com/marketplace/actions/provision-with-micromamba
-      - uses: mamba-org/provision-with-micromamba@main
-        with:
-          environment-file: devtools/conda-envs/test_env.yaml
-          environment-name: test
-          channels: conda-forge,defaults
-          extra-specs: |
-            python=${{ matrix.python-version }}
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+          
+      - name: Testing Dependencies
+        shell: bash
+        run: |
+          python -m pip install -U pytest pytest-cov codecov
           
       - name: Install package
         shell: bash
@@ -52,12 +48,6 @@ jobs:
         shell: bash
         run: |
           pytest -v --cov=QMzyme --cov-report=xml --color=yes QMzyme/tests/
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          file: /tmp/coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
           
       - name: CodeCov
         uses: codecov/codecov-action@v1
