@@ -1,19 +1,14 @@
 name: CI
 
 on:
-  GitHub has started calling new repo's first branch "main" https://github.com/github/renaming
-  The cookiecutter uses the "--initial-branch" flag when it runs git-init
+  # GitHub has started calling new repo's first branch "main" https://github.com/github/renaming
+  # The cookiecutter uses the "--initial-branch" flag when it runs git-init
   push:
     branches:
       - "main"
   pull_request:
     branches:
       - "main"
-  schedule:
-    Weekly tests run on main by default:
-      Scheduled workflows run on the latest commit on the default or base branch.
-      (from https://help.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events-schedule)
-    - cron: "0 0 * * 0"
 
 jobs:
   test:
@@ -22,10 +17,10 @@ jobs:
     strategy:
       matrix:
         os: [macOS-latest, ubuntu-latest, windows-latest]
-        python-version: [3.8, 3.9, "3.10"]
+        python-version: [3.9, "3.10", "3.11"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Additional info about the build
         shell: bash
@@ -43,20 +38,30 @@ jobs:
           extra-specs: |
             python=${{ matrix.python-version }}
 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          
       - name: Install package
-        # conda setup requires this special shell
-        shell: bash -l {0}
+        shell: bash
         run: |
-          python -m pip install . --no-deps
-          micromamba list
+          python -m pip install .
 
       - name: Run tests
-        # conda setup requires this special shell
-        shell: bash -l {0}
+        shell: bash
         run: |
           pytest -v --cov=QMzyme --cov-report=xml --color=yes QMzyme/tests/
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
+          file: /tmp/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
+          
+      - name: CodeCov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
