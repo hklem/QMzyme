@@ -28,6 +28,9 @@ class CalculateModel:
     """
     calculation = {}
     def _add(self, calc, region):
+        if calc != 'QM':
+            if 'QM' not in CalculateModel.calculation:
+                raise UserWarning("You must set the high-region QM method first.")
         if calc in CalculateModel.calculation:
             if calc == 'QM':
                 if 'QM2' in CalculateModel.calculation:
@@ -47,12 +50,12 @@ class CalculateModel:
         if 'QM' in CalculateModel.calculation:    
             high_region = CalculateModel.calculation['QM']
             low_region = region
-        elif region.method["type"] == 'QM':
-            high_region = region
-            try:
-                low_region = CalculateModel.calculation['XTB']
-            except:
-                low_region = CalculateModel.calculation['ChargeField']
+        # elif region.method["type"] == 'QM':
+        #     high_region = region
+        #     try:
+        #         low_region = CalculateModel.calculation['XTB']
+        #     except:
+        #         low_region = CalculateModel.calculation['ChargeField']
 
         common_atoms = high_region.get_overlap(low_region)
         if len(common_atoms) != 0:

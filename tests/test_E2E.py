@@ -117,6 +117,13 @@ def test_QMQM2_calculation(qm1_dict, qm2_dict):
     assert qm2_input.strip().endswith(f"QM2CUSTOMMETHOD '{val}'")
     assert "QMATOMS "+"{"+"0:37"+"}" in file
     assert len(file.split("%QMMM")) == 2
+
+    # check that you cannot set a third QM method
+    model.set_region(selection=DistanceCutoff, cutoff=6)
+    with pytest.raises(UserWarning):
+        model.set_region(selection=DistanceCutoff, cutoff=6)
+        qm2_method.assign_to_region(region=model.cutoff_6)
+
     restore_directory()
 
 def test_QMXTB_calculation():
@@ -128,6 +135,10 @@ def test_QMXTB_calculation():
     model.truncate_region(region=model.cutoff_5)
     c_alpha_atoms = model.cutoff_5_truncated.get_atoms(attribute='name', value='CA')
     model.cutoff_5_truncated.set_fixed_atoms(atoms=c_alpha_atoms)
+
+    # check that warning is raised if a non-QM method is set before a QM method is set.
+    with pytest.raises(UserWarning):
+        assert XTB_Method().assign_to_region(region=model.cutoff_5_truncated)
 
     qm_method = QM_Method(basis_set='6-31G*', 
                functional='wB97X-D3', 
