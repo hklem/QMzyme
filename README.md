@@ -8,7 +8,7 @@
 
 [comment]: <> "![PyPI - Downloads](https://img.shields.io/pypi/dm/QMzyme)"
 
-[comment]: <> "![CircleCI](https://img.shields.io/circleci/build/gh/hklem/QMzyme)"
+[comment]: <> "![CircleCI](https://img.shields.io/circleci/build/gh/hklem/QMzyme)d"
 
 *QMzyme is currently under-development. Please note the user interface may change! The first stable API version will be released as QMzyme==1.0.0 on PyPi.*
 
