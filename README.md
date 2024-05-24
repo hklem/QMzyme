@@ -2,7 +2,7 @@
 ![](logo.png)
 
 ![Read the Docs](https://img.shields.io/readthedocs/hklem-qmzyme-documentation)
-![PyPI](https://img.shields.io/pypi/v/QMzyme)
+[![PyPI version](https://badge.fury.io/py/QMzyme.svg)](https://badge.fury.io/py/QMzyme)
 
 [comment]: <> "![PyPI - Downloads](https://img.shields.io/pypi/dm/QMzyme)"
 
