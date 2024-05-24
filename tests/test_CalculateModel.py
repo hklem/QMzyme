@@ -25,7 +25,7 @@ def restore_directory():
 def test_QM_Method(Test, program):
     model = GenerateModel(PDB)
     region_name = 'cutoff_3'
-    model.set_region(region_name=region_name, selection='byres around 3 resid 263')
+    model.set_region(name=region_name, selection='byres around 3 resid 263')
     # check basis_set info is set for all atoms
     bs1 = '6-31g(d)'
     ids = model.cutoff_3.get_ids('name', 'CA')

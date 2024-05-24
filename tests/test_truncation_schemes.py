@@ -6,6 +6,7 @@ Tests for the QMzyme truncation_schemes.py and truncation_utils.py codes.
 # Name each function as test_* to be automatically included in test workflow
 
 from QMzyme.GenerateModel import GenerateModel
+from QMzyme.TruncationSchemes import *
 import pytest
 from QMzyme.data import PDB
 
@@ -22,10 +23,13 @@ from QMzyme.data import PDB
         ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
     ]
 )
-def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme="CA_terminal"):
+def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme=CA_terminal):
     model = GenerateModel(init_file)
-    model.set_region(region_name='region', selection=region_selection)
-    model.truncate_region(model.region, truncation_scheme)
+    model.set_region(name='region', selection=region_selection)
+    print('Region: ', model.regions[-1])
+    model.truncate_region(region=model.region, scheme=truncation_scheme)
+    print('New Region: ', model.regions[-1])
+
     #First check that the original region didn't change:
     original_first_res = model.region.residues[0]
     truncated_first_res = model.region_truncated.residues[0]

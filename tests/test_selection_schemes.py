@@ -9,22 +9,24 @@ from QMzyme.GenerateModel import GenerateModel
 import pytest
 from QMzyme.RegionBuilder import RegionBuilder
 from MDAnalysis.core.universe import Universe
-from QMzyme.selection_schemes import distance_cutoff
-#from importlib_resources import files
+from QMzyme.SelectionSchemes import DistanceCutoff
 from QMzyme.data import PDB
 
 
-def test_distance_cutoff():
+def test_DistanceCutoff():
+    from QMzyme.SelectionSchemes import DistanceCutoff
     model = GenerateModel(PDB)
     with pytest.raises(UserWarning):
-        distance_cutoff(model, cutoff=3, include_whole_residues=True)
+        DistanceCutoff(model=model, name=None, cutoff=3, include_whole_residues=True)
+    with pytest.raises(UserWarning):
+        model.set_region(selection=DistanceCutoff, name=None, cutoff=3, include_whole_residues=True)
     model.set_catalytic_center('resid 263')
-    model.selection_scheme(selection_scheme='distance_cutoff', cutoff=3, include_whole_residues=True)
+    model.set_region(selection=DistanceCutoff, name=None, cutoff=3, include_whole_residues=True)
     assert len(model.regions) == 2
     assert model.cutoff_3.n_atoms == 275
     assert model.cutoff_3.n_residues == 19
 
-    model.selection_scheme(selection_scheme='distance_cutoff', cutoff=5, include_whole_residues=True)
+    model.set_region(selection=DistanceCutoff, name=None, cutoff=5, include_whole_residues=True)
     assert len(model.regions) == 3
     assert model.cutoff_5.n_atoms == 427
     assert model.cutoff_5.n_residues == 33

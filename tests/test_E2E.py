@@ -2,6 +2,8 @@
 End to end tests designed to match up with documentation examples.
 """
 from QMzyme.GenerateModel import GenerateModel
+from QMzyme.SelectionSchemes import *
+from QMzyme.TruncationSchemes import *
 from QMzyme.data import PDB
 import os
 import shutil
@@ -23,14 +25,14 @@ def test_QM_only_calculation():
     # Initialize model and define regions
     model = GenerateModel(PDB)
     model.set_catalytic_center(selection='resid 263')
-    model.selection_scheme(scheme='distance_cutoff', cutoff=5)
+    model.set_region(selection=DistanceCutoff, cutoff=5)
     assert model.n_regions == 2
     assert len(model.regions) == 2
     assert 'catalytic_center' in model.get_region_names()
     assert 'cutoff_5' in model.get_region_names()
 
     # Truncate region
-    model.truncate_region(region=model.cutoff_5)
+    model.truncate_region(region=model.cutoff_5, scheme=CA_terminal)
     assert model.n_regions == 3
     assert 'cutoff_5_truncated' in model.get_region_names()
 
@@ -84,7 +86,7 @@ def test_QMQM2_calculation(qm1_dict, qm2_dict):
     model.set_catalytic_center(selection='resid 263')
     model.catalytic_center.set_charge(-1)
     assert model.catalytic_center.charge == -1
-    model.selection_scheme(scheme='distance_cutoff', cutoff=5)
+    model.set_region(selection=DistanceCutoff, cutoff=5)
     model.truncate_region(region=model.cutoff_5)
     c_alpha_atoms = model.cutoff_5_truncated.get_atoms(attribute='name', value='CA')
     model.cutoff_5_truncated.set_fixed_atoms(atoms=c_alpha_atoms)
@@ -118,11 +120,11 @@ def test_QMQM2_calculation(qm1_dict, qm2_dict):
     restore_directory()
 
 def test_QMXTB_calculation():
-    from QMzyme.CalculateModel import QM_Method, XTB_Method
+    from QMzyme.CalculateModel import CalculateModel, QM_Method, XTB_Method
     model = GenerateModel(PDB)
     model.set_catalytic_center(selection='resid 263')
     model.catalytic_center.set_charge(-1)
-    model.selection_scheme(scheme='distance_cutoff', cutoff=5)
+    model.set_region(selection=DistanceCutoff, cutoff=5)
     model.truncate_region(region=model.cutoff_5)
     c_alpha_atoms = model.cutoff_5_truncated.get_atoms(attribute='name', value='CA')
     model.cutoff_5_truncated.set_fixed_atoms(atoms=c_alpha_atoms)
@@ -135,6 +137,7 @@ def test_QMXTB_calculation():
     qm_method.assign_to_region(region=model.catalytic_center)
     XTB_Method().assign_to_region(region=model.cutoff_5_truncated)
     model.write_input("temp")
+    assert CalculateModel.calculation['XTB'].n_atoms != model.cutoff_5_truncated.n_atoms
     with open(os.path.join('QCALC', 'temp.inp'), 'r') as f:
         file = f.read()
     assert "%QMMM\n" in file
