@@ -25,19 +25,24 @@ jobs:
           source activate base 
           conda activate qmzyme
           pip install -e .[test]
-          pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=html 
-      - store_artifacts:
-          path: htmlcov
+          pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=xml
+          rm -r /tmp/*
+          cp -r * /tmp
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - coverage.xml
+            - QMzyme
   codecov-coverage:
     docker:
       - image: cimg/python:3.10
     steps:
       - attach_workspace:
-          at: /htmlcov
+          at: /tmp
       # this checkout step is necessary to avoid an issue in which codecov thinks the report is empty
       - checkout
       - codecov/upload:
-          file: /htmlcov
+          file: /tmp/coverage.xml
           token: CODECOV_TOKEN
             
 workflows:
