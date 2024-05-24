@@ -13,7 +13,7 @@ import warnings
 import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import protein_residues
-from QMzyme.utils import check_filename
+
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
@@ -120,6 +120,7 @@ class QMzymeRegion:
         self.name = name
 
     def write(self, filename=None, format='pdb'):
+        from QMzyme.utils import check_filename
         warnings.filterwarnings('ignore')
         # Housekeeping
         if filename is None:
