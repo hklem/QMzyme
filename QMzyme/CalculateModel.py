@@ -13,12 +13,19 @@ Notes
     *   Currently optimized to generate QM-only Gaussian input files.
 """
 
-import os
 from QMzyme.aqme.qprep import qprep
 import numpy as np
 
 
 class CalculateModel:
+    """
+    Class responsible for storing calculation type and associated region. 
+    This information is used to determine what type of calculation writer to call 
+    in the Writers module.
+
+    This class also determines if there are any model issues, such as overlap between
+    two regions, which may lead to incorrect charge estimations.
+    """
     calculation = {}
     def _add(self, calc, region):
         if calc in CalculateModel.calculation:
@@ -53,7 +60,8 @@ class CalculateModel:
             residues = [atom.resid for atom in common_atoms]
             residues = [high_region.get_residue(resid) for resid in list(set(residues))]
             print(f"\nWARNING: Region overlap detected. The following residue(s) were found in both regions: {list(set(residues))}.")
-            print(f"Removing duplicate atoms from {low_region.name} and recalculating charge.")
+            print(f"Removing duplicate atoms and recalculating charge for calculation.")
+            print(f"The original region {low_region.name} can still be accessed in the GenerateModel object.")
             subtracted = low_region.subtract(high_region)
             subtracted.guess_charge()
             subtracted.method = low_region.method
@@ -61,7 +69,6 @@ class CalculateModel:
             subtracted.method["freeze_atoms"] = subtracted.get_indices(attribute='is_fixed', value=True)
             subtracted.name = low_region.name
             CalculateModel.calculation[low_region.method["type"]] = subtracted
-
 
     def _reset():
         CalculateModel.calculation = {}
