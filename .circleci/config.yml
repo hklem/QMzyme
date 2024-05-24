@@ -4,6 +4,7 @@ version: 2.1
 orbs:
   python: circleci/python@2.1.1
   codecov: codecov/codecov@4.0.1
+
 jobs:
   build-and-test:
     # Install dependencies and run tests
@@ -32,3 +33,5 @@ workflows:
   build-and-test:
     jobs:
       - build-and-test
+      - checkout 
+      - codecov/upload
