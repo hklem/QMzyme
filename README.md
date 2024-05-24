@@ -3,6 +3,8 @@
 
 ![Read the Docs](https://img.shields.io/readthedocs/hklem-qmzyme-documentation)
 [![PyPI version](https://badge.fury.io/py/QMzyme.svg)](https://badge.fury.io/py/QMzyme)
+![CircleCI](https://img.shields.io/circleci/build/gh/hklem/QMzyme)
+![Codecov](https://img.shields.io/codecov/c/gh/hklem/QMzyme)
 
 [comment]: <> "![PyPI - Downloads](https://img.shields.io/pypi/dm/QMzyme)"
 
