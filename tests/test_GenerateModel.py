@@ -51,7 +51,15 @@ def test_set_region(Test, init_file, region_name, selection):
         region_builder.init_atom_group(mda_atomgroup)
         qmz_region = region_builder.get_region()
         model.set_region(name=region_name, selection=qmz_region)
+
+        # check that warning is raised if you try to add a region with the same name of a region that already exists
+        with pytest.raises(UserWarning):
+            model.set_region(name=region_name, selection=qmz_region)
+
     assert len(model.regions) == 1
     assert model.regions[0].name == region_name
     assert model.regions[0].n_atoms == 40
     assert model.regions[0].n_residues == 2
+
+
+

@@ -118,11 +118,14 @@ def test_QMQM2_calculation(qm1_dict, qm2_dict):
     assert "QMATOMS "+"{"+"0:37"+"}" in file
     assert len(file.split("%QMMM")) == 2
 
-    # check that you cannot set a third QM method
+    # check that you cannot set a third QM method, or call gaussian with QMQM2
     model.set_region(selection=DistanceCutoff, cutoff=6)
     with pytest.raises(UserWarning):
         model.set_region(selection=DistanceCutoff, cutoff=6)
         qm2_method.assign_to_region(region=model.cutoff_6)
+        model.catalytic_center.method["program"] = 'gaussian'
+
+    model.write_input()
 
     restore_directory()
 

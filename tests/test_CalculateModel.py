@@ -38,15 +38,19 @@ def test_QM_Method(Test, program):
         qm_input='OPT FREQ', 
         program=program
     )
+    region.set_charge(-100)
     qm_method.assign_to_region(region=region)
     
     # check region method:
     assert hasattr(region, "method")
     assert region.method["basis_set"] == basis_set
     assert region.method["functional"] == functional
-    assert region.method["charge"] == -1
+    assert region.method["charge"] == -100
     assert region.method["mult"] == 1
     assert region.method["freeze_atoms"] == region.get_ix_array_from_ids(ids)
+
+    model.write_input()
+    restore_directory()
 
     # write_QM(region)
     # assert 'QCALC' in os.listdir()
