@@ -28,9 +28,22 @@ jobs:
           pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=html 
       - store_artifacts:
           path: htmlcov
-      - codecov/upload
+  codecov-coverage:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - attach_workspace:
+          at: /htmlcov
+      # this checkout step is necessary to avoid an issue in which codecov thinks the report is empty
+      - checkout
+      - codecov/upload:
+          file: /htmlcov
+          token: CODECOV_TOKEN
             
 workflows:
   build-and-test:
     jobs:
       - build-and-test
+      - codecov-coverage:
+          requires:
+            - build-and-test
