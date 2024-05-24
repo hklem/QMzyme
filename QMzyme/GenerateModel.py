@@ -7,13 +7,11 @@
 Module in charge of generating the QMzymeModel given a starting structure. 
 """
 
-from QMzyme.RegionBuilder import RegionBuilder
 from QMzyme.QMzymeModel import QMzymeModel
 import os
 import QMzyme.MDAnalysisWrapper as MDAwrapper
-from QMzyme.utils import translate_selection
-from QMzyme.truncation_schemes import truncation_schemes
-from QMzyme.selection_schemes import selection_schemes
+from QMzyme.utils import make_selection
+from QMzyme.TruncationSchemes import CA_terminal
 from QMzyme.CalculateModel import CalculateModel
 from QMzyme.Writers import Writer
 
@@ -54,44 +52,27 @@ class GenerateModel(QMzymeModel):
         includes (i) str that can be interpreted by the MDAnalysis selection 
         command, (ii) an MDAnalysis.core.groups.AtomGroup, (iii) a QMzyme.QMzymeRegion.
         """
-        self.set_region(selection=selection, region_name='catalytic_center',)
-        #return self.regions[-1]
-        return self
+        self.set_region(selection=selection, name='catalytic_center')
 
 
-    def set_region(self, selection, region_name="None"):
+    def set_region(self, selection, name=None, **kwargs):
         """
         Method to a QMzymeRegion. Accepted input includes (i) str that can be 
         interpreted by the MDAnalysis selection command, (ii) an 
         MDAnalysis.core.groups.AtomGroup, or (iii) a QMzyme.QMzymeRegion.
         """
-        selection = translate_selection(selection, self.universe)
-        region_builder = RegionBuilder(region_name)
-        region_builder.init_atom_group(selection)
-        region = region_builder.get_region()
+        region = make_selection(selection, model=self, name=name, **kwargs)
         self.add_region(region)
-        #return self.regions[-1]
-        return self
     
-
-    def truncate_region(self, region, truncation_scheme='CA_terminal'):
+    
+    def truncate_region(self, region, scheme=CA_terminal, name=None):
         """
         Method to truncate a QMzymeRegion. This will create a new region, and leave
         the original region unchanged.
         """
-        new_region = truncation_schemes[truncation_scheme](region)
-        self.add_region(new_region)
-        #return new_region
-        return self
-
-    def selection_scheme(self, selection_scheme: str='distance_cutoff', **kwargs):
-        """
-        Method to call a selection scheme to identify what atoms to include in the QMzymeRegion.
-        If selection_scheme='distance_cutoff', the keyword argument cutoff must also be supplied.
-        """
-        new_region = selection_schemes[selection_scheme](self, kwargs['cutoff'])
-        self.add_region(new_region)
-        return self
+        s = scheme(region=region, name=name)
+        region = s.return_region()
+        self.add_region(region)
 
 
     def write_input(self, filename=None, memory=None, nprocs=None):
