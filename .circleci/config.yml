@@ -21,7 +21,7 @@ jobs:
           pkg-manager: pip
       - run: |
           conda update -y conda
-          conda create -n qmzyme python=3.10
+          conda create -n qmzyme python=3.11
           source activate base 
           conda activate qmzyme
           pip install -e .[test]
@@ -36,7 +36,7 @@ jobs:
             
   codecov-coverage:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.11
     steps:
       - attach_workspace:
           at: /tmp
