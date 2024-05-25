@@ -24,8 +24,6 @@ jobs:
           conda create -n qmzyme python=3.11
           source activate base 
           conda activate qmzyme
-          apt-get install build-essential
-          conda install pandoc
           pip install -e .[test]
           pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=xml
           pip install -r docs/requirements.txt
