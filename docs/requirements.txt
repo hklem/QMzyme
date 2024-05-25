@@ -1,4 +1,5 @@
 sphinx
+numpy
 nbsphinx
 sphinx-rtd-theme
 sphinx-autoapi
