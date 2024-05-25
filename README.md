@@ -1,7 +1,7 @@
 
 ![](logo.png)
 
-![Read the Docs](https://img.shields.io/readthedocs/hklem-qmzyme-documentation)
+![Read the Docs](https://img.shields.io/readthedocs/qmzyme)
 [![PyPI version](https://badge.fury.io/py/QMzyme.svg)](https://badge.fury.io/py/QMzyme)
 [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main)
 [![codecov](https://codecov.io/gh/hklem/QMzyme/graph/badge.svg?token=5PISDUT85W)](https://codecov.io/gh/hklem/QMzyme)
@@ -10,7 +10,7 @@
 
 QMzyme is a Python toolkit to facilitate (quantum mechanical) QM-based enzyme calculations. The GenerateModel module guides the process of generating calculation ready truncated or partitioned molecule regions. Any input file(s) accepted by [MDAnalysis to create a Universe](https://userguide.mdanalysis.org/stable/universe.html) object can be used to start working in QMzyme. From there, the code relies on more flexible QMzyme objects: QMzymeAtom, QMzymeResidue, QMzymeRegion and QMzymeModel. 
 
-Full documentation with installation instructions, technical details and examples can be found in [Read the Docs](https://hklem-qmzyme-documentation.readthedocs.io).
+Full documentation with installation instructions, technical details and examples can be found in [Read the Docs](https://qmzyme.readthedocs.io/).
 
 ## Contributing to QMzyme
 For suggestions and improvements of the code (greatly appreciated!), please reach out through the issues and pull requests options of Github.  
