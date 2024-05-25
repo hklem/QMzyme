@@ -10,7 +10,8 @@ jobs:
     # Install dependencies and run tests
     docker:
       #- image: cimg/python:3.11-node
-      - image: continuumio/miniconda3
+      #- image: continuumio/miniconda3
+      - image: continuumio/anaconda3
     #filters:
       #branches:
         #only:
@@ -20,9 +21,6 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run: |
-          apt-get update
-          apt-get install sudo -y
-          sudo apt install build-essential
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
