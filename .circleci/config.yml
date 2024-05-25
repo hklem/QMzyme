@@ -51,28 +51,28 @@ jobs:
           file: /tmp/coverage.xml
           token: CODECOV_TOKEN
           
-  build_docs:
-    docker:
-      - image: continuumio/miniconda3
-    steps:
-      - checkout
-      - run: |
-          conda update -y conda
-          conda create -n qmzyme python=3.11
-          source activate base 
-          conda activate qmzyme
-          conda install pandoc
-          pip install -e .
-          pip install -r docs/requirements.txt
-          cd docs;make html
-      - store_artifacts:
-          path: docs/_build/html/
-          destination: html
+  # build_docs:
+  #   docker:
+  #     - image: continuumio/miniconda3
+  #   steps:
+  #     - checkout
+  #     - run: |
+  #         conda update -y conda
+  #         conda create -n qmzyme python=3.11
+  #         source activate base 
+  #         conda activate qmzyme
+  #         conda install pandoc
+  #         pip install -e .
+  #         pip install -r docs/requirements.txt
+  #         cd docs;make html
+  #     - store_artifacts:
+  #         path: docs/_build/html/
+  #         destination: html
             
 workflows:
   build-and-test:
     jobs:
-      - build_docs
+      # - build_docs
       - build-and-test
       - codecov-coverage:
           requires:
