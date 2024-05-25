@@ -26,8 +26,14 @@ jobs:
           conda activate qmzyme
           pip install -e .[test]
           pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=xml
+          conda install pandoc
+          pip install -r docs/requirements.txt
+          cd docs;make html
           rm -r /tmp/*
           cp -r * /tmp
+      - store_artifacts:
+          path: docs/_build/html/
+          destination: html
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -46,25 +52,18 @@ jobs:
           file: /tmp/coverage.xml
           token: CODECOV_TOKEN
           
-  build_docs:
-    # docker:
-    #   - image: cimg/python:3.11
-    steps:
-      - checkout
-      # - run: |
-      #     pip install -e .
-      #     sudo apt install pandoc
-      #     pip install pandoc
-      #     pip install -r docs/requirements.txt
-      #     cd docs;make html
-      - run: |
-          conda install pandoc
-          pip install -e .
-          pip install -r docs/requirements.txt
-          
-      - store_artifacts:
-          path: docs/_build/html/
-          destination: html
+  # build_docs:
+  #   docker:
+  #     - image: cimg/python:3.11
+  #   steps:
+  #     - checkout
+  #     - run: |
+  #         pip install -e .
+  #         pip install -r docs/requirements.txt
+  #         cd docs;make html
+  #     - store_artifacts:
+  #         path: docs/_build/html/
+  #         destination: html
             
 workflows:
   build-and-test:
