@@ -21,6 +21,7 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run: |
+          PATH=$PATH:/usr/sbin
           sudo apt update
           apt-get install build-essential
           conda update -y conda
