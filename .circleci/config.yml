@@ -53,6 +53,8 @@ jobs:
       - checkout
       - run: |
           pip install -e .
+          sudo apt install pandoc
+          pip install pandoc
           pip install -r docs/requirements.txt
           cd docs;make html
       - store_artifacts:
