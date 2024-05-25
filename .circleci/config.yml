@@ -47,16 +47,21 @@ jobs:
           token: CODECOV_TOKEN
           
   build_docs:
-    docker:
-      - image: cimg/python:3.11
+    # docker:
+    #   - image: cimg/python:3.11
     steps:
       - checkout
+      # - run: |
+      #     pip install -e .
+      #     sudo apt install pandoc
+      #     pip install pandoc
+      #     pip install -r docs/requirements.txt
+      #     cd docs;make html
       - run: |
+          conda install pandoc
           pip install -e .
-          sudo apt install pandoc
-          pip install pandoc
           pip install -r docs/requirements.txt
-          cd docs;make html
+          
       - store_artifacts:
           path: docs/_build/html/
           destination: html
