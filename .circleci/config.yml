@@ -10,8 +10,7 @@ jobs:
     # Install dependencies and run tests
     docker:
       #- image: cimg/python:3.11-node
-      #- image: continuumio/miniconda3
-      - image: continuumio/anaconda3
+      - image: continuumio/miniconda3
     #filters:
       #branches:
         #only:
@@ -21,8 +20,6 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run: |
-          su apt update
-          apt-get install build-essential
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
@@ -54,26 +51,29 @@ jobs:
           file: /tmp/coverage.xml
           token: CODECOV_TOKEN
           
-  # build_docs:
-  #   docker:
-  #     - image: cimg/python:3.11
-  #   steps:
-  #     - checkout
-  #     - run: |
-  #         pip install -e .
-  #         pip install -r docs/requirements.txt
-  #         cd docs;make html
-  #     - store_artifacts:
-  #         path: docs/_build/html/
-  #         destination: html
+  build_docs:
+    docker:
+      - image: continuumio/miniconda3
+    steps:
+      - checkout
+      - run: |
+          conda update -y conda
+          conda create -n qmzyme python=3.11
+          source activate base 
+          conda activate qmzyme
+          conda install pandoc
+          pip install -e .
+          pip install -r docs/requirements.txt
+          cd docs;make html
+      - store_artifacts:
+          path: docs/_build/html/
+          destination: html
             
 workflows:
   build-and-test:
     jobs:
+      - build_docs
       - build-and-test
       - codecov-coverage:
           requires:
             - build-and-test
-      # - build_docs:
-      #     requires:
-      #       - build-and-test
