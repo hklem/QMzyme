@@ -41,12 +41,6 @@ test = [
     "pytest",
     "pytest-cov"
 ]
-docs = [
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-autoapi",
-    "sphinx-autodocgen"
-]
 
 
 [tool.setuptools]

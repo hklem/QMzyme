@@ -33,7 +33,7 @@ jobs:
           paths:
             - coverage.xml
             - QMzyme
-            
+    
   codecov-coverage:
     docker:
       - image: cimg/python:3.11
@@ -45,11 +45,26 @@ jobs:
       - codecov/upload:
           file: /tmp/coverage.xml
           token: CODECOV_TOKEN
+          
+  build_docs:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - run: |
+          pip install -r docs/requirements.txt
+          cd docs;make html
+      - store_artifacts:
+          path: docs/_build/html/
+          destination: html
             
 workflows:
   build-and-test:
     jobs:
       - build-and-test
       - codecov-coverage:
+          requires:
+            - build-and-test
+      - build_docs:
           requires:
             - build-and-test
