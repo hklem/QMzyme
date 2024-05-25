@@ -33,7 +33,17 @@ jobs:
           paths:
             - coverage.xml
             - QMzyme
-            
+  build_docs:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - run:
+        name: doc_build
+        command: |
+          pip install -r docs/requirements.txt
+          cd docs;make html
+    
   codecov-coverage:
     docker:
       - image: cimg/python:3.11
@@ -51,5 +61,8 @@ workflows:
     jobs:
       - build-and-test
       - codecov-coverage:
+          requires:
+            - build-and-test
+      - build_docs:
           requires:
             - build-and-test
