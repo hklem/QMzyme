@@ -1,7 +1,4 @@
-QMzymeRegion
-=============
-
-.. automodule:: QMzyme.QMzymeRegion.QMzymeRegion
+.. autoclass:: QMzyme.QMzymeRegion.QMzymeRegion
+   :show-inheritance:
    :members:
    :undoc-members:
-

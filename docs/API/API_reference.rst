@@ -12,9 +12,10 @@ Vision for the main QMzyme modules.
    :maxdepth: 1
 
    QMzyme.GenerateModel
+   QMzyme.SelectionSchemes
+   QMzyme.TruncationSchemes
    QMzyme.CalculateModel
-   QMzyme.selection_schemes
-   QMzyme.truncation_schemes
+   QMzyme.Writers
 
 
 QMzyme Object Structure
@@ -23,14 +24,14 @@ QMzyme Object Structure
 Modules for constructing QMzyme objects.
 
 .. toctree::
-	:maxdepth: 1
+   :maxdepth: 1
 
-	QMzyme.QMzymeAtom
-	QMzyme.QMzymeResidue
-	QMzyme.QMzymeRegion
-	QMzyme.QMzymeModel
-	QMzyme.RegionBuilder
-
+   QMzyme.QMzymeAtom
+   QMzyme.QMzymeResidue
+   QMzyme.QMzymeModel
+   QMzyme.QMzymeRegion
+   QMzyme.RegionBuilder
+	
 
 Other Modules
 ===============
@@ -39,5 +40,6 @@ Other Modules
    :maxdepth: 1
 
    QMzyme.utils
-   QMzyme.MDAnalysisWrapper
+   QMzyme.truncation_utils
    QMzyme.aqme.qprep
+   QMzyme.MDAnalysisWrapper

@@ -1,7 +1,3 @@
-RegionBuilder
-==============
-
-.. automodule:: QMzyme.RegionBuilder
+.. autoclass:: QMzyme.RegionBuilder.RegionBuilder
    :members:
    :undoc-members:
-

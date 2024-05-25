@@ -22,54 +22,50 @@ class SelectionScheme(abc.ABC):
     classes. Fork QMzyme to build your own concrete selection scheme class and submit
     a Pull Request on github to have your scheme added to QMzyme! 
 
-    Below is a template that you can use to design a selection scheme:
+    Below is a template that you can use to design a selection scheme concrete class:
 
-    {Example concrete class, a subclass of SelectionScheme}
     class InformativeName(SelectionScheme):
         ''' {Example Docstring}
         Detailed description of how the scheme works, including references 
         to any relevant literature.
 
-        Parameters
-        ============
+        **Parameters**
+        
         :param model: QMzymeModel to provide starting structure that selection 
-        will be performed on.
-        :type model: :class:`~QMzymeModel`, required.
+            will be performed on.
+        :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
 
         :param name: Name of the region generated.
         :type name: str, required.
 
-        List the parameters (if any) that will be captured in the kwargs of 
-        GenerateModel().set_region()} See :class:~`DistanceCutoff()` for example.
+        **Returns**
+    
+        :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
-        Returns
-        ========
-        QMzymeRegion
-
-        Notes
-        ======
+        **Notes**
+    
         Include any notes you want users to be aware of.
         '''
         
         def __init__(self, model, name, {any additional kwargs}):
-            # Assign any kwargs as attributes to self. Then in your
-            # select_atoms method you can pull any necessary args from
-            # self attributes, instead of relying on passing them.
+            Assign any kwargs as attributes to self. Then in your
+            select_atoms method you can pull any necessary args from
+            self attributes, instead of relying on passing them.
 
             super().__init__(model, name)
         
         def select_atoms(self):
-            # Write your code to perform the selection. 
+            Write your code to perform the selection. 
 
-            # At the end of your code you should set self.region = {region}. 
+            At the end of your code you should set self.region = {region}. 
 
-            # The product of your selection scheme needs to be a QMzymeRegion 
-            #  in order for it to work with GenerateModel().set_region().
+            The product of your selection scheme needs to be a QMzymeRegion 
+            in order for it to work with GenerateModel().set_region().
 
         def method_name(self):
-            # You can add whatever other methods you want in your class, but 
-            # you should call those methods as necessary in __init__() otherwise
-            # your scheme will not work in GenerateModel.set_region(). 
+            You can add whatever other methods you want in your class, but 
+            you should call those methods as necessary in __init__() otherwise
+            your scheme will not work in GenerateModel.set_region(). 
     """
     def __init__(self, model, name):
         self.name = name
@@ -103,7 +99,7 @@ class DistanceCutoff(SelectionScheme):
     ============
     :param model: QMzymeModel to provide starting structure that selection 
     will be performed on.
-    :type model: :class:`~QMzymeModel`, required.
+    :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
 
     :param name: Name of the region generated.
     :type name: str, required.
@@ -118,7 +114,7 @@ class DistanceCutoff(SelectionScheme):
 
     Returns
     ========
-    QMzymeRegion
+    :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
     Notes
     ======

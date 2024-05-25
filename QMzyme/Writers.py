@@ -27,15 +27,15 @@ class Writer:
     :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel` (required)
     
     :param filename: Name to be given to calculation input file. 
-    Does not need to contain file format suffix.
+        Does not need to contain file format suffix.
     :type filename: str (required) Example: filename='1oh0_cutoff3'
 
     :param writer: Tells the class what format of input file to create. Options
-    are entries in the writers dict found in Writers.py
+        are entries in the writers dict found in Writers.py
     :type writer: str (required), options: 'QM', 'QMQM2', 'QMXTB', 'QMChargeField'
 
     :param memory: Memory for the QM calculation 
-    (i) Gaussian: total memory; (ii) ORCA: memory per processor.
+        (i) Gaussian: total memory; (ii) ORCA: memory per processor.
     :type memory: str (optional, default memory='24GB')
 
     :param nprocs: Number of processors used in the QM calculation.
