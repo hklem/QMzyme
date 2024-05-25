@@ -37,7 +37,6 @@ Introduction to QMzyme
    
    Examples/Installation
    Examples/Getting_Started
-   Examples/Contributing to QMzyme
    Examples/QM-only Calculation
    Examples/QMQM2 Calculation
    Examples/QMxTB Calculation
