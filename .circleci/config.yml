@@ -20,12 +20,12 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run: |
+          apt-get update
+          sudo apt install build-essential
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
           conda activate qmzyme
-          apt-get update
-          ${which sudo} apt install build-essential
           pip install -e .[test]
           pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=xml
           pip install -r docs/requirements.txt
