@@ -46,6 +46,7 @@ Introduction to QMzyme
 
 .. toctree::
    :maxdepth: 1
-   :caption: Development Team
+   :caption: Development
 
+   Examples/Contribiting to QMzyme
    questions
