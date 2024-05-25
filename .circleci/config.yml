@@ -21,6 +21,7 @@ jobs:
       - python/install-packages:
           pkg-manager: pip
       - run: |
+          apt-get install make
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
