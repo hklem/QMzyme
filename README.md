@@ -3,12 +3,8 @@
 
 ![Read the Docs](https://img.shields.io/readthedocs/hklem-qmzyme-documentation)
 [![PyPI version](https://badge.fury.io/py/QMzyme.svg)](https://badge.fury.io/py/QMzyme)
-![CircleCI](https://img.shields.io/circleci/build/gh/hklem/QMzyme)
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main)
 [![codecov](https://codecov.io/gh/hklem/QMzyme/graph/badge.svg?token=5PISDUT85W)](https://codecov.io/gh/hklem/QMzyme)
-
-[comment]: <> "![PyPI - Downloads](https://img.shields.io/pypi/dm/QMzyme)"
-
-[comment]: <> "![CircleCI](https://img.shields.io/circleci/build/gh/hklem/QMzyme)"
 
 *QMzyme is currently under-development. Please note the user interface may change! The first stable API version will be released as QMzyme==1.0.0 on PyPi.*
 
