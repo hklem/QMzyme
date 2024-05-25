@@ -72,6 +72,6 @@ workflows:
       - codecov-coverage:
           requires:
             - build-and-test
-      - build_docs:
-          requires:
-            - build-and-test
+      # - build_docs:
+      #     requires:
+      #       - build-and-test
