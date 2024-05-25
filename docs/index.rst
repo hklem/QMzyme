@@ -34,7 +34,15 @@ Introduction to QMzyme
 .. toctree::
    :maxdepth: 2
    :caption: Examples
-
+   
+   Examples/Installation
+   Examples/Getting_Started
+   Examples/Contributing to QMzyme
+   Examples/QM-only Calculation
+   Examples/QMQM2 Calculation
+   Examples/QMxTB Calculation
+   Examples/Ligand Parameterization
+   Examples/Working with Trajectories
 
 
 .. toctree::
