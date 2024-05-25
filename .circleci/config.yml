@@ -52,6 +52,7 @@ jobs:
     steps:
       - checkout
       - run: |
+          pip install -e .
           pip install -r docs/requirements.txt
           cd docs;make html
       - store_artifacts:

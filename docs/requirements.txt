@@ -1,6 +1,4 @@
 sphinx
-numpy
-MDAnalysis
 nbsphinx
 sphinx-rtd-theme
 sphinx-autoapi
