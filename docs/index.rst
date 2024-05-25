@@ -48,5 +48,5 @@ Introduction to QMzyme
    :maxdepth: 1
    :caption: Development
 
-   Examples/Contribiting to QMzyme
+   Examples/Contributing to QMzyme
    questions
