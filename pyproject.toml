@@ -37,11 +37,9 @@ dependencies = [
 #"Documentation" = "https://QMzyme.readthedocs.io/"
 
 [project.optional-dependencies]
-test = [
+test_and_doc = [
     "pytest",
-    "pytest-cov"
-]
-docs = [
+    "pytest-cov",
     "sphinx",
     "sphinx-rtd-theme",
     "sphinx-autoapi",
