@@ -1,3 +1,4 @@
+pandoc
 sphinx
 nbsphinx
 sphinx-rtd-theme
