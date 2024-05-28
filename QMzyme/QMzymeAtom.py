@@ -48,27 +48,9 @@ class QMzymeAtom:
     def __repr__(self):
         return f"<QMzymeAtom {self.id}: {self.name} of resname {self.resname}, resid {self.resid}>"
 
-    # @property 
-    # def name(self):
-    #     return self.name
-
-    # @name.setter
-    # def name(self, value):
-    #     fname = inspect.currentframe().f_code.co_name
-    #     raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
-        
     def set_name(self, value):
         self.name = value
-    
-    # @property
-    # def element(self):
-    #     return self.element
-    
-    # @element.setter
-    # def element(self, value):
-    #     fname = inspect.currentframe().f_code.co_name
-    #     raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
-        
+
     def set_element(self, value):
         self.element = value
 
@@ -107,7 +89,7 @@ class QMzymeAtom:
 
     def get_chain(self):
         chain = None
-        for name in ['chain', 'chainID', 'chain_ID', 'chain_id']:
+        for name in ['chain', 'chainID', 'chain_ID', 'chain_id', 'chainid']:
             if hasattr(self, name):
                 chain = getattr(self, name)
         return chain
@@ -122,12 +104,4 @@ class QMzymeAtom:
         for k in ['name', 'resid', 'resname', 'element']:
             if self.__dict__[k] != atom.__dict__[k]:
                 return False
-        # for k in atom.__dict__:
-        #     print(self.__dict__[k])
-        #     if 'region' in k or k.startswith('set'):
-        #         continue
-        #     elif k == 'position':
-        #         continue
-        #     elif self.__dict__[k] != atom.__dict__[k]:
-        #         return False
         return True

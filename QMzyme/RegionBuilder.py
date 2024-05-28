@@ -11,6 +11,7 @@ import warnings
 import copy
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.QMzymeAtom import QMzymeAtom
+from QMzyme.converters import mda_atom_to_qmz_atom
 from MDAnalysis.core.groups import Atom
 from MDAnalysis.core.groups import AtomGroup
 
@@ -22,7 +23,8 @@ _MDAtom = TypeVar("_MDAtom", bound="Atom")
 _AtomGroup = TypeVar("_AtomGroup", bound="AtomGroup")
 _Atom = TypeVar("_Atom", bound=Union["QMzymeAtom", "Atom"])
 
-remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
+#remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
+remove_mda_atom_props = ['level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
 
 class RegionBuilder:
 
@@ -52,17 +54,19 @@ class RegionBuilder:
         """
         for atom in atom_group.atoms:
             self.init_atom(atom, uniquify=True)
-            #self.init_atom(atom, uniquify=False)
         self.atom_group = atom_group
         region = self.get_region()
         return region
 
     def init_atom(self, atom, uniquify=True):
         warnings.filterwarnings('ignore')
-        atom_props = self.get_atom_properties(atom)
-        if uniquify is True:
-            atom = self.uniquify_atom(atom_props)
-        atom = QMzymeAtom(**atom_props)
+        if isinstance(atom, Atom):
+            atom = mda_atom_to_qmz_atom(atom)
+        else:
+            atom_props = self.get_atom_properties(atom)
+            if uniquify is True:
+                atom = self.uniquify_atom(atom_props)
+            atom = QMzymeAtom(**atom_props)
         self.atoms.append(atom)
 
     def uniquify_atom(self, atom_props):

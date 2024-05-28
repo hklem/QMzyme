@@ -9,7 +9,9 @@ Product of the RegionBuilder class.
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
+from QMzyme.converters import region_to_atom_group
 import warnings
+import numpy as np
 import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import protein_residues
@@ -21,7 +23,7 @@ class QMzymeRegion:
     def __init__(self, name, atoms: list, atom_group = None):
         self.name = name
         self.atoms = atoms
-        self.atom_group = atom_group
+        self._atom_group = atom_group
         self.method = None
 
     def __repr__(self):
@@ -68,20 +70,18 @@ class QMzymeRegion:
             residues.append(res)
         return residues
     
-    # def set_layer(self, value: str):
-    #     """
-    #     Accepted layer values are "QM", "xTB" and "point_charges".
-    #     """
-    #     value = value.lower()
-    #     if value not in ["qm", "xtb", "point_charges"]:
-    #         raise UserWarning('Accepted layer values are QM, xTB and point_charges.')
-    #     self.layer = value
+    @property
+    def positions(self):
+        coordinates = np.empty((self.n_atoms, 3), dtype=np.float32)
+        for i, atom in enumerate(self.atoms):
+            coordinates[i] = atom.position
+        return coordinates
 
-    def set_atom_group(self, atom_group):
-        self.atom_group = atom_group
-        
-    def get_atom_group(self):
-        return self.atom_group
+    @property
+    def atom_group(self):
+        if self._atom_group is None:
+            return self.convert_to_atom_group()
+        return self._atom_group
     
     def get_atom(self, id):
         for i in self.atoms:
@@ -126,12 +126,13 @@ class QMzymeRegion:
         if filename is None:
             filename = f"{'_'.join(self.name.split(' '))}.{format}"
         filename = check_filename(filename, format)
-        ag = self.convert_to_AtomGroup()
-        ag.write(filename)
+        #ag = self.convert_to_AtomGroup()
+        #ag.write(filename)
+        self.atom_group.write(filename)
         return filename
 
-    def convert_to_AtomGroup(self):
-        return MDAwrapper.build_universe_from_QMzymeRegion(self)
+    # def convert_to_AtomGroup(self):
+    #     return MDAwrapper.build_universe_from_QMzymeRegion(self)
     
     def set_fixed_atoms(self, ids: list= None, atoms=None):
         if atoms is not None:
@@ -180,6 +181,9 @@ class QMzymeRegion:
             if atom.id in ids:
                 ix_array.append(ix)
         return ix_array
+    
+    def convert_to_atom_group(self):
+        return region_to_atom_group(self)
     
     def check_missing_attr(self, attr):
         missing = []
