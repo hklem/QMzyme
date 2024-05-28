@@ -59,14 +59,16 @@ def test_setters():
     # with pytest.raises(AttributeError):
     #     qmz_atom.name = 'F'
     assert qmz_atom.name != 'F'
-    qmz_atom.set_name('F')
+    #qmz_atom.set_name('F')
+    qmz_atom.name = 'F'
     assert qmz_atom.name == 'F'
 
     # element
     # with pytest.raises(AttributeError):
     #     qmz_atom.element = 'P'
     assert qmz_atom.element != 'P'
-    qmz_atom.set_element('P')
+    #qmz_atom.set_element('P')
+    qmz_atom.element = 'P'
     assert qmz_atom.element == 'P'
 
     # region
@@ -74,7 +76,7 @@ def test_setters():
     with pytest.raises(AttributeError):
         qmz_atom.region = 'placeholder'
     assert qmz_atom.region != 'placeholder'
-    qmz_atom.set_region('placeholder')
+    qmz_atom._set_region('placeholder')
     assert qmz_atom.region == 'placeholder'
 
     # is_fixed

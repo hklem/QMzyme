@@ -98,7 +98,7 @@ class DistanceCutoff(SelectionScheme):
     Parameters
     ============
     :param model: QMzymeModel to provide starting structure that selection 
-    will be performed on.
+        will be performed on.
     :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
 
     :param name: Name of the region generated.
@@ -108,13 +108,13 @@ class DistanceCutoff(SelectionScheme):
     :type cutoff: float, required.
 
     :param include_whole_residues: Informs code whether or not to only include
-    atoms within the cutoff, or include whole residues if they have at least one
-    atom within the cutoff. 
+        atoms within the cutoff, or include whole residues if they have at least one
+        atom within the cutoff. 
     :type include_whole_residues: bool, default=True.
 
     Returns
     ========
-    :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+    :class:`~QMzyme.QMzymeRegion.QMzymeRegion instance.`
 
     Notes
     ======

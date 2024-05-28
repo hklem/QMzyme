@@ -48,20 +48,30 @@ class QMzymeRegion:
     
     @property
     def resids(self):
+        """
+        Returns a list of sorted residue IDs for residues within this region.
+        """
         return sorted(list(set([atom.resid for atom in self.atoms])))
     
     @property
     def n_atoms(self):
+        """
+        Returns the number of atoms within this region.
+        """
         return len(self.atoms)
     
     @property
     def n_residues(self):
-        #self.residues = list(set([atom.resid for atom in self.atoms]))
-        #return len(self.resids)
+        """
+        Returns the number of residues within this region.
+        """
         return len(self.residues)
     
     @property 
     def residues(self):
+        """
+        Returns a list of :class:`~QMzyme.QMzymeRegion.QMzymeResidue` instances within this region.
+        """
         residues = []
         for resid in self.resids:
             atoms = [atom for atom in self.atoms if atom.resid == resid]
@@ -72,6 +82,9 @@ class QMzymeRegion:
     
     @property
     def positions(self):
+        """
+        Returns a numpy array of the positions of all atoms in this region instance.
+        """
         coordinates = np.empty((self.n_atoms, 3), dtype=np.float32)
         for i, atom in enumerate(self.atoms):
             coordinates[i] = atom.position
@@ -79,6 +92,11 @@ class QMzymeRegion:
 
     @property
     def atom_group(self):
+        """
+        Returns the :class:`~MDAnalysis.core.groups.AtomGroup` instance. If the region was not 
+        bult from an AtomGroup initially, it will be converted to one. Note, in this case, the universe
+        of that AtomGroup will 
+        """
         if self._atom_group is None:
             return self.convert_to_atom_group()
         return self._atom_group
@@ -101,7 +119,7 @@ class QMzymeRegion:
     def add_atom(self, atom: _QMzymeAtom):
         """
         :param atom: The atom you want to add to the QMzymeRegion. 
-        :type atom: _QMzymeAtom. 
+        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`. 
         """
         self.atoms.append(atom)
         self.atoms = self.sort_atoms()

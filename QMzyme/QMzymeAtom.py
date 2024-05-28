@@ -9,27 +9,12 @@ class QMzymeAtom:
     """
     Required Parameters
     --------------------
-    :param id: id starts from 1 NOT 0. 
-    :param name:
-    :param element:
-    :param position:
-    :param resid:
-    :param resname:
-
-    Optional Parameters
-    --------------------
-    :param type: optional
-    :param force: optional
-    :param velocity: optional
-    :param id: optional
-    :param bfactor: optional
-    :param segid: optional
-    :param chain: optional
-    :param record_type: optional
-    :param charge: optional
-    :param is_fixed: optional
-    :param is_neighbor: optional
-    :param is_point_charge: optional
+    :param id: Atom id, 1 indexed. Default = 1. 
+    :param name: Atom name: ex., 'C1'
+    :param element: Element one-letter name: ex., 'C'
+    :param position: Array of cartesian coordinates.
+    :param resid: Integer residue number.
+    :param resname: Three letter residue name: ex., 'VAL'
     """
     def __init__(self, name, element, position, resid, resname, id=1, region=None, **kwargs):
         self.name = name
@@ -48,14 +33,11 @@ class QMzymeAtom:
     def __repr__(self):
         return f"<QMzymeAtom {self.id}: {self.name} of resname {self.resname}, resid {self.resid}>"
 
-    def set_name(self, value):
-        self.name = value
-
-    def set_element(self, value):
-        self.element = value
-
     @property
     def region(self):
+        """
+        Returns the QMzymeRegion this atom belongs to.
+        """
         return self.__region
     
     @region.setter
@@ -63,24 +45,24 @@ class QMzymeAtom:
         fname = inspect.currentframe().f_code.co_name
         raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
 
-    def set_region(self, value):
+    def _set_region(self, value):
         self.__region = value
 
     def set_neighbor(self, value: bool=True):
         """
-        Method to add ``is_neighbor=True`` attribute to QMzymeAtom."
+        Method to set ``is_neighbor=True`` for QMzymeAtom instance."
         """
         self.is_neighbor = value
     
     def set_fixed(self, value: bool=True):
         """
-        Method to add ``is_fixed=True`` attribute to QMzymeAtom."
+        Method to set ``is_fixed=True`` for QMzymeAtom instance."
         """
         self.is_fixed = value
 
     def set_point_charge(self, value: bool=True):
         """
-        Method to set ``is_point_charge=True`` to QMzymeAtom.
+        Method to set ``is_point_charge=True`` for QMzymeAtom instance.
         Note: only works if atom has charge attribute.
         """
         if not hasattr(self, "charge"):
@@ -88,6 +70,10 @@ class QMzymeAtom:
         self.is_point_charge = value
 
     def get_chain(self):
+        """
+        Searches possible attribute names chain can live under 
+        (chainID, chain_ID, chain,id) and returns value if found.
+        """
         chain = None
         for name in ['chain', 'chainID', 'chain_ID', 'chain_id', 'chainid']:
             if hasattr(self, name):
