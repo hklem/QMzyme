@@ -39,6 +39,7 @@ class CalculateModel:
                                       "of two QM regions in a single calculation.")
                 calc = 'QM2'
                 region.method["type"] = 'QM2'
+                region.segid = 'QM2'
                 print(f"WARNING: A QM region already defined. Setting QMzymeRegion {region.name} as QM2.")
         
         CalculateModel.calculation[calc] = region
@@ -57,6 +58,7 @@ class CalculateModel:
         #     except:
         #         low_region = CalculateModel.calculation['ChargeField']
 
+        high_region.segid = 'QM'
         common_atoms = high_region.get_overlap(low_region)
         if len(common_atoms) != 0:
             #residues = [atom.resname+str(atom.resid) for atom in common_atoms]
@@ -81,6 +83,7 @@ class CalculationBase:
         self._set_constraints(region)
         self.mult = mult
         region.set_method(self.__dict__)
+        region.segid = self.type
         region = CalculateModel()._add(calc=self.type, region=region)
         self._set_charge(CalculateModel.calculation[self.type], charge)
 
