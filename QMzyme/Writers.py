@@ -36,17 +36,15 @@ class Writer:
 
     :param memory: Memory for the QM calculation 
         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-    :type memory: str (optional, default memory='24GB')
+    :type memory: str (optional, default memory='12GB')
 
     :param nprocs: Number of processors used in the QM calculation.
     :type nprocs: int (optional, default nprocs=12)
 
     """
-    def __init__(self, filename, writer, memory, nprocs):
-        if memory == None:
-            memory = '24GB'
-        if nprocs == None:
-            nprocs = 12
+    def __init__(self, filename, memory, nprocs, writer=None):
+        if writer == None:
+            writer = "".join(CalculateModel.calculation)
         self.filename = filename
         self.memory = memory
         self.nprocs = nprocs

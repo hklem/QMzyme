@@ -106,7 +106,7 @@ class GenerateModel(QMzymeModel):
         self.add_region(region)
 
 
-    def write_input(self, filename=None, memory=None, nprocs=None):
+    def write_input(self, filename=None, memory='12GB', nprocs=12):
         """
         Method to write calculation file input. The code will automatically
         detect what type of calculation file to prepare based on the 
@@ -125,6 +125,5 @@ class GenerateModel(QMzymeModel):
             A :class:`~QMzyme.CalculateModel.QM_Method` must have been assigned
             to a region. 
         """
-        writer = "".join(CalculateModel.calculation)
-        Writer(filename, writer, memory, nprocs)
+        Writer(filename=filename, memory=memory, nprocs=nprocs)
 
