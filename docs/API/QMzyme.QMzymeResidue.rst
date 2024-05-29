@@ -1,3 +1,5 @@
+QMzymeResidue
+===================
 
 .. autoclass:: QMzyme.QMzymeRegion.QMzymeResidue
    :show-inheritance:

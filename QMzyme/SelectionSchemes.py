@@ -25,27 +25,20 @@ class SelectionScheme(abc.ABC):
     Below is a template that you can use to design a selection scheme concrete class:
 
     class InformativeName(SelectionScheme):
-        ''' {Example Docstring}
-        Detailed description of how the scheme works, including references 
+        This is an example docstring.
+
+        Include a detailed description of how the scheme works, including references 
         to any relevant literature.
 
-        **Parameters**
+        :Parameters:
+            - :model: QMzymeModel to provide starting structure that selection will be performed on.
+            - :name: Name of the region generated.
+
+        :Returns:
+            :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
         
-        :param model: QMzymeModel to provide starting structure that selection 
-            will be performed on.
-        :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
-
-        :param name: Name of the region generated.
-        :type name: str, required.
-
-        **Returns**
-    
-        :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
-
-        **Notes**
-    
-        Include any notes you want users to be aware of.
-        '''
+        :Notes:
+            Include any notes you want users to be aware of.
         
         def __init__(self, model, name, {any additional kwargs}):
             Assign any kwargs as attributes to self. Then in your
@@ -95,8 +88,7 @@ class DistanceCutoff(SelectionScheme):
     O-Methyltransferase. J Phys Chem B. 2016 Nov 10;120(44):11381-11394. 
     doi: 10.1021/acs.jpcb.6b07814.).
 
-    Parameters
-    ============
+
     :param model: QMzymeModel to provide starting structure that selection 
         will be performed on.
     :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
@@ -112,18 +104,17 @@ class DistanceCutoff(SelectionScheme):
         atom within the cutoff. 
     :type include_whole_residues: bool, default=True.
 
-    Returns
-    ========
-    :class:`~QMzyme.QMzymeRegion.QMzymeRegion instance.`
 
-    Notes
-    ======
-    Users are encouraged to evaluate the resulting region. There may be situations where
-    a charged residue is within the cutoff distance, however, its charge partner is not. 
-    Such situations can drastically alter the chemistry of the model! Maybe someone could
-    write up a less generic distance based selection scheme that would take such situations
-    into consideration. Or modify the current class to include an argument 
-    `include_charge_partners=True`. 
+    :returns: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+    :notes:
+        Users are encouraged to evaluate the resulting region. There may be situations where
+        a charged residue is within the cutoff distance, however, its charge partner is not. 
+        Such situations can drastically alter the chemistry of the model! Maybe someone could
+        write up a less generic distance based selection scheme that would take such situations
+        into consideration. Or modify the current class to include an argument 
+        `include_charge_partners=True`. 
+        
     """
     def __init__(self, model, name, cutoff, include_whole_residues=True):
         if name is None:

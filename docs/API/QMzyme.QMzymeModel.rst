@@ -1,3 +1,5 @@
+QMzymeModel
+===================
 
 .. autoclass:: QMzyme.QMzymeModel.QMzymeModel
    :members:

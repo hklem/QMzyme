@@ -1,52 +1,52 @@
-.. QMzyme-documentation documentation master file, created by
-   sphinx-quickstart on Mon Apr 15 13:01:29 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 .. |logo| image:: Images/QMzyme_logo.png
    :width: 300
 
-===================================
-Introduction to QMzyme
-===================================
-
 |logo|
 
-.. include:: README.rst
-   :start-after: introduction-start
-   :end-before: introduction-end
+:QMzyme version: |release|
+:Last updated: |today|
+
+=============================================
+Introduction
+=============================================
+
+
+**QMzyme** is a Python toolkit to facilitate (quantum mechanical) QM-based enzyme 
+calculations. The :class:`~QMzyme.GenerateModel.GenerateModel` class guides the process of generating 
+QM-calculation ready truncated or partitioned enzyme models. The code 
+framework can accept any input files MDAnalysis would accept to formulate an
+MDAnalysis Universe object. The QMzyme framework works with MDAnalysis modules
+to create more dynamic QMzyme objects: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, 
+:class:`~QMzyme.QMzymeRegion.QMzymeResidue`, :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, and
+:class:`~QMzyme.QMzymeModel.QMzymeModel`. QMzymeModel is an abstraction of a molecular system, such as a real enzyme. 
+Its utility comes from the ability to perform calculations on it. The calculation
+results will (ideally) be validatable through comparison to experiment, and 
+(hopefully) provide new chemical or methodological insights. 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Quickstart
+   :maxdepth: 3
+   :caption: Table of contents
 
    Quickstart/installation
-   Quickstart/requirements 
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Python API
-
-   API/API_reference.rst
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Examples
-   
-   Examples/Installation
-   Examples/Getting_Started
-   Examples/QM-only Calculation
-   Examples/QMQM2 Calculation
-   Examples/QMxTB Calculation
-   Examples/Ligand Parameterization
-   Examples/Working with Trajectories
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Development
-
+   Examples/index
+   API/index
    Examples/Contributing to QMzyme
-   questions
+
+.. Hide the contents from the front page because they are already in
+.. the side bar in the Alabaster sphinx style; requires Alabaster
+.. config sidebar_includehidden=True (default)
+
+.. Contents
+.. ========
+.. toctree::
+   :maxdepth: 4
+   :caption: Documentation
+   :numbered:		
+   :hidden:
+   
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`search`

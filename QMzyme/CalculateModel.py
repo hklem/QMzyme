@@ -7,10 +7,6 @@
 Module in charge of creating input files for QM-only or QM/MM calculations. This 
 module integrates the `AQME QPREP <https://aqme.readthedocs.io/en/latest/API/aqme.qprep.html>`_ 
 workflow.
-
-Notes
-...............
-    *   Currently optimized to generate QM-only Gaussian input files.
 """
 
 from QMzyme.aqme.qprep import qprep
@@ -103,28 +99,25 @@ class QM_Method(CalculationBase):
     Class to prepare a QMzymeRegion for QM treatment.
     
     Required Parameters
-    ====================
-    region: QMzymeRegion to apply method to
-    basis_set: str, defines basis set to use for calculation
-    functional: str, defines functional to use for calculation
+    ---------------------
+        region: QMzymeRegion to apply method to
+        basis_set: str, defines basis set to use for calculation
+        functional: str, defines functional to use for calculation
 
     Optional Parameters 
-    ====================
-    charge: int, charge of the region. If not provided in parameters, charge will be guessed.
-    mult: int, multiplicity of the region. default = 1.
-    qm_input: str, default = ""
-        Keywords to include in the input file route line to 
-        declare any details beyond the basis set and functional.
-        E.g. "EmpiricalDispersion=GD3BJ opt freq". Not including anything
-        here means the calculation will be a single-point energy calculation.
-    qm_end: str, default = ""
-        Final line(s) in the input file
+    ---------------------
+        charge: int, charge of the region. If not provided in parameters, charge will be guessed.
+        mult: int, multiplicity of the region. default = 1.
+        qm_input: str, default = ""
+            Keywords to include in the input file route line to 
+            declare any details beyond the basis set and functional.
+            E.g. "EmpiricalDispersion=GD3BJ opt freq". Not including anything
+            here means the calculation will be a single-point energy calculation.
+        qm_end: str, default = ""
+            Final line(s) in the input file.
+            
     """
     def __init__(self, basis_set, functional, qm_input="", qm_end="", program='orca'):
-        """
-        :param region: QMzyme region to treat at the QM level.
-        :type region: QMzymeRegion
-        """
         self.type = 'QM'
         self.qm_input = qm_input
         self.basis_set = basis_set

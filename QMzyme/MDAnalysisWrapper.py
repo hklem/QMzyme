@@ -12,8 +12,15 @@ import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
 
 
-def init_universe(*args, **kwargs):
+def init_universe(*args, frame=0, **kwargs):
+    """
+    Accepts all argument and key word arguments that :class:`~MDAnalysis.Universe`
+    can accept to create a Universe instance. Note, you may need to pass the 
+    format key word in some cases. 
+    """
     u = mda.Universe(*args, **kwargs)
+    if frame != 0:
+            u.trajectory[frame]
     if not hasattr(u.atoms, "elements"):
         from MDAnalysis.topology.guessers import guess_types
         guessed_elements = guess_types(u.atoms.names)

@@ -4,3 +4,4 @@
 #from QMzyme import *
 from .GenerateModel import GenerateModel
 from .CalculateModel import *
+from ._version import __version__

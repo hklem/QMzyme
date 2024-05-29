@@ -1,8 +1,11 @@
+Code Documentation
+======================
+
 .. |schema| image:: ../Images/QMzyme_schema.png
    :width: 600
 
 Main Modules
-==============
+-------------
 
 |schema|
 
@@ -18,8 +21,8 @@ Vision for the main QMzyme modules.
    QMzyme.Writers
 
 
-QMzyme Object Structure
-========================
+Data Structures
+---------------------------------------
 
 Modules for constructing QMzyme objects.
 
@@ -34,7 +37,7 @@ Modules for constructing QMzyme objects.
 	
 
 Other Modules
-===============
+--------------
 
 .. toctree::
    :maxdepth: 1

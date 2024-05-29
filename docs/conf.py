@@ -11,6 +11,7 @@
 #
 import os
 import sys
+import datetime
 # Ensure that modules can be imported without installing aqme
 sys.path.insert(0, os.path.abspath('..')) 
 
@@ -19,10 +20,12 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+now = datetime.datetime.now()
 project = 'QMzyme-documentation'
-copyright = '2024, Heidi Klem'
+copyright = f'{now.year}, Heidi Klem'
 author = 'Heidi Klem'
-release = '0.0'
+packageversion = __import__('QMzyme').__version__
+release = packageversion
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -40,4 +43,17 @@ smartquotes = False
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+autoclass_content = 'both'
+toc_object_entries = False
 autodoc_member_order = 'bysource'
+
+# Custom sidebar templates, maps document names to template names.
+# alabaster sidebars
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+    ]
+}

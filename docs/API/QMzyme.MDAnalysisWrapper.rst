@@ -1,5 +1,5 @@
 MDAnalysisWrapper
-================
+===================
 
 .. automodule:: QMzyme.MDAnalysisWrapper
    :members:
