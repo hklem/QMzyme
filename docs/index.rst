@@ -6,6 +6,11 @@
 :QMzyme version: |release|
 :Last updated: |today|
 
+*QMzyme is currently under-development. 
+Please note the user interface may change! 
+The first stable API version will be released 
+as version 1.0.0 (QMzyme==1.0.0) on PyPi.*
+
 =============================================
 Introduction
 =============================================
