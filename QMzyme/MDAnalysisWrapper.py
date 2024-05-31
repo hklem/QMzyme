@@ -111,11 +111,6 @@ def build_universe_from_QMzymeRegion(region):
             else:
                 atom_attributes[attr].append(getattr(atom, attr))
     
-    # avoid attributes that can't be set as topology level attributes
-    # exclude_attributes = [ 
-    #     'index', 'ix', 'ix_array', 'level', 'position', 'residue', 
-    #     'resindex', 'segid', 'segindex', 'segment', 'universe', 'region'] 
-    
     if 'chain' in atom_attributes:
         atom_attributes['chainID'] = atom_attributes['chain']
         del atom_attributes['chain']
