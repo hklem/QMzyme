@@ -9,7 +9,7 @@ class QMzymeAtom:
     """
     Required Parameters
     --------------------
-    :param id: Atom id, 1 indexed. Default = 1. 
+    :param id: Atom id. If the atom is generated from an MDAnalysis AtomGroup (probably) the id will be the universe atom ID. 
     :param name: Atom name: ex., 'C1'
     :param element: Element one-letter name: ex., 'C'
     :param position: Array of cartesian coordinates.
