@@ -65,8 +65,10 @@ class RegionBuilder:
         else:
             atom_props = self.get_atom_properties(atom)
             if uniquify is True:
-                atom = self.uniquify_atom(atom_props)
+                self.uniquify_atom(atom_props)
             atom = QMzymeAtom(**atom_props)
+        # if self.atoms != []:
+        #     print(atom, self.atoms[-1])
         self.atoms.append(atom)
 
     def uniquify_atom(self, atom_props):
@@ -82,7 +84,6 @@ class RegionBuilder:
                 atom_props['name'] = f"{element}{i}" 
         while atom_props['id'] in temp_region.ids:
             atom_props['id'] += 1
-        return atom_props
 
     def get_atom_properties(self, atom: _Atom):
         atom_attr_dict = {}
