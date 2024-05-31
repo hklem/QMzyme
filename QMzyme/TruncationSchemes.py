@@ -15,10 +15,13 @@ import abc
 class TruncationScheme(abc.ABC):
     def __init__(self, region, name):
         self.region = region
+        self.truncated_region = None
         if name == None:
             name = f'{self.region.name}_truncated'
         self.name = name
         self.truncate()
+        if hasattr(self.region.atoms[0], "charge"):
+            balance_charge(self.region, self.truncated_region)
         self.return_region()
 
     @abc.abstractmethod
@@ -26,8 +29,8 @@ class TruncationScheme(abc.ABC):
         ...
 
     def return_region(self):
-        self.region.rename(self.name)
-        return self.region
+        self.truncated_region.rename(self.name)
+        return self.truncated_region
 
 class CA_terminal(TruncationScheme):
     def __init__(self, region, name):
@@ -61,12 +64,14 @@ class CA_terminal(TruncationScheme):
                 region_builder.init_atom(cap_H(Catom, CAatom))
                 remove_atoms.append(Catom)
                 remove_atoms.append(Oatom)
+
         for atom in self.region.atoms:
             if atom not in remove_atoms:
                 region_builder.init_atom(atom)
 
-        self.region = region_builder.get_region()
+        self.truncated_region = region_builder.get_region()
 
+        
 class CA_all(TruncationScheme):
     """
     Function to truncate a QMzymeRegion accoring to the CA_all scheme. 
