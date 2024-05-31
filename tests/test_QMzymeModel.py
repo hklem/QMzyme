@@ -10,11 +10,11 @@ import os
 import shutil
 from QMzyme.QMzymeModel import QMzymeModel
 from QMzyme.RegionBuilder import RegionBuilder
-from importlib_resources import files
+from QMzyme.data import PDB
 from QMzyme.MDAnalysisWrapper import init_universe
 
-pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
-u = init_universe(pdb_file)
+
+u = init_universe(PDB)
 original_contents = os.listdir()
 
 def restore_directory():
@@ -31,7 +31,7 @@ def test_QMzymeModel():
     model = QMzymeModel(name='1oh0', universe=u)
     assert model.name == '1oh0'
     assert model.__repr__() == "<QMzymeModel 1oh0 built from <Universe with 4258 atoms> contains 0 region(s)>"
-    assert model.filename == pdb_file
+    assert model.filename == PDB
     assert model.n_regions == 0
     assert hasattr(model, 'universe')
 

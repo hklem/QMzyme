@@ -6,27 +6,30 @@ Tests for the QMzyme truncation_schemes.py and truncation_utils.py codes.
 # Name each function as test_* to be automatically included in test workflow
 
 from QMzyme.GenerateModel import GenerateModel
+from QMzyme.TruncationSchemes import *
 import pytest
-from importlib_resources import files
+from QMzyme.data import PDB
 
-pdb_file = str(files('QMzyme.data').joinpath('1oh0.pdb'))
 
 @pytest.mark.parametrize(
     "Test, init_file, region_selection",[
-        ('First and last residue in protein: MET1 GLN262', pdb_file, 'resid 1 or resid 262'),
-        ('MET1 ASN2', pdb_file, 'resid 1 or resid 2'),
-        ('MET1 LEU3', pdb_file, 'resid 1 or resid 3'),
-        ('ASN2 THR5', pdb_file, 'resid 2 or resid 5'),
-        ('ASN2 LEU3 THR5 ALA6', pdb_file, 'resid 2 or resid 3 or resid 5 or resid 6'),
-        ('PRO4 THR5', pdb_file, 'resid 4 or resid 5'),
-        ('LEU3 PRO4', pdb_file, 'resid 3 or resid 4'),
-        ('With Non protein residue: WAT265', pdb_file, 'resid 3 or resid 265'),
+        ('First and last residue in protein: MET1 GLN262', PDB, 'resid 1 or resid 262'),
+        ('MET1 ASN2', PDB, 'resid 1 or resid 2'),
+        ('MET1 LEU3', PDB, 'resid 1 or resid 3'),
+        ('ASN2 THR5', PDB, 'resid 2 or resid 5'),
+        ('ASN2 LEU3 THR5 ALA6', PDB, 'resid 2 or resid 3 or resid 5 or resid 6'),
+        ('PRO4 THR5', PDB, 'resid 4 or resid 5'),
+        ('LEU3 PRO4', PDB, 'resid 3 or resid 4'),
+        ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
     ]
 )
-def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme="CA_terminal"):
+def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme=CA_terminal):
     model = GenerateModel(init_file)
-    model.set_region(region_name='region', selection=region_selection, layer='High')
-    model.truncate_region(model.region, truncation_scheme)
+    model.set_region(name='region', selection=region_selection)
+    print('Region: ', model.regions[-1])
+    model.truncate_region(region=model.region, scheme=truncation_scheme)
+    print('New Region: ', model.regions[-1])
+
     #First check that the original region didn't change:
     original_first_res = model.region.residues[0]
     truncated_first_res = model.region_truncated.residues[0]

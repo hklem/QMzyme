@@ -6,16 +6,21 @@
 """
 Code to integrate MDAnalysis utilities in QMzyme. 
 """
-import os
 import numpy as np
 import warnings
 import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
-from MDAnalysis.core.universe import Universe
 
 
-def init_universe(*args, **kwargs):
+def init_universe(*args, frame=0, **kwargs):
+    """
+    Accepts all argument and key word arguments that :class:`~MDAnalysis.Universe`
+    can accept to create a Universe instance. Note, you may need to pass the 
+    format key word in some cases. 
+    """
     u = mda.Universe(*args, **kwargs)
+    if frame != 0:
+            u.trajectory[frame]
     if not hasattr(u.atoms, "elements"):
         from MDAnalysis.topology.guessers import guess_types
         guessed_elements = guess_types(u.atoms.names)
@@ -105,11 +110,6 @@ def build_universe_from_QMzymeRegion(region):
                     pass
             else:
                 atom_attributes[attr].append(getattr(atom, attr))
-    
-    # avoid attributes that can't be set as topology level attributes
-    # exclude_attributes = [ 
-    #     'index', 'ix', 'ix_array', 'level', 'position', 'residue', 
-    #     'resindex', 'segid', 'segindex', 'segment', 'universe', 'region'] 
     
     if 'chain' in atom_attributes:
         atom_attributes['chainID'] = atom_attributes['chain']

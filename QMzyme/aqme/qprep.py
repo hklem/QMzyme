@@ -4,7 +4,7 @@ Parameters
    files : mol object, str or list of str, default=None
       This module prepares input QM file(s). Formats accepted: mol object(s), 
       Gaussian or ORCA LOG/OUT output files, JSON, XYZ, SDF, PDB. Also, 
-      lists can be used (i.e. [FILE1.log, FILE2.log] or \*.FORMAT such as \*.json).
+      lists can be used (i.e. [FILE1.log, FILE2.log] or *.FORMAT such as *.json).
    atom_types : list of str, default=[]
       (If files is None) List containing the atoms of the system
    cartesians : list of str, default=[]
@@ -85,7 +85,7 @@ class qprep:
     Class containing all the functions from the QPREP module related to Gaussian input files
     """
 
-    def __init__(self, create_dat=True, **kwargs):
+    def __init__(self, create_dat=False, **kwargs):
 
         start_time_overall = time.time()
         # load default and user-specified variables
@@ -254,6 +254,10 @@ class qprep:
         mols = mol_from_sdf_or_mol_or_mol2(sdf_file, "qprep", self.args, low_check=low_check)
 
         for i, mol in enumerate(mols):
+            if len(mols) > 1:
+                suffix = f'_conf_{i+1}' # to stop adding _conf_X when only 1 file.
+            else:
+                suffix = ''
             (
                 atom_types,
                 cartesians,
@@ -263,7 +267,7 @@ class qprep:
             ) = self.qprep_coords(sdf_file, mol, file_format)
 
             if "_conf_" not in sdf_name:
-                name_conf = f"{sdf_name}_conf_{i+1}"
+                name_conf = f"{sdf_name}{suffix}"
             else:
                 name_conf = sdf_name
 
@@ -328,6 +332,7 @@ class qprep:
                     # if you wanted to freeze a bond it would be something like {B 0 1 C}
                     txt += " { C "+f"{idx}"+" C }\n" 
                 txt += " end\n" 
+                txt += "end\n" 
             txt += f'* xyz {qprep_data["charge"]} {qprep_data["mult"]}\n'
 
         return txt

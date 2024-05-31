@@ -11,9 +11,9 @@ import warnings
 import copy
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.QMzymeAtom import QMzymeAtom
+from QMzyme.converters import mda_atom_to_qmz_atom
 from MDAnalysis.core.groups import Atom
 from MDAnalysis.core.groups import AtomGroup
-from QMzyme import utils
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
 
@@ -23,18 +23,18 @@ _MDAtom = TypeVar("_MDAtom", bound="Atom")
 _AtomGroup = TypeVar("_AtomGroup", bound="AtomGroup")
 _Atom = TypeVar("_Atom", bound=Union["QMzymeAtom", "Atom"])
 
-remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
+#remove_mda_atom_props = ['chainID', 'level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
+remove_mda_atom_props = ['level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
 
 class RegionBuilder:
 
-    def __init__(self, name, atom_group = None, layer = None):
+    def __init__(self, name, atom_group = None):
         self.name = name
         self.atoms = []
         self.region = None
         self.atom_group = atom_group
         if atom_group is not None:
             self.init_atom_group(atom_group)
-        self.layer = layer
 
     def __repr__(self):
         return f"<RegionBuilder: Current QMzymeRegion, {self.name}, "+\
@@ -54,17 +54,21 @@ class RegionBuilder:
         """
         for atom in atom_group.atoms:
             self.init_atom(atom, uniquify=True)
-            #self.init_atom(atom, uniquify=False)
         self.atom_group = atom_group
         region = self.get_region()
         return region
 
     def init_atom(self, atom, uniquify=True):
         warnings.filterwarnings('ignore')
-        atom_props = self.get_atom_properties(atom)
-        if uniquify is True:
-            atom = self.uniquify_atom(atom_props)
-        atom = QMzymeAtom(**atom_props)
+        if isinstance(atom, Atom):
+            atom = mda_atom_to_qmz_atom(atom)
+        else:
+            atom_props = self.get_atom_properties(atom)
+            if uniquify is True:
+                self.uniquify_atom(atom_props)
+            atom = QMzymeAtom(**atom_props)
+        # if self.atoms != []:
+        #     print(atom, self.atoms[-1])
         self.atoms.append(atom)
 
     def uniquify_atom(self, atom_props):
@@ -80,7 +84,6 @@ class RegionBuilder:
                 atom_props['name'] = f"{element}{i}" 
         while atom_props['id'] in temp_region.ids:
             atom_props['id'] += 1
-        return atom_props
 
     def get_atom_properties(self, atom: _Atom):
         atom_attr_dict = {}
@@ -107,5 +110,5 @@ class RegionBuilder:
         return atom_attr_dict
 
     def get_region(self):
-        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group, self.layer)
+        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group)
         return self.region

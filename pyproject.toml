@@ -23,17 +23,24 @@ requires-python = ">=3.11"
 dependencies = [
     "importlib_resources",
     "MDAnalysis",
-    "aqme", #bc lots of dependencies
+    "jupyterlab", #not super necessary, but helpful to follow along with examples
+    "PyYAML", #aqme dependency
+    #"aqme", #bc lots of dependencies
     "rdkit-pypi", # dependency of aqme but doesn't get installed with pip install aqme
+    "openbabel-wheel" #this works! And you don't have to add conda install -c conda-forge openbabel to config.yml, which makes testing faster (by like 30%)
     #"openbabel" #doesn't work to install this way... need to do conda install -c conda-forge openbabel in config.yml
 ]
 
 # Update the urls once the hosting is set up.
-#[project.urls]
-#"Source" = "https://github.com/<username>/QMzyme/"
-#"Documentation" = "https://QMzyme.readthedocs.io/"
+[project.urls]
+"Source" = "https://github.com/hklem/QMzyme/"
+"Documentation" = "https://qmzyme.readthedocs.io/"
 
 [project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov"
+]
 
 
 [tool.setuptools]
@@ -60,12 +67,7 @@ zip-safe = false
 #include-package-data = false
 [tool.setuptools.packages.find]
 #namespaces = false
-<<<<<<< class_structure_redesign
 where = [".","QMzyme/data"] # use "." and not "QMzyme" so pytest can find tests.
-=======
-#where = [".","data"]
-where = ["QMzyme","data"]
->>>>>>> main
 
 # Ref https://setuptools.pypa.io/en/latest/userguide/datafiles.html#package-data
 [tool.setuptools.package-data]
@@ -90,7 +92,7 @@ distance-dirty = "{base_version}.dev{distance}"
 method = "git"  # <- The method name
 # Parameters to pass to the method:
 match = ["*"]
-default-tag = "1.0.0"
+default-tag = "0.0.0"
 
 [tool.versioningit.write]
 file = "QMzyme/_version.py"

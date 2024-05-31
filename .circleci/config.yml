@@ -3,17 +3,18 @@
 version: 2.1
 orbs:
   python: circleci/python@2.1.1
-  codecov: codecov/codecov@4.0.1
+  codecov: codecov/codecov@3.2.4
+
 jobs:
   build-and-test:
     # Install dependencies and run tests
     docker:
       #- image: cimg/python:3.11-node
       - image: continuumio/miniconda3
-    filters:
-      branches:
-        only:
-          - class_structure_redesign
+    #filters:
+      #branches:
+        #only:
+          #- class_structure_redesign
     steps:
       - checkout
       - python/install-packages:
@@ -22,16 +23,55 @@ jobs:
           conda update -y conda
           conda create -n qmzyme python=3.11
           source activate base 
-          conda install -c conda-forge openbabel
           conda activate qmzyme
-          pip install -e .
-          pip install pytest
-          pip install pytest-cov
-          pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report html
+          pip install -e .[test]
+          pytest -v --color yes --cov-config=pyproject.toml --cov=QMzyme --cov-report=xml
+          rm -r /tmp/*
+          cp -r * /tmp
       - store_artifacts:
-          path: htmlcov
+          path: docs/_build/html/
+          destination: html
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - coverage.xml
+            - QMzyme
+    
+  codecov-coverage:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - attach_workspace:
+          at: /tmp
+      # this checkout step is necessary to avoid an issue in which codecov thinks the report is empty
+      - checkout
+      - codecov/upload:
+          file: /tmp/coverage.xml
+          token: CODECOV_TOKEN
+          
+  # build_docs:
+  #   docker:
+  #     - image: continuumio/miniconda3
+  #   steps:
+  #     - checkout
+  #     - run: |
+  #         conda update -y conda
+  #         conda create -n qmzyme python=3.11
+  #         source activate base 
+  #         conda activate qmzyme
+  #         conda install pandoc
+  #         pip install -e .
+  #         pip install -r docs/requirements.txt
+  #         cd docs;make html
+  #     - store_artifacts:
+  #         path: docs/_build/html/
+  #         destination: html
             
 workflows:
   build-and-test:
     jobs:
+      # - build_docs
       - build-and-test
+      - codecov-coverage:
+          requires:
+            - build-and-test
