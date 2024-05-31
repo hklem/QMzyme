@@ -7,6 +7,7 @@ Tests for the QMzyme RegionBuilder.py ands QMzymeRegion.py code.
 
 
 import numpy as np
+import pytest
 from QMzyme.RegionBuilder import RegionBuilder
 import MDAnalysis as mda
 from QMzyme.data import PDB
@@ -43,18 +44,31 @@ def test_QMzymeRegion():
     assert any(region.resids) == any(atom_group.resids)
 
     # add atom through region builder init_atom() method
-    mda_atom = u.select_atoms('resid 1 and name CA').atoms[0]
+    mda_atom = u.select_atoms('resid 1 and name CA').atoms[0] # has id=5
     region_builder.init_atom(mda_atom)
-    new_atom = region.get_atom(id=5)
+    region = region_builder.get_region()
+    qmz_atom = region.get_atom(id=5)
     assert region.n_atoms == 62
     assert 1 in region.resids
     assert 5 in region.ids
 
-    # now add the atom again- it will be changed because it was not unique.
-    region_builder.init_atom(new_atom)
-    assert region.n_atoms == 63
-    assert region.atoms[-1].name == f"{new_atom.element}1"
-    assert region.atoms[-1].id == max(region.get_residue(new_atom.resid).ids)
+    region_builder.init_atom(mda_atom)
+    with pytest.raises(UserWarning): 
+        region = region_builder.get_region() # Because this atom already exists in region.
+    # remove that problem atom from region_builder atoms to continue with testing
+    region_builder.atoms = region_builder.atoms[:-1]
+    
+    res = region.get_residue(resid=qmz_atom.resid)
+    assert f"{qmz_atom.element}1" not in [atom.name for atom in res.atoms] # check it doesn't exist first
+    # now add the atom again- it will be changed because it was not unique and not an mda_atom with immutable id.
+    region_builder.init_atom(qmz_atom)
+    assert qmz_atom != region_builder.atoms[-1] # atom has changed because it was already there
+    assert qmz_atom == region_builder.atoms[-2]
+    region = region_builder.get_region()
+    assert region.n_atoms == 63 
+    res = region.get_residue(resid=qmz_atom.resid)
+    assert f"{qmz_atom.element}1" in [atom.name for atom in res.atoms]
+    assert region_builder.atoms[-1].id == max(region.get_residue(qmz_atom.resid).ids)
 
     # test getting atom ids for all CA atoms
     ids = region.get_ids(attribute='name', value='CA')

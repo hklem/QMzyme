@@ -115,7 +115,7 @@ def test_QMQM2_calculation(qm1_dict, qm2_dict):
     qm2_input = file[file.find('%QMMM'):].split('\n')[0]
     val = model.cutoff_5_truncated.method["qm_input"]
     assert qm2_input.strip().endswith(f"QM2CUSTOMMETHOD '{val}'")
-    assert "QMATOMS "+"{"+"0:37"+"}" in file
+    assert "QMATOMS "+"{"+"324:360"+"}" in file
     assert len(file.split("%QMMM")) == 2
 
     # check that you cannot set a third QM method, or call gaussian with QMQM2
