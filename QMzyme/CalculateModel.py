@@ -9,10 +9,6 @@ module integrates the `AQME QPREP <https://aqme.readthedocs.io/en/latest/API/aqm
 workflow.
 """
 
-from QMzyme.aqme.qprep import qprep
-import numpy as np
-
-
 class CalculateModel:
     """
     Class responsible for storing calculation type and associated region. 
@@ -44,15 +40,8 @@ class CalculateModel:
             self._check_overlap(region)
     
     def _check_overlap(self, region):
-        if 'QM' in CalculateModel.calculation:    
-            high_region = CalculateModel.calculation['QM']
-            low_region = region
-        # elif region.method["type"] == 'QM':
-        #     high_region = region
-        #     try:
-        #         low_region = CalculateModel.calculation['XTB']
-        #     except:
-        #         low_region = CalculateModel.calculation['ChargeField']
+        high_region = CalculateModel.calculation['QM']
+        low_region = region
 
         high_region.segid = 'QM'
         common_atoms = high_region.get_overlap(low_region)
@@ -60,15 +49,16 @@ class CalculateModel:
             #residues = [atom.resname+str(atom.resid) for atom in common_atoms]
             residues = [atom.resid for atom in common_atoms]
             residues = [high_region.get_residue(resid) for resid in list(set(residues))]
-            print(f"\nWARNING: Region overlap detected. The following residue(s) were found in both regions: {list(set(residues))}.")
-            print(f"Removing duplicate atoms and recalculating charge for calculation.")
-            print(f"The original region {low_region.name} can still be accessed in the GenerateModel object.")
             subtracted = low_region.subtract(high_region)
-            subtracted.guess_charge()
+            subtracted.guess_charge(verbose=False)
             subtracted.method = low_region.method
             subtracted.method["charge"] = subtracted.charge
             subtracted.method["freeze_atoms"] = subtracted.get_indices(attribute='is_fixed', value=True)
             subtracted.name = low_region.name
+            print(f"\nWARNING: Region overlap detected. The following residue(s) were found in both regions: {list(set(residues))}.")
+            print(f"Removing duplicate atoms and recalculating charge for calculation.")
+            print(f"Subtracted region has a charge of {subtracted.charge}. Both regions combine for a total charge of {subtracted.charge+high_region.charge}.")
+            print(f"The original region {low_region.name} remains unchanged in the GenerateModel object 'regions' attribute.")
             CalculateModel.calculation[low_region.method["type"]] = subtracted
 
     def _reset():
@@ -79,7 +69,7 @@ class CalculationBase:
         self._set_constraints(region)
         self.mult = mult
         region.set_method(self.__dict__)
-        region.segid = self.type
+        region.set_atom_segid(self.type)
         region = CalculateModel()._add(calc=self.type, region=region)
         self._set_charge(CalculateModel.calculation[self.type], charge)
 
@@ -92,7 +82,7 @@ class CalculationBase:
             self.charge = charge
 
     def _set_constraints(self, region):
-        self.freeze_atoms = region.get_indices('is_fixed', True)
+        self.freeze_atoms = region.get_indices('is_fixed', True) # these indices are 0 indexed and in order of increasing atom id
 
 class QM_Method(CalculationBase):
     """
@@ -132,24 +122,6 @@ class QM_Method(CalculationBase):
             if info not in self.qm_input:
                 self.qm_input = f"{info} {self.qm_input}"
         self.qm_input = self.qm_input.strip()
-
-    # def _set_charge(self, region, charge):
-    #     if charge is None:
-    #         if not hasattr(region, "charge"):
-    #             region.guess_charge()
-    #         self.charge = region.charge
-    #     else:
-    #         self.charge = charge
-
-    # def _set_constraints(self, region):
-    #     self.freeze_atoms = region.get_indices('is_fixed', True)
-
-    # def assign_to_region(self, region, charge=None, mult=1):
-    #     self._set_constraints(region)
-    #     self._set_charge(region, charge)
-    #     self.mult = mult
-    #     region.set_method(self.__dict__, _type="QM")
-    #     CalculateModel()._add(calc='QM', region=region)
     
 class XTB_Method(CalculationBase):
     """
