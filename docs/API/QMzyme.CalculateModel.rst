@@ -23,3 +23,14 @@ MM Treatment
 -------------------
 
 Under development.
+
+Developer Classes
+------------------
+
+.. autoclass:: QMzyme.CalculateModel.CalculationBase
+   :members:
+   :undoc-members:
+
+.. autoclass:: QMzyme.CalculateModel.CalculateModel
+   :members:
+   :undoc-members:

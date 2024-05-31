@@ -1,5 +1,3 @@
-Code Documentation
-======================
 
 .. |schema| image:: ../Images/QMzyme_schema.png
    :width: 600
@@ -9,7 +7,8 @@ Main Modules
 
 |schema|
 
-Vision for the main QMzyme modules.
+The GenerateModel, CalculateModel, and Writers modules communicate to 
+create a calculation ready QMzymeModel. 
 
 .. toctree::
    :maxdepth: 1

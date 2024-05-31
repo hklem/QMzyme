@@ -29,13 +29,13 @@ results will (ideally) be validatable through comparison to experiment, and
 (hopefully) provide new chemical or methodological insights. 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Table of contents
 
    Quickstart/installation
    Examples/index
    API/index
-   Examples/Contributing to QMzyme
+   Contributing/index
 
 .. Hide the contents from the front page because they are already in
 .. the side bar in the Alabaster sphinx style; requires Alabaster
