@@ -23,13 +23,14 @@ class QMzymeRegion:
     def __init__(self, name, atoms: list, atom_group = None):
         self.name = name
         self.atoms = atoms
+        self.atoms = self.sorted_atoms()
         self._atom_group = atom_group
         self.method = None
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
     
-        
+
     @property
     def ids(self):
         """
@@ -122,9 +123,11 @@ class QMzymeRegion:
         :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`. 
         """
         self.atoms.append(atom)
-        self.atoms = self.sort_atoms()
+        self.atoms = self.sorted_atoms()
 
-    def sort_atoms(self):
+    def sorted_atoms(self):
+        if self.atoms != [] and self.atoms[-1].id in self.ids[:-1]:
+            raise UserWarning(f"Atom {self.atoms[-1]} cannot be added to region because another atom with the same id already exists: {self.get_atom(self.atoms[-1].id)}.")
         atoms = self.atoms
         ids = [atom.id for atom in self.atoms]
         return [x for _, x in sorted(zip(ids, atoms))]
@@ -185,7 +188,7 @@ class QMzymeRegion:
             if getattr(atom, attribute) == value:
                 atoms.append(atom)
         return atoms
-    
+
     def get_indices(self, attribute: str, value):
         ids = self.get_ids(attribute, value)
         return self.get_ix_array_from_ids(ids)
@@ -223,11 +226,12 @@ class QMzymeRegion:
         except:
             pass
 
-    def guess_charge(self):
+    def guess_charge(self, verbose=True):
         if hasattr(self.atoms[0], "charge"):
-            self.read_charges()
+            self.read_charges(verbose)
             return
-        print(f"\nEstimating total charge for QMzymeRegion {self.name} based on protein residue naming conventions...")
+        txt = ''
+        txt += f"\nEstimating total charge for QMzymeRegion {self.name} based on protein residue naming conventions..."
         unk_res = []
         chrg = 0
         for res in self.residues:
@@ -235,27 +239,33 @@ class QMzymeRegion:
                 if res.resname in ["WAT", "SOL"]:
                     continue
                 unk_res.append(res)
-                print(res, f"Charge: UNK")
+                txt+=f"\n{res} -->  Charge: UNK"
             else: 
                 q = protein_residues[res.resname.upper()]
                 chrg += q
-                print(res, f"Charge: {q}")
+                txt+=f"\n{res} -->  Charge: {q}"
         self.set_charge(chrg)
         if unk_res == []:
-            print(f"\nQMzymeRegion {self.name} has an estimated charge of {chrg}.")
+            txt+=f"\nQMzymeRegion {self.name} has an estimated charge of {chrg}."
         else:    
-            print(f"\n!!!Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}. Ignoring unknown residues in charge estimation!!!")
-            print(f"QMzymeRegion {self.name} has an estimated total charge of {chrg}.")
+            txt+=f"\n!!!Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}." 
+            txt+="Ignoring unknown residues in charge estimation!!!"
+            txt+=f"QMzymeRegion {self.name} has an estimated total charge of {chrg}."
+        if verbose == True:
+            print(txt)
 
 
-    def read_charges(self):
-        print(f"\nCalculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'...")
+    def read_charges(self, verbose=True):
+        txt=''
+        txt+=f"\nCalculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'..."
         chrg = 0
         for atom in self.atoms:
             chrg += atom.charge
         chrg = round(chrg)
         self.set_charge(chrg)
-        print(f"QMzymeRegion {self.name} has a total charge of {chrg}.")
+        txt+=f"\nQMzymeRegion {self.name} has a total charge of {chrg}."
+        if verbose == True:
+            print(txt)
 
 
     def combine(self, other, name = ''):
@@ -275,7 +285,8 @@ class QMzymeRegion:
         """
         combined_atoms = copy.copy(self.atoms)
         for atom in other.atoms:
-            if not atom.is_within(self):
+            # if not atom.is_within(self):
+            if not atom.id in self.ids:
                 combined_atoms.append(atom)
         combined_region = QMzymeRegion(name=name, atoms=combined_atoms)
         return combined_region
@@ -307,7 +318,10 @@ class QMzymeRegion:
             if atom.is_within(other):
                 atoms.append(atom)
         return atoms
-
+    
+    def set_atom_segid(self, segid):
+        for atom in self.atoms:
+            atom.segid = segid
     
     def guess_bonds():
         """
@@ -340,6 +354,40 @@ class QMzymeResidue(QMzymeRegion):
 
     def set_chain(self, value: str):
         self.chain = value
+
+    def guess_charge(self, verbose=True):
+        if hasattr(self.atoms[0], "charge"):
+            self.read_charges(verbose)
+            return
+        txt = ''
+        txt += f"\nEstimating total charge for QMzymeResidue {self.resname} based on protein residue naming conventions..."
+        if self.resname not in protein_residues:
+            if self.resname in ["WAT", "SOL"]:
+                chrg = 0
+            else:
+                chrg = 'UNK'
+        else: 
+            chrg = protein_residues[self.resname.upper()]
+        if chrg != 'UNK':
+            self.set_charge(chrg)
+            txt+=f"\nQMzymeResidue {self.resname} has an estimated charge of {chrg}."
+        else:    
+            txt+=f"\nQMzymeResidue {self.resname} has an unknown charge value based on conventional residue naming."
+        if verbose == True:
+            print(txt)
+
+    def read_charges(self, verbose=True):
+        txt = ''
+        txt+=f"\nCalculating total charge for QMzymeResidue {self.resname} based on charges read from topology attribute 'charge'..."
+        chrg = 0
+        for atom in self.atoms:
+            chrg += atom.charge
+        chrg = round(chrg)
+        self.set_charge(chrg)
+        txt+=f"\nQMzymeResidue {self.resname} has a total charge of {chrg}."
+        if verbose == True:
+            print(txt)
+
 
 
 
