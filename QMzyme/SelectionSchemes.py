@@ -129,7 +129,7 @@ class DistanceCutoff(SelectionScheme):
         
         neighbors = MDAwrapper.get_neighbors(
         self.model.universe.select_atoms('all'),
-        self.model.get_region('catalytic_center').atom_group, self.cutoff)
+        self.model.get_region('catalytic_center')._atom_group, self.cutoff)
     
         neighbors_byres = neighbors.residues.sorted_unique.atoms
 
