@@ -14,28 +14,67 @@ import warnings
 import numpy as np
 import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
-from QMzyme.data import protein_residues
+from QMzyme.data import residue_charges
 
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
 class QMzymeRegion:
-    def __init__(self, name, atoms: list, atom_group = None):
+    def __init__(self, name, atoms: list, atom_group = None, universe = None):
         self.name = name
         self.atoms = atoms
         self.atoms = self.sorted_atoms()
         self._atom_group = atom_group
-        self.method = None
+        if atom_group is not None:
+            universe = atom_group.universe
+        self._universe = universe
+        if not hasattr(self, "method"):
+            self.method = None
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
     
+    def __sub__(self, other, name=None):
+        """
+        Remove any atoms with IDs matching atom IDs in `other` reigon.
+        """
+        diff_array = np.setdiff1d(np.array(self.ids), np.array(other.ids))
+        atoms = [self.get_atom(id=id) for id in diff_array]
+        if name == None:
+            name = f"{self.name}_{other.name}_subtracted"
+        return QMzymeRegion(name=name, 
+                            atoms=atoms, 
+                            universe=self._universe)
+    
+    def __add__(self, other, name=None):
+        """
+        Combine two QMzymeRegions. If an atom with the same ID appears in both regions, the attributes
+        from the first (self) region will be kept.
+        """
+        if name == None:
+            name = f"{self.name}_{other.name}_combined"
+        region = QMzymeRegion(name=name, 
+                              atoms=other.atoms, 
+                              universe=self._universe)
+        for atom in [self.get_atom(id=id) for id in self.ids]:
+            region.add_atom(atom, override_same_id=True)
+        return region
+
+    def __eq__(self, other):
+        if other == None:
+            return
+        eq_ids = np.array_equal(self.ids, other.ids)
+        names = [atom.name for atom in self.atoms]
+        names_other = [atom.name for atom in other.atoms]
+        eq_names = np.array_equal(names, names_other)
+
+        return (eq_ids, eq_names) == (True, True)
 
     @property
     def ids(self):
         """
         Returns a list of the atom numbers/ids from the original starting structure. An atom id
-        of an atom from the starting structure should not change. See ix_array as an alternative.
+        of an atom from the starting structure should not change.
         """
         return [atom.id for atom in self.atoms]
     
@@ -46,6 +85,7 @@ class QMzymeRegion:
         assigned to an atom will change. See ids as an alternative.
         """
         return [ix for ix in range(self.n_atoms)]
+        #return np.array([atom.ix for atom in self.atoms])
     
     @property
     def resids(self):
@@ -98,9 +138,16 @@ class QMzymeRegion:
         bult from an AtomGroup initially, it will be converted to one. Note, in this case, the universe
         of that AtomGroup will 
         """
-        if self._atom_group is None:
-            return self.convert_to_atom_group()
+        if self._atom_group is None or self._atom_group.n_atoms != self.n_atoms:
+            return region_to_atom_group(self)
         return self._atom_group
+    
+    @property
+    def segids(self):
+        if hasattr(self.atoms[0], 'segid'):
+            return [atom.segid for atom in self.atoms]
+        else:
+            return
     
     def get_atom(self, id):
         for i in self.atoms:
@@ -117,17 +164,29 @@ class QMzymeRegion:
             return True
         return False
     
-    def add_atom(self, atom: _QMzymeAtom):
+    def add_atom(self, atom: _QMzymeAtom, override_same_id=False):
         """
         :param atom: The atom you want to add to the QMzymeRegion. 
         :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`. 
         """
         self.atoms.append(atom)
-        self.atoms = self.sorted_atoms()
+        self.atoms = self.sorted_atoms(override_same_id=override_same_id)
 
-    def sorted_atoms(self):
+    def remove_atom(self, atom: _QMzymeAtom):
+        """
+        :param atom: The atom you want to add to the QMzymeRegion. 
+        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`. 
+        """
+        self.atoms.remove(atom)
+
+    def sorted_atoms(self, override_same_id=False):
         if self.atoms != [] and self.atoms[-1].id in self.ids[:-1]:
-            raise UserWarning(f"Atom {self.atoms[-1]} cannot be added to region because another atom with the same id already exists: {self.get_atom(self.atoms[-1].id)}.")
+            if override_same_id == False: 
+                #self.remove_atom(self.atoms[-1])
+                raise UserWarning(f"Atom {self.atoms[-1]} cannot be added to region because another atom with the same id already exists: {self.get_atom(self.atoms[-1].id)}.")
+            else:
+                atom = self.get_atom(self.atoms[-1].id)
+                self.remove_atom(atom)
         atoms = self.atoms
         ids = [atom.id for atom in self.atoms]
         return [x for _, x in sorted(zip(ids, atoms))]
@@ -155,7 +214,7 @@ class QMzymeRegion:
     # def convert_to_AtomGroup(self):
     #     return MDAwrapper.build_universe_from_QMzymeRegion(self)
     
-    def set_fixed_atoms(self, ids: list= None, atoms=None):
+    def set_fixed_atoms(self, ids: list= None, atoms: list=None):
         if atoms is not None:
             for atom in atoms:
                 setattr(atom, "is_fixed", True)
@@ -203,9 +262,6 @@ class QMzymeRegion:
                 ix_array.append(ix)
         return ix_array
     
-    def convert_to_atom_group(self):
-        return region_to_atom_group(self)
-    
     def check_missing_attr(self, attr):
         missing = []
         for atom in self.atoms:
@@ -231,26 +287,23 @@ class QMzymeRegion:
             self.read_charges(verbose)
             return
         txt = ''
-        txt += f"\nEstimating total charge for QMzymeRegion {self.name} based on protein residue naming conventions..."
+        txt += f"\nEstimating total charge for QMzymeRegion {self.name} based on residue naming conventions in QMzyme.data.residue_charges..."
         unk_res = []
         chrg = 0
         for res in self.residues:
-            if res.resname not in protein_residues:
-                if res.resname in ["WAT", "SOL"]:
-                    continue
+            if res.resname not in residue_charges:
                 unk_res.append(res)
-                txt+=f"\n{res} -->  Charge: UNK"
+                txt+=f"\n\t{res} --> Charge: UNK, defaulting to 0"
             else: 
-                q = protein_residues[res.resname.upper()]
+                q = residue_charges[res.resname.upper()]
                 chrg += q
-                txt+=f"\n{res} -->  Charge: {q}"
+                txt+=f"\n\t{res} --> Charge: {q}"
         self.set_charge(chrg)
         if unk_res == []:
             txt+=f"\nQMzymeRegion {self.name} has an estimated charge of {chrg}."
         else:    
-            txt+=f"\n!!!Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}." 
-            txt+="Ignoring unknown residues in charge estimation!!!"
-            txt+=f"QMzymeRegion {self.name} has an estimated total charge of {chrg}."
+            txt+=f"\nWARNING: Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}." 
+            txt+=f"\nQMzymeRegion {self.name} has an estimated total charge of {chrg}."
         if verbose == True:
             print(txt)
 
@@ -259,8 +312,17 @@ class QMzymeRegion:
         txt=''
         txt+=f"\nCalculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'..."
         chrg = 0
-        for atom in self.atoms:
-            chrg += atom.charge
+        #for atom in self.atoms:
+        #    chrg += atom.charge
+        #chrg = round(chrg)
+        self.set_charge(chrg)
+        for res in self.residues:
+            q = 0
+            for atom in res.atoms:
+                q+=atom.charge
+            txt+=f"\n\t{res} --> Charge: {round(q)}"
+            chrg += round(q)
+            #print(f"\n\t{res} --> Charge: {q}, rounded {round(q)}")
         chrg = round(chrg)
         self.set_charge(chrg)
         txt+=f"\nQMzymeRegion {self.name} has a total charge of {chrg}."
@@ -288,7 +350,8 @@ class QMzymeRegion:
             # if not atom.is_within(self):
             if not atom.id in self.ids:
                 combined_atoms.append(atom)
-        combined_region = QMzymeRegion(name=name, atoms=combined_atoms)
+        combined_region = QMzymeRegion(name=name, atoms=combined_atoms, universe=self._universe)
+        setattr(combined_region, "universe", self.atom_group.universe)
         return combined_region
     
     def subtract(self, other, name = ''):
@@ -360,14 +423,14 @@ class QMzymeResidue(QMzymeRegion):
             self.read_charges(verbose)
             return
         txt = ''
-        txt += f"\nEstimating total charge for QMzymeResidue {self.resname} based on protein residue naming conventions..."
-        if self.resname not in protein_residues:
+        txt += f"\nEstimating total charge for QMzymeResidue {self.resname} based on residue naming conventions in QMzyme.data.residue_charges..."
+        if self.resname not in residue_charges:
             if self.resname in ["WAT", "SOL"]:
                 chrg = 0
             else:
                 chrg = 'UNK'
         else: 
-            chrg = protein_residues[self.resname.upper()]
+            chrg = residue_charges[self.resname.upper()]
         if chrg != 'UNK':
             self.set_charge(chrg)
             txt+=f"\nQMzymeResidue {self.resname} has an estimated charge of {chrg}."
@@ -387,6 +450,19 @@ class QMzymeResidue(QMzymeRegion):
         txt+=f"\nQMzymeResidue {self.resname} has a total charge of {chrg}."
         if verbose == True:
             print(txt)
+
+    def get_backbone_atoms(self, backbone_atoms={'C':'C', 'CA':'CA', 'O':'O', 'N':'N', 'HA':'HA'}):
+        bb_atoms = []
+        for atom_name, atom in backbone_atoms.items():
+            if self.get_atom(atom) == None:
+                if self.get_atom('H1') != None:
+                    bb_atoms.append(self.get_atom('H1'))
+                if self.get_atom('H2') != None:
+                    bb_atoms.append(self.get_atom('H2'))
+            else:
+                bb_atoms.append(self.get_atom(atom))
+        return bb_atoms
+
 
 
 
