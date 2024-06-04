@@ -332,7 +332,7 @@ class qprep:
                     # if you wanted to freeze a bond it would be something like {B 0 1 C}
                     txt += " { C "+f"{idx}"+" C }\n" 
                 txt += " end\n" 
-                txt += "end\n"
+                txt += "end\n" 
             txt += f'* xyz {qprep_data["charge"]} {qprep_data["mult"]}\n'
 
         return txt

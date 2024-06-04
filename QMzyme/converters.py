@@ -21,119 +21,67 @@ from MDAnalysis.core.topologyattrs import (
     Occupancies,
     Tempfactors,
 )
-
-
 def region_to_atom_group(region):
-    """
-    Converts a QMzymeRegion to an MDanalysis AtomGroup.
-    """
-    print("enetered")
-    attrs = {}
-    top_attrs = []
+    
     n_atoms = region.n_atoms
-    coordinates = np.empty((n_atoms, 3), dtype=np.float32)
+    u = MDAnalysis.Universe.empty(
+        n_atoms=n_atoms,  
+        n_residues=n_atoms, # Although this will make u.n_residues return a misleading number, 
+                            #this won't matter after the group has been saved to a PDB and reloaded into a universe.
+        atom_resindex=np.arange(n_atoms), # Doing it this way makes the attribute setting simpler
+        n_segments=n_atoms,
+        trajectory=True) # Needs to be True so positions can be set
 
-    for i, atom in enumerate(region.atoms):
-        coordinates[i] = atom.position
-        for attr in MDAATOMATTRIBUTES:
-            if not hasattr(atom, attr):
+    # Store atom attributes
+    atom_attributes = {}
+    for atom in region.atoms:
+
+        for attr in atom.__dict__:
+            if attr.startswith('_'):
                 continue
-            if attr not in attrs.keys():
-                attrs[attr] = []
-            attrs[attr].append(getattr(atom, attr))
-
-    # Atom attributes
-    for vals, Attr, dtype in (
-        (attrs['id'], Atomids, np.int32),
-        (attrs['element'], Elements, object),
-        (attrs['mass'], Masses, np.float32),
-        (attrs['name'], Atomnames, object),
-        (attrs['type'], Atomtypes, object),
-    ):
-        top_attrs.append(Attr(np.array(vals, dtype=dtype)))
-
-    # Partial charges
-    if 'charge' in attrs.keys():
-        top_attrs.append(Charges(np.array(attrs['charge'], dtype=np.float32)))
-    else:
-        pass 
-
-    # PDB only
-    for vals, Attr, dtype in (
-        (attrs['chainID'], ChainIDs, object),
-        (attrs['occupancy'], Occupancies, np.float32),
-        (attrs['tempfactor'], Tempfactors, np.float32),
-    ):
-        if vals:
-            top_attrs.append(Attr(np.array(vals, dtype=dtype)))
-
-    # Residue
-    if any(attrs['resnum']) and not any(val is None for val in attrs['resnum']):
-        resnums = np.array(attrs['resnum'], dtype=np.int32)
-        resnames = np.array(attrs['resname'], dtype=object)
-        segids = np.array(attrs['segid'], dtype=object)
-        icodes = np.array(attrs['icode'], dtype=object)
-        residx, (resnums, resnames, icodes, segids) = change_squash(
-            (resnums, resnames, icodes, segids),
-            (resnums, resnames, icodes, segids))
-        n_residues = len(resnums)
-        for vals, Attr, dtype in (
-            (resnums, Resids, np.int32),
-            (resnums.copy(), Resnums, np.int32),
-            (resnames, Resnames, object),
-            (icodes, ICodes, object),
-        ):
-            top_attrs.append(Attr(np.array(vals, dtype=dtype)))
-    else:
-        top_attrs.append(Resids(np.array([1])))
-        top_attrs.append(Resnums(np.array([1])))
-        residx = None
-        n_residues = 1
-
-    if any(segids) and not any(val is None for val in segids):
-        segidx, (segids,) = change_squash((segids,), (segids,))
-        n_segments = len(segids)
-        top_attrs.append(Segids(segids))
-    else:
-        n_segments = 1
-        top_attrs.append(Segids(np.array(['SYSTEM'], dtype=object)))
-        segidx = None
-
-    top = Topology(n_atoms, n_residues, n_segments,
-                   attrs=top_attrs, atom_resindex=residx,
-                   residue_segindex=segidx)
+            elif attr not in atom_attributes.keys():
+                try:
+                    atom_attributes[attr] = [getattr(atom, attr)]
+                except:
+                    pass
+            else:
+                atom_attributes[attr].append(getattr(atom, attr))
+    if 'chain' in atom_attributes:
+        atom_attributes['chainID'] = atom_attributes['chain']
+        del atom_attributes['chain']
     
-    u = MDAnalysis.Universe(top, coordinates)
+    # Now load the attributes to the new Universe
+    for attr, val in atom_attributes.items():
+        # if attr in exclude_attributes:
+        #     continue
+        # u.add_TopologyAttr(attr, val)
+        try:
+            u.add_TopologyAttr(attr, val)
+        except:
+            pass
+    u.atoms.positions = atom_attributes['position']
 
-    for traj_attr in ['forces', 'velocities', 'charges']:
-        if traj_attr in attrs.keys():
-            u.add_TopologyAttr(traj_attr, attrs[traj_attr])
-    ag = u.select_atoms('all')
+    # add segid info if provided
+    if hasattr(region.atoms[0], "segid"):
+        segments = list(set(region.segids))
+        for segid in segments:
+            segment = u.add_Segment(segid=segid)
+            ag = []
+            for atom in region.atoms:
+                if atom.segid == segid:
+                    ag.append(u.select_atoms(f'id {atom.id}')[0])
+            sum(ag).residues.segments=segment
+            #print(sum(ag).residues.segments)
+            
+        #segids = np.array([atom.segid for atom in region.atoms])
+        #segids = region.segids
+        #u.add_TopologyAttr("segids", segids)
 
-    return u.select_atoms('all')
+    # Create AtomGroup and sort by resids
+    atom_group = sum(list(u.atoms.sort(key='resids')))
 
+    return atom_group
 
-def atomgroup_to_region(atomgroup):
-    """
-    Under development.
-    """
-    pass
-#     """
-#     Note that this will make the universe based on the region, all non-region atoms will be lost.
-#     """
-#     try:
-#         elements = atomgroup.elements
-#     except:
-#         from MDAnalysis.topology.guessers import guess_types
-#         u = atomgroup.universe
-#         guessed_elements = guess_types(u.atoms.names)
-#         u.add_TopologyAttr("elements", guessed_elements)
-#         warnings.warn("Element information was missing from input. MDAnalysis.topology.guessers.guess_types was used to infer element types.", UserWarning)
-    
-#     attrs = mda_atom_to_qmz_atom(atomgroup)
-
-#     for i, (atom, element) in enumerate(zip(atomgroup, guessed_elements)):
-#         atom = QMzymeAtom()
 
 def mda_atom_to_qmz_atom(mda_atom):
     attrs = {}

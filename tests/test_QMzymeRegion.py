@@ -7,6 +7,8 @@ Tests for the QMzyme RegionBuilder.py ands QMzymeRegion.py code.
 
 
 import numpy as np
+import pytest
+import QMzyme
 from QMzyme.RegionBuilder import RegionBuilder
 import MDAnalysis as mda
 from QMzyme.data import PDB
@@ -43,18 +45,31 @@ def test_QMzymeRegion():
     assert any(region.resids) == any(atom_group.resids)
 
     # add atom through region builder init_atom() method
-    mda_atom = u.select_atoms('resid 1 and name CA').atoms[0]
+    mda_atom = u.select_atoms('resid 1 and name CA').atoms[0] # has id=5
     region_builder.init_atom(mda_atom)
-    new_atom = region.get_atom(id=5)
+    region = region_builder.get_region()
+    qmz_atom = region.get_atom(id=5)
     assert region.n_atoms == 62
     assert 1 in region.resids
     assert 5 in region.ids
 
-    # now add the atom again- it will be changed because it was not unique.
-    region_builder.init_atom(new_atom)
-    assert region.n_atoms == 63
-    assert region.atoms[-1].name == f"{new_atom.element}1"
-    assert region.atoms[-1].id == max(region.get_residue(new_atom.resid).ids)
+    region_builder.init_atom(mda_atom)
+    with pytest.raises(UserWarning): 
+        region = region_builder.get_region() # Because this atom already exists in region.
+    # remove that problem atom from region_builder atoms to continue with testing
+    region_builder.atoms = region_builder.atoms[:-1]
+    
+    res = region.get_residue(resid=qmz_atom.resid)
+    assert f"{qmz_atom.element}1" not in [atom.name for atom in res.atoms] # check it doesn't exist first
+    # now add the atom again- it will be changed because it was not unique and not an mda_atom with immutable id.
+    region_builder.init_atom(qmz_atom)
+    assert qmz_atom != region_builder.atoms[-1] # atom has changed because it was already there
+    assert qmz_atom == region_builder.atoms[-2]
+    region = region_builder.get_region()
+    assert region.n_atoms == 63 
+    res = region.get_residue(resid=qmz_atom.resid)
+    assert f"{qmz_atom.element}1" in [atom.name for atom in res.atoms]
+    assert region_builder.atoms[-1].id == max(region.get_residue(qmz_atom.resid).ids)
 
     # test getting atom ids for all CA atoms
     ids = region.get_ids(attribute='name', value='CA')
@@ -65,6 +80,49 @@ def test_QMzymeRegion():
     for id in ids:
         assert region.get_atom(id).is_fixed == True
 
+def test_add_regions():
+    model = QMzyme.GenerateModel(PDB)
+    model.set_region(name='r1', selection='resid 263')
+    model.set_region(name='r2', selection='resid 103')
+    model.set_region(name='r1_r2', selection='resid 103 or resid 263')
+
+    assert model.r1.n_atoms + model.r2.n_atoms == model.r1_r2.n_atoms
+    assert model.r1 + model.r2 == model.r1_r2
+    assert model.r1_r2 + model.r1 == model.r1_r2
+    model.r1.set_fixed_atoms(ids=model.r1.ids)
+
+    r3 = model.r1_r2 + model.r1
+    for atom in r3.atoms:
+        assert atom.is_fixed == False
+
+    r3 = model.r1 + model.r1_r2
+    for atom in r3.atoms:
+        if atom.id in model.r1.ids:
+            assert atom.is_fixed == True
+        else:
+            assert atom.is_fixed == False
+
+def test_subtract_regions():
+    model = QMzyme.GenerateModel(PDB)
+    model.set_region(name='r1', selection='resid 263')
+    model.set_region(name='r2', selection='resid 103')
+    model.set_region(name='r1_r2', selection='resid 103 or resid 263')
+
+    assert model.r1_r2 - model.r1 == model.r2
+    assert (model.r1 - model.r1_r2).n_atoms == 0
+
+
+def test_equal_regions():
+    model = QMzyme.GenerateModel(PDB)
+    model.set_region(name='r1', selection='resid 263')
+    model.set_region(name='r2', selection='resid 263')
+    assert model.r1 == model.r2
+
+
+    setattr(model.r1.atoms[0], "name", "X")
+    assert model.r1 != model.r2
+
+
 def test_QMzymeResidue():
     region_builder = RegionBuilder(name='test')
     region_builder.init_atom_group(atom_group=atom_group)
@@ -73,5 +131,6 @@ def test_QMzymeResidue():
     assert residue.__repr__() == "<QMzymeResidue resname: ASN, resid: 2, chain: A>"
     assert residue.get_atom('CA').__repr__() == "<QMzymeAtom 22: CA of resname ASN, resid 2>"
     assert residue.chain == 'A'
+    assert not residue.has_atom(100000000)
 
     

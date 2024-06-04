@@ -5,7 +5,6 @@ Writers
    :members:
    :undoc-members:
 
-
 .. autoclass:: QMzyme.Writers.QMWriter
    :members:
    :undoc-members:
@@ -15,6 +14,10 @@ Writers
    :undoc-members:
 
 .. autoclass:: QMzyme.Writers.QMXTBWriter
+   :members:
+   :undoc-members:
+
+.. autoclass:: QMzyme.Writers.WritersRegistry
    :members:
    :undoc-members:
 

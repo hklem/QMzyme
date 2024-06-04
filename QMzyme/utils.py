@@ -53,6 +53,8 @@ def MDA_AtomGroup_selection(selection: AtomGroup, model: QMzymeModel, name, **kw
 
 @make_selection.register
 def MDA_AtomGroup_selection(selection: QMzymeRegion, model: QMzymeModel, name, **kwargs):
+    if name is not None:
+         selection.name = name
     return selection
 
 @make_selection.register

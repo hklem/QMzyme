@@ -28,11 +28,12 @@ remove_mda_atom_props = ['level', 'universe', 'bfactor', 'altLoc', 'ix_array', '
 
 class RegionBuilder:
 
-    def __init__(self, name, atom_group = None):
+    def __init__(self, name, atom_group = None, universe = None):
         self.name = name
         self.atoms = []
         self.region = None
         self.atom_group = atom_group
+        self.universe = universe
         if atom_group is not None:
             self.init_atom_group(atom_group)
 
@@ -55,8 +56,9 @@ class RegionBuilder:
         for atom in atom_group.atoms:
             self.init_atom(atom, uniquify=True)
         self.atom_group = atom_group
+        self.universe = atom_group.universe
         region = self.get_region()
-        return region
+        #return region
 
     def init_atom(self, atom, uniquify=True):
         warnings.filterwarnings('ignore')
@@ -65,8 +67,10 @@ class RegionBuilder:
         else:
             atom_props = self.get_atom_properties(atom)
             if uniquify is True:
-                atom = self.uniquify_atom(atom_props)
+                self.uniquify_atom(atom_props)
             atom = QMzymeAtom(**atom_props)
+        # if self.atoms != []:
+        #     print(atom, self.atoms[-1])
         self.atoms.append(atom)
 
     def uniquify_atom(self, atom_props):
@@ -82,7 +86,6 @@ class RegionBuilder:
                 atom_props['name'] = f"{element}{i}" 
         while atom_props['id'] in temp_region.ids:
             atom_props['id'] += 1
-        return atom_props
 
     def get_atom_properties(self, atom: _Atom):
         atom_attr_dict = {}
@@ -109,5 +112,5 @@ class RegionBuilder:
         return atom_attr_dict
 
     def get_region(self):
-        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group)
+        self.region = QMzymeRegion(self.name, self.atoms, self.atom_group, self.universe)
         return self.region

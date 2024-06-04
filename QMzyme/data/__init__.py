@@ -1,4 +1,5 @@
 from importlib import resources
+import copy
 
 _data_ref = resources.files('QMzyme.data')
 
@@ -37,5 +38,8 @@ protein_residues = {
     'THR': 0,
     'TRP': 0,
     'TYR': 0,
-    'VAL': 0
+    'VAL': 0,
  }
+
+residue_charges = copy.copy(protein_residues)
+residue_charges['WAT'] = 0
