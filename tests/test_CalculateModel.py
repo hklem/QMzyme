@@ -31,7 +31,6 @@ def test_QM_Method(Test, program):
     ids = model.cutoff_3.get_ids('name', 'CA')
     model.cutoff_3.set_fixed_atoms(ids)
     region, basis_set, functional = model.cutoff_3, '6-31G*', 'wB97X-D3'
-    #qm_method = QM_Method(basis_set=basis_set, functional=functional, program=program)
     qm_method = QM_Method(
         basis_set=basis_set, 
         functional=functional, 

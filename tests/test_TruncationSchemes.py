@@ -23,22 +23,22 @@ from QMzyme.data import PDB
         ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
     ]
 )
-def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncation_scheme=CA_terminal):
+def test_truncate_CA_terminal(Test, init_file, region_selection, truncation_scheme=CA_terminal):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
-    print('Region: ', model.regions[-1])
-    model.truncate_region(region=model.region, scheme=truncation_scheme)
-    print('New Region: ', model.regions[-1])
+    region_truncated = CA_terminal(model.region, name=None).return_region()
+    assert region_truncated != model.region
 
     #First check that the original region didn't change:
     original_first_res = model.region.residues[0]
-    truncated_first_res = model.region_truncated.residues[0]
+    truncated_first_res = region_truncated.residues[0]
     original_last_res = model.region.residues[-1]
-    truncated_last_res = model.region_truncated.residues[-1]
+    truncated_last_res = region_truncated.residues[-1]
 
     if original_first_res.resname != 'PRO':
         removed_atom_name = 'H'
         if original_first_res.resid == 1:
+            assert 'H1' in [atom.name for atom in original_first_res.atoms]
             assert 'H2' in [atom.name for atom in original_first_res.atoms]
             assert 'H3' in [atom.name for atom in original_first_res.atoms]
             assert 'H2' in [atom.name for atom in truncated_first_res.atoms]
@@ -48,21 +48,22 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
             assert 'N' in [atom.name for atom in original_first_res.atoms]
             assert 'H' not in [atom.name for atom in truncated_first_res.atoms]
             assert 'N' not in [atom.name for atom in truncated_first_res.atoms]
+            assert 'HN' in [atom.name for atom in truncated_first_res.atoms]
     
     if original_first_res.resname == 'PRO':
         assert 'N' in [atom.name for atom in original_first_res.atoms]
         assert 'H' not in [atom.name for atom in original_first_res.atoms]
         assert 'N' in [atom.name for atom in truncated_first_res.atoms]
+        assert 'HN' in [atom.name for atom in truncated_first_res.atoms]
     
-    assert 'H1' in [atom.name for atom in truncated_first_res.atoms]
 
     for i in range(model.region.n_residues-1):
         resid = model.region.resids[i]
         next_resid = model.region.resids[i+1] 
         original_res = model.region.get_residue(resid)
         original_next_res = model.region.get_residue(next_resid)
-        truncated_res = model.region_truncated.get_residue(resid)
-        truncated_next_res = model.region_truncated.get_residue(next_resid)
+        truncated_res = region_truncated.get_residue(resid)
+        truncated_next_res = region_truncated.get_residue(next_resid)
         assert 'C' in [atom.name for atom in original_res.atoms]
         assert 'O' in [atom.name for atom in original_res.atoms]
         assert 'N' in [atom.name for atom in original_next_res.atoms]
@@ -84,12 +85,10 @@ def test_truncate_region_CA_terminal(Test, init_file, region_selection, truncati
                 assert 'N' in [atom.name for atom in truncated_next_res.atoms]
             elif original_next_res.resname != 'PRO':
                 assert 'N' not in [atom.name for atom in truncated_next_res.atoms]
-            assert 'H1' in [atom.name for atom in truncated_next_res.atoms]
-            assert 'H1' in [atom.name for atom in truncated_res.atoms]
+            assert 'HN' in [atom.name for atom in truncated_next_res.atoms]
+            assert 'HC' in [atom.name for atom in truncated_res.atoms]
             names = [atom.name for atom in truncated_res.atoms]
-            if 'H1' in names:
-                if original_res.resname != 'PRO':
-                    if 'N' not in names and 'C' not in names:
-                        assert 'H2' in names
-
-
+            if 'N' not in names and 'C' not in names:
+                print(original_res.atoms)
+                assert 'HN' in names
+                assert 'HC' in names

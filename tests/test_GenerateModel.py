@@ -7,19 +7,39 @@ Tests for the QMzyme GenerateModel.py code.
 
 from QMzyme.GenerateModel import GenerateModel
 import pytest
+import numpy as np
+import numpy.testing as npt
 from QMzyme.RegionBuilder import RegionBuilder
 from MDAnalysis.core.universe import Universe
-#from importlib_resources import files
-from QMzyme.data import PDB
+from QMzyme.data import PDB, PQR, DCD
 
 
-def test_init():
-    model = GenerateModel(PDB)
-    assert model.__repr__() == "<QMzymeModel built from <Universe with 4258 atoms> contains 0 region(s)>"
-    assert model.name == '1oh0'
+@pytest.mark.parametrize(
+        "init_file, traj_file",
+        [(PDB, None), 
+         (PQR, DCD),]
+)
+def test_init(init_file, traj_file):
+    if traj_file is not None:
+        model = GenerateModel(init_file, traj_file)
+        assert model.name == '1oh0_equ'
+        model.set_region(name='test', selection='resid 263')
+        assert hasattr(model.regions[-1].atoms[0], "charge")
+        frame_0_positions = model.regions[-1].positions
+        model = GenerateModel(init_file, traj_file, frame=2)
+        model.set_region(name='test', selection='resid 263')
+        #assert model.regions[-1].positions != frame_0_positions
+        with pytest.raises(AssertionError):
+            npt.assert_array_equal(model.regions[-1].positions, frame_0_positions)
+
+    else:
+        model = GenerateModel(init_file)
+        assert model.name == '1oh0'
+        model.set_region(name='test', selection='resid 263')
+        assert not hasattr(model.regions[-1].atoms[0], "charge")
+    assert model.__repr__() == "<QMzymeModel built from <Universe with 4258 atoms> contains 1 region(s)>"
     assert model.universe.__class__ == Universe
-    assert model.filename == PDB
-    assert model.regions == []
+    assert model.filename == init_file
 
 def test_set_catalytic_center(selection='resid 263'):
     model = GenerateModel(PDB)

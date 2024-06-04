@@ -8,6 +8,7 @@ Tests for the QMzyme RegionBuilder.py ands QMzymeRegion.py code.
 
 import numpy as np
 import pytest
+import QMzyme
 from QMzyme.RegionBuilder import RegionBuilder
 import MDAnalysis as mda
 from QMzyme.data import PDB
@@ -79,6 +80,49 @@ def test_QMzymeRegion():
     for id in ids:
         assert region.get_atom(id).is_fixed == True
 
+def test_add_regions():
+    model = QMzyme.GenerateModel(PDB)
+    model.set_region(name='r1', selection='resid 263')
+    model.set_region(name='r2', selection='resid 103')
+    model.set_region(name='r1_r2', selection='resid 103 or resid 263')
+
+    assert model.r1.n_atoms + model.r2.n_atoms == model.r1_r2.n_atoms
+    assert model.r1 + model.r2 == model.r1_r2
+    assert model.r1_r2 + model.r1 == model.r1_r2
+    model.r1.set_fixed_atoms(ids=model.r1.ids)
+
+    r3 = model.r1_r2 + model.r1
+    for atom in r3.atoms:
+        assert atom.is_fixed == False
+
+    r3 = model.r1 + model.r1_r2
+    for atom in r3.atoms:
+        if atom.id in model.r1.ids:
+            assert atom.is_fixed == True
+        else:
+            assert atom.is_fixed == False
+
+def test_subtract_regions():
+    model = QMzyme.GenerateModel(PDB)
+    model.set_region(name='r1', selection='resid 263')
+    model.set_region(name='r2', selection='resid 103')
+    model.set_region(name='r1_r2', selection='resid 103 or resid 263')
+
+    assert model.r1_r2 - model.r1 == model.r2
+    assert (model.r1 - model.r1_r2).n_atoms == 0
+
+
+def test_equal_regions():
+    model = QMzyme.GenerateModel(PDB)
+    model.set_region(name='r1', selection='resid 263')
+    model.set_region(name='r2', selection='resid 263')
+    assert model.r1 == model.r2
+
+
+    setattr(model.r1.atoms[0], "name", "X")
+    assert model.r1 != model.r2
+
+
 def test_QMzymeResidue():
     region_builder = RegionBuilder(name='test')
     region_builder.init_atom_group(atom_group=atom_group)
@@ -87,5 +131,6 @@ def test_QMzymeResidue():
     assert residue.__repr__() == "<QMzymeResidue resname: ASN, resid: 2, chain: A>"
     assert residue.get_atom('CA').__repr__() == "<QMzymeAtom 22: CA of resname ASN, resid 2>"
     assert residue.chain == 'A'
+    assert not residue.has_atom(100000000)
 
     
