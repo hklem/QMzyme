@@ -10,6 +10,7 @@ Module containing functions utilized by truncation_schemes.py.
 import numpy as np
 from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.RegionBuilder import RegionBuilder
+from QMzyme.converters import *
 
 
 def cap_H(replace_atom, fixed_atom, bond_length=1.09, base_atom=None):
@@ -21,7 +22,7 @@ def cap_H(replace_atom, fixed_atom, bond_length=1.09, base_atom=None):
     new_atom_dict = {
             'element': 'H',
             'type': 'H',  
-            'name': 'H1',
+            'name': f'H{replace_atom.element}',
             'position': new_position, 
             'mass': 1.00794,
         }
@@ -29,6 +30,7 @@ def cap_H(replace_atom, fixed_atom, bond_length=1.09, base_atom=None):
         base_atom = replace_atom
         if fixed_atom.resname == 'PRO' and fixed_atom.name == 'N':
             new_atom_dict['charge'] = 0.0
+            new_atom_dict['name'] = 'HN'
             base_atom = fixed_atom
     new_atom = create_new_atom(base_atom, new_atom_dict) # used fixed atom because sometimes replaced atom comes from a different residue
     return new_atom
@@ -87,21 +89,19 @@ def create_new_atom(base_atom, new_atom_dict):
 def get_preceding_Catom(region, resid):
     if resid == 1:
         return None
-    mda_atom = region.atom_group.universe.select_atoms(f'resid {resid-1} and name C').atoms[0]
-    rb = RegionBuilder(name='temp')
-    rb.init_atom(mda_atom)
-    atom = rb.atoms[0]
+    if region._universe != None:
+        mda_atom = region._universe.select_atoms(f'resid {resid-1} and name C').atoms[0]
+        atom = mda_atom_to_qmz_atom(mda_atom)
     return atom
 
 
 def get_following_Natom(region, resid):
     try:
-        mda_atom = region.atom_group.universe.select_atoms(f'resid {resid+1} and name N').atoms[0]
-        rb = RegionBuilder(name='temp')
-        rb.init_atom(mda_atom)
-        atom = rb.atoms[0]
+        if region._universe != None:
+            mda_atom = region._universe.select_atoms(f'resid {resid+1} and name N').atoms[0]
+        atom = mda_atom_to_qmz_atom(mda_atom)
     except:
-        atom = None
+        atom = None # covers if res is last protein res in universe
     return atom
 
 
