@@ -27,6 +27,7 @@ You can also add onto the read the docs webpage in the QMzyme/docs directory.
 To build the documentaion pages locally go to the QMzyme/docs dirctory and run:
 
 .. code-block:: bash
+
     pip install -r requirements.txt # to install sphinx and other docs related packages
     brew install pandoc # pandoc is required to configure the jupyter notebook files used as tutorials. If you are not on MacOS see pandoc webpage for other installation methods: https://pandoc.org/installing.html
     make html
@@ -50,6 +51,7 @@ Running Tests Locally
 In the main QMzyme directory run:
 
 .. code-block:: bash
+
     pip install -e .[test] # installs pytest and pytest-cov
     # To run only a single test file:
     pytest tests/test_FILENAME.py -vv --color yes
