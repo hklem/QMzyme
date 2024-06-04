@@ -63,8 +63,19 @@ def region_to_atom_group(region):
 
     # add segid info if provided
     if hasattr(region.atoms[0], "segid"):
-        segids = np.array([atom.segid for atom in region.atoms])
-        u.add_TopologyAttr("segid", segids)
+        segments = list(set(region.segids))
+        for segid in segments:
+            segment = u.add_Segment(segid=segid)
+            ag = []
+            for atom in region.atoms:
+                if atom.segid == segid:
+                    ag.append(u.select_atoms(f'id {atom.id}')[0])
+            sum(ag).residues.segments=segment
+            #print(sum(ag).residues.segments)
+            
+        #segids = np.array([atom.segid for atom in region.atoms])
+        #segids = region.segids
+        #u.add_TopologyAttr("segids", segids)
 
     # Create AtomGroup and sort by resids
     atom_group = sum(list(u.atoms.sort(key='resids')))
