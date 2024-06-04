@@ -93,32 +93,53 @@ class QMQM2Writer:
     def write(self, high_region=None, low_region=None, total_charge=None):
         if high_region is None:
             high_region = CalculateModel.calculation['QM']
+        else:
+            high_region = CalculateModel()._add(calc='QM', region=high_region)
         if low_region is None:
             low_region = CalculateModel.calculation['QM2']
+        else:
+            low_region = CalculateModel()._add(calc='QM2', region=low_region)
 
         if high_region.method["program"] != 'orca':
             raise UserWarning("QM/QM2 calculation only supported for ORCA program.")
-
-        combined = high_region.combine(low_region)
-        combined.name = high_region.name+'_'+low_region.name
+        
+        combined = CalculateModel.calculation['QMQM2']
         filename = combined.write(self.filename)
-        combined.method = high_region.method
         combined.method["starting_file"] = filename
-        combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        if 'QM/QM2' not in combined.method['qm_input']:
-            combined.method['qm_input'] = 'QM/QM2 '+combined.method['qm_input']
+        # if 'QMQM2' in CalculateModel.calculation:
+        #     combined = CalculateModel.calculation['QMQM2']
+        #     filename = combined.write(self.filename)
+        #     combined.method["starting_file"] = filename
+        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        qm_atoms = combined.get_ix_array_from_ids(ids=CalculateModel.calculation['QM'].ids)
-        qm_atoms = get_atom_range(qm_atoms)
-        qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_region.method['qm_input']}'\n"
-        qmmm_section += f" QMATOMS {qm_atoms} END\n"
-        if total_charge is None:
-            total_charge = low_region.charge + high_region.charge
-        qmmm_section += f" Charge_Total {total_charge} END"
-        combined.method['qm_input'] += f'\n{qmmm_section}'
+        # else:
+        #     combined = high_region.combine(low_region)
+        #     combined.name = high_region.name+'_'+low_region.name
+        #     filename = combined.write(self.filename)
+        #     combined.method = high_region.method
+        #     combined.method["starting_file"] = filename
+        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        qprep(**qprep_dict(high_region.method), mem=self.memory, nprocs=self.nprocs)
+        # if 'QM/QM2' not in combined.method['qm_input']:
+        #     combined.method['qm_input'] = 'QM/QM2 '+combined.method['qm_input']
+
+        # qm_atoms = combined.get_ix_array_from_ids(ids=CalculateModel.calculation['QM'].ids)
+        # qm_atoms = get_atom_range(qm_atoms)
+        # qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_region.method['qm_input']}'\n"
+        # qmmm_section += f" QMATOMS {qm_atoms} END\n"
+        # if total_charge is None:
+        #     total_charge = low_region.charge + high_region.charge
+        # qmmm_section += f" Charge_Total {total_charge} END"
+        # combined.method['qm_input'] += f'\n{qmmm_section}'
+
+        # qprep(**qprep_dict(high_region.method), mem=self.memory, nprocs=self.nprocs)
+        # print_details(filename, 'inp')
+
+        # charge and mult here are just for the high region qm_atoms
+        combined.method['charge'] = high_region.method["charge"]
+        combined.method['mult'] = high_region.method["mult"]
+        qprep(**qprep_dict(combined.method), mem=self.memory, nprocs=self.nprocs)
         print_details(filename, 'inp')
 
 
@@ -142,6 +163,7 @@ class QMMMWriter:
             high_region = CalculateModel.calculation['QM']
         if low_region is None:
             low_region = CalculateModel.calculation['ChargeField']
+
         QMWriter(self.filename, self.memory, self.nprocs).write(high_region)
         # remove any qm_atoms from low_region then proceed
         ChargeFieldWriter.write(low_region)
@@ -235,31 +257,50 @@ class QMXTBWriter:
         if low_region is None:
             low_region = CalculateModel.calculation['XTB']
         if high_region.method["program"] != 'orca':
-            raise UserWarning("QMXTB calculation only supported for ORCA program.")
-
-        combined = high_region.combine(low_region)
-        combined.name = high_region.name+'_'+low_region.name
+            raise UserWarning("QM/XTB calculation only supported for ORCA program.")
+        
+        combined = CalculateModel.calculation['QMXTB']
         filename = combined.write(self.filename)
-        combined.method = high_region.method
         combined.method["starting_file"] = filename
-        combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        if 'QM/XTB' not in combined.method['qm_input']:
-            combined.method['qm_input'] = 'QM/XTB '+combined.method['qm_input']
+        # if 'QMXTB' in CalculateModel.calculation:
+        #     combined = CalculateModel.calculation['QMXTB']
+        #     filename = combined.write(self.filename)
+        #     combined.method["starting_file"] = filename
+        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        #high_level_atoms = get_atom_range(high_region.ix_array)
-        qm_atoms = combined.get_ix_array_from_ids(ids=CalculateModel.calculation['QM'].ids)
-        qm_atoms = get_atom_range(qm_atoms)
-        qmmm_section = "%QMMM\n"
-        #qmmm_section += f" QMATOMS {high_level_atoms} END\n"
-        qmmm_section += f" QMATOMS {qm_atoms} END\n"
-        if total_charge is None:
-            total_charge = low_region.charge + high_region.charge
-        qmmm_section += f" Charge_Total {total_charge} END"
+        # else:
+        #     combined = high_region.combine(low_region)
+        #     combined.name = high_region.name+'_'+low_region.name
+        #     filename = combined.write(self.filename)
+        #     combined.method = high_region.method
+        #     combined.method["starting_file"] = filename
+        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
 
-        if qmmm_section not in combined.method['qm_input']:
-            combined.method['qm_input'] += f'\n{qmmm_section}'
+        # if 'QM/XTB' not in combined.method['qm_input']:
+        #     combined.method['qm_input'] = 'QM/XTB '+combined.method['qm_input']
 
+        # # #high_level_atoms = get_atom_range(high_region.ix_array)
+        # # qm_atoms = combined.get_ix_array_from_ids(ids=CalculateModel.calculation['QM'].ids)
+        # # qm_atoms = get_atom_range(qm_atoms)
+        # # qmmm_section = "%QMMM\n"
+        # # #qmmm_section += f" QMATOMS {high_level_atoms} END\n"
+        # # qmmm_section += f" QMATOMS {qm_atoms} END\n"
+        # # if total_charge is None:
+        # #     total_charge = low_region.charge + high_region.charge
+        # # qmmm_section += f" Charge_Total {total_charge} END"
+
+        # # if qmmm_section not in combined.method['qm_input']:
+        # #     combined.method['qm_input'] += f'\n{qmmm_section}'
+        
+        # if '%QMMM' not in combined.method['qm_input']:
+        #     combined.method['qm_input'] += f'\n{qmmm_section}'
+            
+        # CalculateModel.calculation['QMXTB'] = combined
+
+        # charge and mult here are just for the high region qm_atoms
+        combined.method['charge'] = high_region.method["charge"]
+        combined.method['mult'] = high_region.method["mult"]
         qprep(**qprep_dict(combined.method), mem=self.memory, nprocs=self.nprocs)
         print_details(filename, 'inp')
         
@@ -316,7 +357,9 @@ class Writer:
         self.memory = memory
         self.nprocs = nprocs
         if writer is None:
-            writer = WritersRegistry._get_writer("".join(CalculateModel.calculation))
+            writer = WritersRegistry._get_writer(CalculateModel.calc_type)
+        else:
+            writer = WritersRegistry._get_writer(writer)
         self.writer = writer
 
     def write(self):
@@ -338,17 +381,17 @@ def qprep_dict(method_dict):
             del d[key]
     return d
 
-def get_atom_range(atom_indices: list):
-    """
-    Utility function used for ORCA file input.
-    """
-    range = ''
-    for i in np.arange(1, np.max(atom_indices)+1):
-        if i in atom_indices:
-            if i-1 not in atom_indices:
-                range += "{"+str(i)
-                if i+1 not in atom_indices:
-                    range += "} "
-            elif i+1 not in atom_indices:
-                range += f":{i}"+"} "
-    return range.strip()
+# def get_atom_range(atom_indices: list):
+#     """
+#     Utility function used for ORCA file input.
+#     """
+#     range = ''
+#     for i in np.arange(1, np.max(atom_indices)+1):
+#         if i in atom_indices:
+#             if i-1 not in atom_indices:
+#                 range += "{"+str(i)
+#                 if i+1 not in atom_indices:
+#                     range += "} "
+#             elif i+1 not in atom_indices:
+#                 range += f":{i}"+"} "
+#     return range.strip()
