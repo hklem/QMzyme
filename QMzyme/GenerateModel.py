@@ -15,11 +15,12 @@ calculation input files.
 """
 
 from QMzyme.QMzymeModel import QMzymeModel
+from QMzyme.data import protein_residues, residue_charges
 import os
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.utils import make_selection
 from QMzyme.TruncationSchemes import CA_terminal
-from QMzyme.CalculateModel import CalculateModel
+from QMzyme.CalculateModel import CalculateModel, CalcMethodsRegistry
 from QMzyme.Writers import Writer
 
 
@@ -44,8 +45,31 @@ class GenerateModel(QMzymeModel):
         self.universe = universe
         if name is None:
             name = os.path.basename(self.universe.filename).split('.')[0]
+        self.truncated = None
         model = QMzymeModel(name, universe)
         self.__dict__.update(model.__dict__)
+        
+        if not hasattr(self.universe.atoms, "charges"):
+            print("\nCharge information not present. QMzyme will try to guess "+
+                  "region charges based on residue names consistent with AMBER naming "+
+                  "conventions (i.e., aspartate: ASP --> Charge: -1, aspartic acid: ASH --> Charge: 0.). "+
+                  "See QMzyme.data.residue_charges for the full set.")
+            unk_res = []
+            for res in self.universe.residues:
+                if res.resname not in residue_charges:
+                    if unk_res == []:
+                        print("\n\tNonconventional Residues Found")
+                        print("\t------------------------------")
+                    if res.resname not in unk_res:
+                        unk_res.append(res.resname)
+                        print(f"\t{res.resname} --> Charge: UNK, defaulting to 0")
+            if unk_res != []:
+                print("\nYou can update charge information for nonconventional residues by running "+
+                      "\n\t>>>QMzyme.data.residue_charges.update("+"{"+"'3LETTER_RESNAME':INTEGER_CHARGE}). "+
+                      "\nNote your changes will not be stored after you exit your session. "+
+                      "It is recommended to only alter the residue_charges dictionary. "+
+                      "If you alter the protein_residues dictionary instead that could cause "+
+                      "unintended bugs in other modules (TruncationSchemes).\n")
 
 
     def __repr__(self):
@@ -85,26 +109,36 @@ class GenerateModel(QMzymeModel):
         region = make_selection(selection, model=self, name=name, **kwargs)
         self.add_region(region)
     
-    
-    def truncate_region(self, region, scheme=CA_terminal, name=None):
-        """
-        Method to truncate a QMzymeRegion. This will create a new region, and leave
-        the original region unchanged.
 
-        :param region: QMzymeRegion to perform truncation on.
-        :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required
+    def truncate(self, scheme=CA_terminal, name=None):
+        """
+        Method to truncate QMzymeModel. All QMzymeModel regions with assigned methods will be 
+        combined and truncated according to the specified scheme. The resulting region will
+        be saved as the QMzymeModel `truncated` attribute.
+
         :param scheme: Specifies the truncation scheme to use. Options can be found
             in :py:mod:`~QMzyme.TruncationSchemes`.
         :type scheme: :py:class:`~QMzyme.TruncationSchemes.TruncationScheme` concrete class, 
             default=:py:class:`~QMzyme.TruncationSchemes.CA_terminal`
         :param name: Name to give the truncated model to. If None, the original
-            region name will be used with '_truncated' appended.
+            region name will be the combination of calculation methods '_combined_region_truncated' appended.
         :type name: str, optional
         """
-        s = scheme(region=region, name=name)
+        #combine regions
+        if self.truncated != None:
+            raise UserWarning("Your model has already been truncated.")
+        if CalculateModel.calc_type == None:
+            raise UserWarning("You must first assign calculation method(s) to the model region(s).")
+        calc_type = CalculateModel.calc_type
+        s = scheme(region=CalculateModel.calculation[calc_type], name=name)
         region = s.return_region()
-        self.add_region(region)
-
+        if calc_type != 'QM':
+            CalcMethodsRegistry._get_calc_method(calc_type)().assign_to_region(region=region)
+        CalculateModel.calculation[calc_type] = region
+        self.truncated = region
+        print(f"\nTruncated model has been created and saved to attribute 'truncated' "+
+              "and stored in QMzyme.CalculateModel.calculation under key "+
+              f"{calc_type}. This model be used to write the calculation input.")
 
     def write_input(self, filename=None, memory='24GB', nprocs=12):
         """
@@ -125,5 +159,13 @@ class GenerateModel(QMzymeModel):
             A :class:`~QMzyme.CalculateModel.QM_Method` must have been assigned
             to a region. 
         """
-        Writer(filename=filename, memory=memory, nprocs=nprocs).write()
+        if getattr(self, "truncated") == None:
+            print("\nWARNING: model has not been truncated. Resulting model may not be a chemically complete structure (i.e., incomplete atomic valencies due to removed atoms.).")
+            Writer(filename=filename, memory=memory, nprocs=nprocs).write()
+        else:
+            CalculateModel.calculation[self.truncated.method["type"]] = self.truncated
+            Writer(filename=filename, memory=memory, nprocs=nprocs, writer=self.truncated.method["type"]).write()
+
+
+    
 
