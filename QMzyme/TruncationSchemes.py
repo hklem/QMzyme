@@ -36,7 +36,18 @@ class TruncationScheme(abc.ABC):
         self.truncated_region.rename(self.name)
         return self.truncated_region
 
-class CA_terminal(TruncationScheme):
+class TerminalAlphaCarbon(TruncationScheme):
+    """
+    The TerminalAlphaCarbon scheme will 1) remove N-terminal backbone atoms 
+    (N and H) if the preceding sequence residue (resid-1) is not included
+    in the region and add a hydrogen atom along the CA–N backbone
+    bond vector; and 2) remove C-terminal backbone atoms (C and O) if the 
+    following sequence residue (resid+1) is not included in the region and
+    add a hydrogen atom along the CA–C backbone bond vector. In
+    the case of Proline, if the preceding sequence residue is not present 
+    the Proline N atom is kept and a hydrogen is added along the N–(resid-1)C
+    backbone bond vector.
+    """
     def __init__(self, region, name):
         super().__init__(region, name)
 
@@ -77,9 +88,9 @@ class CA_terminal(TruncationScheme):
             r.set_method(self.region.method)
         self.truncated_region = r
         
-class CA_all(TruncationScheme):
+class AlphaCarbon(TruncationScheme):
     """
-    Function to truncate a QMzymeRegion accoring to the CA_all scheme. 
+    Function to truncate a QMzymeRegion accoring to the AlphaCarbon scheme. 
     See Documentation for scheme descriptions.
     *I still need to write up some documentation about how various schemes works."
     """

@@ -16,8 +16,8 @@ calculation input files.
 
 from QMzyme.QMzymeModel import QMzymeModel
 from QMzyme.utils import make_selection
-from QMzyme.TruncationSchemes import CA_terminal
-from QMzyme.CalculateModel import CalculateModel, CalcMethodsRegistry
+from QMzyme.TruncationSchemes import TerminalAlphaCarbon
+from QMzyme.CalculateModel import CalculateModel, CalculationFactory
 from QMzyme.Writers import WriterFactory
 
 
@@ -77,7 +77,7 @@ class GenerateModel(QMzymeModel):
         self.add_region(region)
     
 
-    def truncate(self, scheme=CA_terminal, name=None):
+    def truncate(self, scheme=TerminalAlphaCarbon, name=None):
         """
         Method to truncate QMzymeModel. All QMzymeModel regions with assigned methods will be 
         combined and truncated according to the specified scheme. The resulting region will
@@ -94,18 +94,20 @@ class GenerateModel(QMzymeModel):
         #combine regions
         if hasattr(self, "truncated"):
             raise UserWarning("Your model has already been truncated.")
-        if CalculateModel.calc_type == None:
+        if CalculateModel.calculation == {}:
             raise UserWarning("You must first assign calculation method(s) to the model region(s).")
+        if len(CalculateModel.calculation) > 1:
+            CalculateModel.combine_regions_and_methods()
         calc_type = CalculateModel.calc_type
         s = scheme(region=CalculateModel.calculation[calc_type], name=name)
         region = s.return_region()
         if calc_type != 'QM':
-            CalcMethodsRegistry._get_calc_method(calc_type)().assign_to_region(region=region)
+            CalculationFactory._make_calculation(calc_type)().assign_to_region(region=region)
         CalculateModel.calculation[calc_type] = region
         setattr(self, "truncated", region)
         print(f"\nTruncated model has been created and saved to attribute 'truncated' "+
               "and stored in QMzyme.CalculateModel.calculation under key "+
-              f"{calc_type}. This model be used to write the calculation input.")
+              f"{calc_type}. This model will be used to write the calculation input.")
 
     def write_input(self, filename=None, memory='24GB', nprocs=12):
         """
@@ -130,7 +132,8 @@ class GenerateModel(QMzymeModel):
             print("\nWARNING: model has not been truncated. Resulting model may "+
                   "not be a chemically complete structure (i.e., incomplete atomic "+
                   "valencies due to removed atoms).\n")
+            CalculateModel.combine_regions_and_methods()
         
         writer_type = CalculateModel.calc_type
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
-        writer.write()
+        #writer.write()
