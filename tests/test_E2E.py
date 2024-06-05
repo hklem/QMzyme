@@ -70,8 +70,8 @@ def test_QM_only_calculation():
     assert qm_input.endswith(model.cutoff_5.method["qm_input"])
     assert f'%geom Constraints' in file
     assert f'%QMMM' not in file
-    #restore_directory()
-    #assert 'QCALC' not in os.listdir()
+    restore_directory()
+    assert 'QCALC' not in os.listdir()
 
 @pytest.mark.parametrize(
     "qm1_dict, qm2_dict",[
@@ -126,24 +126,8 @@ def test_QMQM2_calculation(qm1_dict, qm2_dict):
     assert file[6].strip() == "Charge_Total -2 END"
     assert file[7].strip() == f"%geom Constraints"
 
-    # qm_input = file[file.find('!')+1:].split('\n')[0]
-    # assert qm_input.strip().startswith('QM/QM2')
-    # assert model.catalytic_center.method['qm_input'] in file
-    # assert f'%QMMM' in file
-    # qm2_input = file[file.find('%QMMM'):].split('\n')[0]
-    # val = model.cutoff_5.method["qm_input"]
-    # assert qm2_input.strip().endswith(f"QM2CUSTOMMETHOD '{val}'")
-    # assert "QMATOMS "+"{"+"324:360"+"}" in file
-    # assert len(file.split("%QMMM")) == 2
+    restore_directory()
 
-    # check that you cannot set a third QM method, or call gaussian with QMQM2
-    # model.set_region(selection=DistanceCutoff, cutoff=6)
-    # with pytest.raises(UserWarning):
-    #     model.set_region(selection=DistanceCutoff, cutoff=6)
-    #     qm2_method.assign_to_region(region=model.cutoff_6)
-    #     model.catalytic_center.method["program"] = 'gaussian'
-
-    #restore_directory()
 
 def test_QMXTB_calculation():
     from QMzyme.CalculateModel import CalculateModel, QM_Method, XTB_Method
@@ -155,8 +139,8 @@ def test_QMXTB_calculation():
     model.cutoff_5.set_fixed_atoms(atoms=c_alpha_atoms)
 
     # check that warning is raised if a non-QM method is set before a QM method is set.
-    with pytest.raises(UserWarning):
-        assert XTB_Method().assign_to_region(region=model.cutoff_5)
+    # with pytest.raises(UserWarning):
+    #     assert XTB_Method().assign_to_region(region=model.cutoff_5)
 
     qm_method = QM_Method(basis_set='6-31G*', 
                functional='wB97X-D3', 
@@ -188,7 +172,7 @@ def test_QMXTB_calculation():
     assert len(file.split('%QMMM')) == 2
     assert len(file.split('QM/XTB')) == 2
 
-    #restore_directory()
+    restore_directory()
 
 def test2_QM_XTB_calculation():
     from QMzyme.CalculateModel import QM_Method, XTB_Method

@@ -50,9 +50,3 @@ def test_QM_Method(Test, program):
 
     model.write_input()
     restore_directory()
-
-    # write_QM(region)
-    # assert 'QCALC' in os.listdir()
-    # restore_directory()
-    # assert 'QCALC' not in os.listdir()
-

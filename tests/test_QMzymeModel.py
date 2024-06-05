@@ -54,9 +54,9 @@ def test_QMzymeModel():
         model.get_region('blah')
 
     # check writing of pymol visualization script
-    # model.pymol_visualize()
-    # assert f'QMzymeModel_{model.name}_visualize.py' in os.listdir()
+    model.pymol_visualize()
+    assert f'QMzymeModel_{model.name}_visualize.py' in os.listdir()
 
-    #restore_directory()
+    restore_directory()
 
 

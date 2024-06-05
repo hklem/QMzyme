@@ -8,7 +8,7 @@ from QMzyme.data import PDB, protein_residues
 def test_CA_terminal():
     model = GenerateModel(PDB)
     model.set_region(name='region', selection='resid 263 or resid 16 or resid 17 or resid 57')
-    truncation = CA_terminal(region=model.region, name=None)
+    truncation = TerminalAlphaCarbon(region=model.region, name=None)
     truncate = truncation.return_region()
     truncate.write('truncated_test')
 
@@ -16,7 +16,7 @@ def test_CA_terminal():
     model.set_region(name='region1', selection='resid 263 or resid 16')
     model.set_region(name='region2', selection='resid 17 or resid 57')
     combined = model.region1.combine(model.region2)
-    truncation = CA_terminal(region=combined, name=None)
+    truncation = TerminalAlphaCarbon(region=combined, name=None)
     truncated_combined = truncation.return_region()
     truncated_combined.write('truncated_combined_test')
 

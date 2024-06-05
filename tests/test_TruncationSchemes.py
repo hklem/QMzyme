@@ -23,10 +23,12 @@ from QMzyme.data import PDB
         ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
     ]
 )
-def test_truncate_CA_terminal(Test, init_file, region_selection, truncation_scheme=CA_terminal):
+def test_truncate(Test, init_file, region_selection, truncation_scheme=TerminalAlphaCarbon):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
-    region_truncated = CA_terminal(model.region, name=None).return_region()
+    region_truncated = TerminalAlphaCarbon(model.region, name=None).return_region()
+    #model.truncate()
+    #region_truncated = model.truncated
     assert region_truncated != model.region
 
     #First check that the original region didn't change:
