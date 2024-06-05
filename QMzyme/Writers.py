@@ -14,14 +14,22 @@ import abc
 ### Writer abstract class ###
 class Writer(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, filename, memory, nprocs):
-        self.filename = filename
+    def __init__(self, filename, memory, nprocs, full_region):
         self.memory = memory
         self.nprocs = nprocs
+        self.full_region = full_region
+        filename = full_region.write(filename)
+        self.filename = filename
+        self.full_region.method["starting_file"] = filename
+        self.set_constraints()
 
     @abc.abstractmethod
     def write(self):
         ...
+
+    def set_constraints(self):
+        self.full_region.method['freeze_atoms'] = self.full_region.get_indices('is_fixed', True) 
+        # These indices are 0 indexed and in order of increasing atom id
 
 ### Concrete writer subclasses ###
 class QMWriter(Writer):
@@ -42,21 +50,19 @@ class QMWriter(Writer):
     :returns:
         Saves QM input file and region pdb file to working directory. 
     """
-    def __init__(self, filename, memory, nprocs, region=None):
-        super().__init__(filename, memory, nprocs)
-        self.write(region)
+    def __init__(self, filename, memory, nprocs, full_region=None):
+        if full_region is None:
+            full_region = CalculateModel.calculation['QM']
+        super().__init__(filename, memory, nprocs, full_region)
+        self.write()
 
-    def write(self, region=None):
-        if region is None:
-            region = CalculateModel.calculation['QM']
-        filename = region.write(self.filename)
-        region.method["starting_file"] = filename
-        qprep(**qprep_dict(region.method), mem=self.memory, nprocs=self.nprocs)
-        if region.method["program"] == 'orca':
+    def write(self):
+        qprep(**qprep_dict(self.full_region.method), mem=self.memory, nprocs=self.nprocs)
+        if self.full_region.method["program"] == 'orca':
             format = '.inp'
-        if region.method["program"] == 'gaussian':
+        if self.full_region.method["program"] == 'gaussian':
             format = '.com'
-        print_details(filename, format)
+        print_details(self.filename, format)
 
    
 class QMQM2Writer(Writer):
@@ -96,86 +102,58 @@ class QMQM2Writer(Writer):
 
         The charge and mult above the coordinates section is assigned to the high region (QM atoms).
     """
-    def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
-        super().__init__(filename, memory, nprocs)
-        self.write(high_region, low_region, total_charge)
-
-    def write(self, high_region=None, low_region=None, total_charge=None):
+    def __init__(self, filename, memory, nprocs, full_region=None, total_charge=None, total_mult=None, high_region=None, low_region=None):
         if high_region is None:
             high_region = CalculateModel.calculation['QM']
-        else:
-            high_region = CalculateModel()._add(calc='QM', region=high_region)
-        if low_region is None:
-            low_region = CalculateModel.calculation['QM2']
-        else:
-            low_region = CalculateModel()._add(calc='QM2', region=low_region)
-
         if high_region.method["program"] != 'orca':
             raise UserWarning("QM/QM2 calculation only supported for ORCA program.")
-        
-        combined = CalculateModel.calculation['QMQM2']
-        filename = combined.write(self.filename)
-        combined.method["starting_file"] = filename
+        if low_region is None:
+            low_region = CalculateModel.calculation['QM2']
+        if full_region is None:
+            full_region = CalculateModel.calculation['QMQM2']
+        super().__init__(filename, memory, nprocs, full_region)
+        if total_charge is None:
+            total_charge = high_region.method["charge"]
+        if total_mult is None:
+            total_mult = high_region.method["mult"]
+        self.total_charge = total_charge
+        self.total_mult = total_mult
+        self.write(full_region, high_region)
 
-        # if 'QMQM2' in CalculateModel.calculation:
-        #     combined = CalculateModel.calculation['QMQM2']
-        #     filename = combined.write(self.filename)
-        #     combined.method["starting_file"] = filename
-        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
-
-        # else:
-        #     combined = high_region.combine(low_region)
-        #     combined.name = high_region.name+'_'+low_region.name
-        #     filename = combined.write(self.filename)
-        #     combined.method = high_region.method
-        #     combined.method["starting_file"] = filename
-        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
-
-        # if 'QM/QM2' not in combined.method['qm_input']:
-        #     combined.method['qm_input'] = 'QM/QM2 '+combined.method['qm_input']
-
-        # qm_atoms = combined.get_ix_array_from_ids(ids=CalculateModel.calculation['QM'].ids)
-        # qm_atoms = get_atom_range(qm_atoms)
-        # qmmm_section = f"%QMMM QM2CUSTOMMETHOD '{low_region.method['qm_input']}'\n"
-        # qmmm_section += f" QMATOMS {qm_atoms} END\n"
-        # if total_charge is None:
-        #     total_charge = low_region.charge + high_region.charge
-        # qmmm_section += f" Charge_Total {total_charge} END"
-        # combined.method['qm_input'] += f'\n{qmmm_section}'
-
-        # qprep(**qprep_dict(high_region.method), mem=self.memory, nprocs=self.nprocs)
-        # print_details(filename, 'inp')
-
+    def write(self, full_region, high_region):
+        method = qprep_dict(full_region.method)
         # charge and mult here are just for the high region qm_atoms
-        combined.method['charge'] = high_region.method["charge"]
-        combined.method['mult'] = high_region.method["mult"]
-        qprep(**qprep_dict(combined.method), mem=self.memory, nprocs=self.nprocs)
-        print_details(filename, 'inp')
+        method['charge'] = self.total_charge
+        method['mult'] = self.total_mult
+
+        qprep(**method, mem=self.memory, nprocs=self.nprocs)
+        print_details(self.filename, 'inp')
 
 
 class QMMMWriter(Writer):
     """
     Under development.
     """
-    def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
-        super().__init__(filename, memory, nprocs)
-        self.write(high_region, low_region, total_charge)
+    pass
+#     def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
+#         super().__init__(filename, memory, nprocs)
+#         self.write(high_region, low_region, total_charge)
 
-    def write(self, high_region=None, low_region=None, total_charge=None):
-        """
-        This method will need a QM method assignment for the high_region, and then 
-        takes the point charges for the low_region. 
-        One prerequisite for this is that charges will need to be defined at the atom level.
-        """
-        if high_region is None:
-            high_region = CalculateModel.calculation['QM']
-        if low_region is None:
-            low_region = CalculateModel.calculation['ChargeField']
+#     def write(self, high_region=None, low_region=None, total_charge=None):
+#         """
+#         This method will need a QM method assignment for the high_region, and then 
+#         takes the point charges for the low_region. 
+#         One prerequisite for this is that charges will need to be defined at the atom level.
+#         """
+#         if high_region is None:
+#             high_region = CalculateModel.calculation['QM']
+#         if low_region is None:
+#             low_region = CalculateModel.calculation['ChargeField']
 
-        QMWriter(self.filename, self.memory, self.nprocs).write(high_region)
-        # remove any qm_atoms from low_region then proceed
-        ChargeFieldWriter.write(low_region)
-        # add line '% pointcharges "pointcharges.pc"' to QM input file
+#         QMWriter(self.filename, self.memory, self.nprocs).write(high_region)
+#         # remove any qm_atoms from low_region then proceed
+#         ChargeFieldWriter.write(low_region)
+#         # add line '% pointcharges "pointcharges.pc"' to QM input file
 
 class ChargeFieldWriter:
     """
@@ -210,10 +188,11 @@ class ChargeFieldWriter:
             DoEQ true
         end
     """
-    def write(Writer, region):
-        for atom in region:
-            atom.set_point_charge()
-        # write pointcharges.pc
+    pass
+#     def write(Writer, region):
+#         for atom in region:
+#             atom.set_point_charge()
+#         # write pointcharges.pc
 
 class QMXTBWriter(Writer):
     """
@@ -253,62 +232,31 @@ class QMXTBWriter(Writer):
         The charge and mult above the coordinates section is assigned 
         to the high region (QM atoms).
     """
-    def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
-        super().__init__(filename, memory, nprocs)
-        self.write(high_region, low_region, total_charge)
-
-    def write(self, high_region=None, low_region=None, total_charge=None):
+    def __init__(self, filename, memory, nprocs, full_region=None, high_region=None, low_region=None, total_charge=None, total_mult=None):
         if high_region is None:
             high_region = CalculateModel.calculation['QM']
+        if high_region.method["program"] != 'orca':
+            raise UserWarning("QM/QM2 calculation only supported for ORCA program.")
         if low_region is None:
             low_region = CalculateModel.calculation['XTB']
-        if high_region.method["program"] != 'orca':
-            raise UserWarning("QM/XTB calculation only supported for ORCA program.")
-        
-        combined = CalculateModel.calculation['QMXTB']
-        filename = combined.write(self.filename)
-        combined.method["starting_file"] = filename
+        if full_region is None:
+            full_region = CalculateModel.calculation['QMXTB']
+        super().__init__(filename, memory, nprocs, full_region)
+        if total_charge is None:
+            total_charge = high_region.method["charge"]
+        if total_mult is None:
+            total_mult = high_region.method["mult"]
+        self.total_charge = total_charge
+        self.total_mult = total_mult
+        self.write(full_region, high_region)
 
-        # if 'QMXTB' in CalculateModel.calculation:
-        #     combined = CalculateModel.calculation['QMXTB']
-        #     filename = combined.write(self.filename)
-        #     combined.method["starting_file"] = filename
-        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
-
-        # else:
-        #     combined = high_region.combine(low_region)
-        #     combined.name = high_region.name+'_'+low_region.name
-        #     filename = combined.write(self.filename)
-        #     combined.method = high_region.method
-        #     combined.method["starting_file"] = filename
-        #     combined.method["freeze_atoms"] = combined.get_indices("is_fixed", True)
-
-        # if 'QM/XTB' not in combined.method['qm_input']:
-        #     combined.method['qm_input'] = 'QM/XTB '+combined.method['qm_input']
-
-        # # #high_level_atoms = get_atom_range(high_region.ix_array)
-        # # qm_atoms = combined.get_ix_array_from_ids(ids=CalculateModel.calculation['QM'].ids)
-        # # qm_atoms = get_atom_range(qm_atoms)
-        # # qmmm_section = "%QMMM\n"
-        # # #qmmm_section += f" QMATOMS {high_level_atoms} END\n"
-        # # qmmm_section += f" QMATOMS {qm_atoms} END\n"
-        # # if total_charge is None:
-        # #     total_charge = low_region.charge + high_region.charge
-        # # qmmm_section += f" Charge_Total {total_charge} END"
-
-        # # if qmmm_section not in combined.method['qm_input']:
-        # #     combined.method['qm_input'] += f'\n{qmmm_section}'
-        
-        # if '%QMMM' not in combined.method['qm_input']:
-        #     combined.method['qm_input'] += f'\n{qmmm_section}'
-            
-        # CalculateModel.calculation['QMXTB'] = combined
-
+    def write(self, full_region, high_region):
+        method = qprep_dict(full_region.method)
         # charge and mult here are just for the high region qm_atoms
-        combined.method['charge'] = high_region.method["charge"]
-        combined.method['mult'] = high_region.method["mult"]
-        qprep(**qprep_dict(combined.method), mem=self.memory, nprocs=self.nprocs)
-        print_details(filename, 'inp')
+        method['charge'] = self.total_charge
+        method['mult'] = self.total_mult
+        qprep(**method, mem=self.memory, nprocs=self.nprocs)
+        print_details(self.filename, 'inp')
         
 
 ### Factory Class to Register Concrete Writer Classes ###
@@ -340,41 +288,41 @@ WriterFactory.register_writer('QMChargeField', QMMMWriter)
 
 ### Main Writer Class that GenerateModel Calls ###
 
-class Writer:
-    """
-    Base Writer class that configures common calculation input information and then
-    sends information to more specific writer classes to deal with remaining information.
+# class Writer:
+#     """
+#     Base Writer class that configures common calculation input information and then
+#     sends information to more specific writer classes to deal with remaining information.
 
-    Parameters
-    -----------
-    :param filename: Name to be given to calculation input file. 
-        Does not need to contain file format suffix.
-    :type filename: str (required) Example: filename='1oh0_cutoff3'
+#     Parameters
+#     -----------
+#     :param filename: Name to be given to calculation input file. 
+#         Does not need to contain file format suffix.
+#     :type filename: str (required) Example: filename='1oh0_cutoff3'
 
-    :param writer: Tells the class what format of input file to create. Options
-        are entries in the writers dict found in Writers.py
-    :type writer: str (required), available options are in WritersRegistry.writers.keys()
+#     :param writer: Tells the class what format of input file to create. Options
+#         are entries in the writers dict found in Writers.py
+#     :type writer: str (required), available options are in WritersRegistry.writers.keys()
 
-    :param memory: Memory for the QM calculation 
-        (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-    :type memory: str (optional, default memory='12GB')
+#     :param memory: Memory for the QM calculation 
+#         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
+#     :type memory: str (optional, default memory='12GB')
 
-    :param nprocs: Number of processors used in the QM calculation.
-    :type nprocs: int (optional, default nprocs=12)
+#     :param nprocs: Number of processors used in the QM calculation.
+#     :type nprocs: int (optional, default nprocs=12)
 
-    """
-    def __init__(self, filename, memory, nprocs, writer=None):
-        self.filename = filename
-        self.memory = memory
-        self.nprocs = nprocs
-        if writer is None:
-            writer = WritersRegistry._get_writer(CalculateModel.calc_type)
-        else:
-            writer = WritersRegistry._get_writer(writer)
-        self.writer = writer
+#     """
+#     def __init__(self, filename, memory, nprocs, writer=None):
+#         self.filename = filename
+#         self.memory = memory
+#         self.nprocs = nprocs
+#         if writer is None:
+#             writer = WritersRegistry._get_writer(CalculateModel.calc_type)
+#         else:
+#             writer = WritersRegistry._get_writer(writer)
+#         self.writer = writer
 
-    def write(self):
-        self.writer(self.filename, self.memory, self.nprocs)
+#     def write(self):
+#         self.writer(self.filename, self.memory, self.nprocs)
 
 
 ### Auxilliary functions ###
@@ -386,7 +334,7 @@ def print_details(filename, format):
 def qprep_dict(method_dict):
     d = copy.copy(method_dict)
     d["files"] = method_dict["starting_file"] # qprep has files keyword
-    for key in ["type", "basis_set", "functional", "starting_file"]:
+    for key in ["type", "basis_set", "functional", "starting_file", "region"]:
         if key in d:
             del d[key]
     return d
