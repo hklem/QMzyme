@@ -8,9 +8,23 @@ import numpy as np
 import copy
 from QMzyme.CalculateModel import CalculateModel
 from QMzyme.utils import check_filename
+import abc
 
-### Concrete Writer Classes ###
-class QMWriter:
+
+### Writer abstract class ###
+class Writer(abc.ABC):
+    @abc.abstractmethod
+    def __init__(self, filename, memory, nprocs):
+        self.filename = filename
+        self.memory = memory
+        self.nprocs = nprocs
+
+    @abc.abstractmethod
+    def write(self):
+        ...
+
+### Concrete writer subclasses ###
+class QMWriter(Writer):
     """
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
@@ -29,9 +43,7 @@ class QMWriter:
         Saves QM input file and region pdb file to working directory. 
     """
     def __init__(self, filename, memory, nprocs, region=None):
-        self.filename = filename
-        self.memory = memory
-        self.nprocs = nprocs
+        super().__init__(filename, memory, nprocs)
         self.write(region)
 
     def write(self, region=None):
@@ -47,7 +59,7 @@ class QMWriter:
         print_details(filename, format)
 
    
-class QMQM2Writer:
+class QMQM2Writer(Writer):
     """
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
@@ -85,9 +97,7 @@ class QMQM2Writer:
         The charge and mult above the coordinates section is assigned to the high region (QM atoms).
     """
     def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
-        self.filename = filename
-        self.memory = memory
-        self.nprocs = nprocs
+        super().__init__(filename, memory, nprocs)
         self.write(high_region, low_region, total_charge)
 
     def write(self, high_region=None, low_region=None, total_charge=None):
@@ -143,14 +153,12 @@ class QMQM2Writer:
         print_details(filename, 'inp')
 
 
-class QMMMWriter:
+class QMMMWriter(Writer):
     """
     Under development.
     """
     def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
-        self.filename = filename
-        self.memory = memory
-        self.nprocs = nprocs
+        super().__init__(filename, memory, nprocs)
         self.write(high_region, low_region, total_charge)
 
     def write(self, high_region=None, low_region=None, total_charge=None):
@@ -207,7 +215,7 @@ class ChargeFieldWriter:
             atom.set_point_charge()
         # write pointcharges.pc
 
-class QMXTBWriter:
+class QMXTBWriter(Writer):
     """
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
@@ -246,9 +254,7 @@ class QMXTBWriter:
         to the high region (QM atoms).
     """
     def __init__(self, filename, memory, nprocs, high_region=None, low_region=None, total_charge=None):
-        self.filename = filename
-        self.memory = memory
-        self.nprocs = nprocs
+        super().__init__(filename, memory, nprocs)
         self.write(high_region, low_region, total_charge)
 
     def write(self, high_region=None, low_region=None, total_charge=None):
@@ -306,25 +312,30 @@ class QMXTBWriter:
         
 
 ### Factory Class to Register Concrete Writer Classes ###
-
-class WritersRegistry:
+class WriterFactory:
     """
     Factory Class to Register Concrete Writer Classes.
     """
     writers = {}
-    def _register_writer(calc_type, writer):
-        WritersRegistry.writers[calc_type] = writer
 
-    def _get_writer(calc_type):
-        writer = WritersRegistry.writers.get(calc_type)
+    @staticmethod
+    def register_writer(writer_type, writer):
+        WriterFactory.writers[writer_type] = writer
+
+    @staticmethod
+    def make_writer(writer_type, filename, memory, nprocs, **kwargs):
+        """
+        Instantiates and returns the specific concrete writer subclass.
+        """
+        writer = WriterFactory.writers.get(writer_type)
         if not writer:
-            raise UserWarning(f"No writer detected for calculation {calc_type}.")
-        return writer
+            raise UserWarning(f"No writer detected for calculation type {writer_type}.")
+        return writer(filename, memory, nprocs, **kwargs)
     
-WritersRegistry._register_writer('QM', QMWriter)
-WritersRegistry._register_writer('QMQM2', QMQM2Writer)
-WritersRegistry._register_writer('QMXTB', QMXTBWriter)
-WritersRegistry._register_writer('QMChargeField', QMMMWriter)
+WriterFactory.register_writer('QM', QMWriter)
+WriterFactory.register_writer('QMQM2', QMQM2Writer)
+WriterFactory.register_writer('QMXTB', QMXTBWriter)
+WriterFactory.register_writer('QMChargeField', QMMMWriter)
 
 
 ### Main Writer Class that GenerateModel Calls ###
@@ -367,7 +378,6 @@ class Writer:
 
 
 ### Auxilliary functions ###
-
 def print_details(filename, format):
     filename = check_filename(filename, format)
     pth = os.path.join(os.path.abspath(''), 'QCALC')
