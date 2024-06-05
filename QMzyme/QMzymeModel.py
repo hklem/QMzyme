@@ -3,20 +3,55 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-"""
-Product of the ModelBuilder class.
-"""
-
 import os
 from QMzyme.CalculateModel import CalculateModel
+import QMzyme.MDAnalysisWrapper as MDAwrapper
+from QMzyme.data import protein_residues, residue_charges
 
 class QMzymeModel:
-    # def __init__(self, name, starting_structure, regions=[]):
-    def __init__(self, name, universe):
-        self.name = name
+    """
+    Base class for :class:`QMzyme.GenerateModel`. Contains methods to create and 
+    modify a ``QMzymeModel`` instance.
+
+    :param name: Name to give to the QMzymeModel. This is used for default filenaming 
+        purposes throughout the QMzyme package. If not provided, it will default to
+        the base name of the universe filename attribute. 
+    :type name: str, optional
+    :param universe: MDAnalysis Universe object.
+    :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
+    
+    """
+    def __init__(self, *args, name, universe, frame=0, **kwargs):
+        if universe is None:
+            universe = MDAwrapper.init_universe(*args, frame=frame, **kwargs)
         self.universe = universe
+        if name is None:
+            name = os.path.basename(self.universe.filename).split('.')[0]
+        self.name = name
         self.filename = universe.filename
         self.regions = []
+
+        if not hasattr(self.universe.atoms, "charges"):
+            print("\nCharge information not present. QMzyme will try to guess "+
+                  "region charges based on residue names consistent with AMBER naming "+
+                  "conventions (i.e., aspartate: ASP --> Charge: -1, aspartic acid: ASH --> Charge: 0.). "+
+                  "See QMzyme.data.residue_charges for the full set.")
+            unk_res = []
+            for res in self.universe.residues:
+                if res.resname not in residue_charges:
+                    if unk_res == []:
+                        print("\n\tNonconventional Residues Found")
+                        print("\t------------------------------")
+                    if res.resname not in unk_res:
+                        unk_res.append(res.resname)
+                        print(f"\t{res.resname} --> Charge: UNK, defaulting to 0")
+            if unk_res != []:
+                print("\nYou can update charge information for nonconventional residues by running "+
+                      "\n\t>>>QMzyme.data.residue_charges.update("+"{"+"'3LETTER_RESNAME':INTEGER_CHARGE}). "+
+                      "\nNote your changes will not be stored after you exit your session. "+
+                      "It is recommended to only alter the residue_charges dictionary. "+
+                      "If you alter the protein_residues dictionary instead that could cause "+
+                      "unintended bugs in other modules (TruncationSchemes).\n")
 
     def __repr__(self):
         return f"<QMzymeModel {self.name} built from {self.universe} contains {self.n_regions} region(s)>"
@@ -36,8 +71,6 @@ class QMzymeModel:
          return [r.name for r in self.regions]
     
     def get_region(self, region_name=None):
-        # if region_name in self.get_region_names():
-        #     return self.regions[self.get_region_names().index(region_name)]
         try:
             return getattr(self,region_name)
         except:
@@ -77,7 +110,6 @@ class QMzymeModel:
             lines += f"cmd.scene('{region.name}', 'store')\n"
             lines += f"cmd.hide('everything', '{region.name}')\n"
 
-
         if CalculateModel.calc_type != None:
             region = CalculateModel.calculation[CalculateModel.calc_type]
             region.write(f'{region.name}.pdb')
@@ -105,45 +137,16 @@ class QMzymeModel:
             lines += f"cmd.hide('everything', 'residue_labels')\n"
             lines += f"cmd.set('label_size', 14)\n"
             lines += f"cmd.label('n. ha and residue_labels', 'resn+resi')\n"
-
             lines += f"cmd.zoom('visible')\n"
             lines += f"cmd.create('model_surface', '{region.name}')\n"
             lines += f"cmd.show_as('surface', 'model_surface')\n"
             lines += f"cmd.orient('visible')\n"
             lines += f"cmd.scene('{region.name}', 'store')\n"
-
             lines += f"cmd.set('cartoon_transparency', 0.6)\n"
             #lines += f"cmd.show('surface', '{region.name}')\n"
             lines += f"cmd.show('cartoon', '{self.name}')\n"
             lines += f"cmd.zoom('visible')\n"
             lines += f"cmd.orient('visible')\n"
-
-        # if CalculateModel.calculation != {}:
-        #     for calc, region in CalculateModel.calculation.items():
-        #         region.write(f'{region.name}_{calc}.pdb')
-        #         file = os.path.abspath(f'{region.name}_{calc}.pdb')
-        #         lines += f"cmd.load('{file}', '{calc}')\n"
-        #         if 'QM' in calc and calc != "QM2":
-        #             lines += f"cmd.show_as('sticks', '{calc}')\n"
-        #         else:
-        #             lines += f"cmd.show_as('lines', '{calc}')\n"
-        #         #lines += f"cmd.color('cyan','Catalytic_Center')\n"
-        #         lines += f"cmd.hide('everything', '{self.name}')\n"
-        #         lines += f"cmd.zoom('visible')\n"
-        #         lines += f"cmd.orient('visible')\n"
-        #         lines += f"cmd.scene('{calc}', 'store')\n"
-
-        # else:
-        #     for i,region in enumerate(ordered_regions):
-        #         region.write(f'{region.name}.pdb')
-        #         file = os.path.abspath(f'{region.name}.pdb')
-        #         lines += f"cmd.load('{file}', '{region.name}')\n"
-        #         lines += f"cmd.show_as('sticks', '{region.name}')\n"
-        #         #lines += f"cmd.color('cyan','Catalytic_Center')\n"
-        #         lines += f"cmd.hide('everything', '{self.name}')\n"
-        #         lines += f"cmd.zoom('visible')\n"
-        #         lines += f"cmd.orient('visible')\n"
-        #         lines += f"cmd.scene('{region.name}', 'store')\n"
 
         if filename == None:
             filename = f'QMzymeModel_{self.name}_visualize.py'

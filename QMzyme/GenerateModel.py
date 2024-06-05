@@ -15,9 +15,6 @@ calculation input files.
 """
 
 from QMzyme.QMzymeModel import QMzymeModel
-from QMzyme.data import protein_residues, residue_charges
-import os
-import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.utils import make_selection
 from QMzyme.TruncationSchemes import CA_terminal
 from QMzyme.CalculateModel import CalculateModel, CalcMethodsRegistry
@@ -40,37 +37,8 @@ class GenerateModel(QMzymeModel):
     """
     def __init__(self, *args, name=None, universe=None, frame=0, **kwargs):
         CalculateModel._reset()
-        if universe is None:
-            universe = MDAwrapper.init_universe(*args, frame=frame, **kwargs)
-        self.universe = universe
-        if name is None:
-            name = os.path.basename(self.universe.filename).split('.')[0]
+        super().__init__(*args, name=name, universe=universe, frame=frame, **kwargs)
         self.truncated = None
-        model = QMzymeModel(name, universe)
-        self.__dict__.update(model.__dict__)
-        
-        if not hasattr(self.universe.atoms, "charges"):
-            print("\nCharge information not present. QMzyme will try to guess "+
-                  "region charges based on residue names consistent with AMBER naming "+
-                  "conventions (i.e., aspartate: ASP --> Charge: -1, aspartic acid: ASH --> Charge: 0.). "+
-                  "See QMzyme.data.residue_charges for the full set.")
-            unk_res = []
-            for res in self.universe.residues:
-                if res.resname not in residue_charges:
-                    if unk_res == []:
-                        print("\n\tNonconventional Residues Found")
-                        print("\t------------------------------")
-                    if res.resname not in unk_res:
-                        unk_res.append(res.resname)
-                        print(f"\t{res.resname} --> Charge: UNK, defaulting to 0")
-            if unk_res != []:
-                print("\nYou can update charge information for nonconventional residues by running "+
-                      "\n\t>>>QMzyme.data.residue_charges.update("+"{"+"'3LETTER_RESNAME':INTEGER_CHARGE}). "+
-                      "\nNote your changes will not be stored after you exit your session. "+
-                      "It is recommended to only alter the residue_charges dictionary. "+
-                      "If you alter the protein_residues dictionary instead that could cause "+
-                      "unintended bugs in other modules (TruncationSchemes).\n")
-
 
     def __repr__(self):
         return f"<QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
