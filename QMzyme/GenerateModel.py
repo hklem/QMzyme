@@ -38,7 +38,6 @@ class GenerateModel(QMzymeModel):
     def __init__(self, *args, name=None, universe=None, frame=0, **kwargs):
         CalculateModel._reset()
         super().__init__(*args, name=name, universe=universe, frame=frame, **kwargs)
-        self.truncated = None
 
     def __repr__(self):
         return f"<QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
@@ -93,7 +92,7 @@ class GenerateModel(QMzymeModel):
         :type name: str, optional
         """
         #combine regions
-        if self.truncated != None:
+        if hasattr(self, "truncated"):
             raise UserWarning("Your model has already been truncated.")
         if CalculateModel.calc_type == None:
             raise UserWarning("You must first assign calculation method(s) to the model region(s).")
@@ -103,7 +102,7 @@ class GenerateModel(QMzymeModel):
         if calc_type != 'QM':
             CalcMethodsRegistry._get_calc_method(calc_type)().assign_to_region(region=region)
         CalculateModel.calculation[calc_type] = region
-        self.truncated = region
+        setattr(self, "truncated", region)
         print(f"\nTruncated model has been created and saved to attribute 'truncated' "+
               "and stored in QMzyme.CalculateModel.calculation under key "+
               f"{calc_type}. This model be used to write the calculation input.")
@@ -127,7 +126,7 @@ class GenerateModel(QMzymeModel):
             A :class:`~QMzyme.CalculateModel.QM_Method` must have been assigned
             to a region. 
         """
-        if getattr(self, "truncated") == None:
+        if not hasattr(self, "truncated"):
             print("\nWARNING: model has not been truncated. Resulting model may "+
                   "not be a chemically complete structure (i.e., incomplete atomic "+
                   "valencies due to removed atoms).\n")
@@ -135,10 +134,3 @@ class GenerateModel(QMzymeModel):
         writer_type = CalculateModel.calc_type
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
         writer.write()
-        # else:
-        #     CalculateModel.calculation[self.truncated.method["type"]] = self.truncated
-        #     Writer(filename=filename, memory=memory, nprocs=nprocs, writer=self.truncated.method["type"]).write()
-
-
-    
-
