@@ -330,7 +330,7 @@ class QMzymeRegion:
             print(txt)
 
 
-    def combine(self, other, name = ''):
+    def combine(self, other, name=None):
         """
         Combine QMzymeRegion with another QMzymeRegion. 
         Duplicates are not retained.
@@ -350,6 +350,8 @@ class QMzymeRegion:
             # if not atom.is_within(self):
             if not atom.id in self.ids:
                 combined_atoms.append(atom)
+        if name == None:
+            name = f"{self.name}_{other.name}_combined"
         combined_region = QMzymeRegion(name=name, atoms=combined_atoms, universe=self._universe)
         setattr(combined_region, "universe", self.atom_group.universe)
         return combined_region
