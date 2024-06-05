@@ -48,7 +48,7 @@ class QMzymeModel:
         # return region_name in self.get_region_names()
         return hasattr(self, region_name)
     
-    def pymol_visualize(self, region_colors=['cyan', 'orange', 'purple', 'green']):
+    def pymol_visualize(self, filename:str=None):
         """
         Creates a QMzymeModel_visualize.py script that you can load into PyMol.
         """
@@ -145,7 +145,11 @@ class QMzymeModel:
         #         lines += f"cmd.orient('visible')\n"
         #         lines += f"cmd.scene('{region.name}', 'store')\n"
 
-        with open (f'QMzymeModel_{self.name}_visualize.py', 'w+') as f:
+        if filename == None:
+            filename = f'QMzymeModel_{self.name}_visualize.py'
+        elif not filename.endswith('.py'):
+            filename = filename+'.py'
+        with open (filename, 'w+') as f:
             f.write(lines)
 
     def remove_region(self, region_name):
