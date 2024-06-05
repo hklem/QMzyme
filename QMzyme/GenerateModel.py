@@ -21,7 +21,7 @@ import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.utils import make_selection
 from QMzyme.TruncationSchemes import CA_terminal
 from QMzyme.CalculateModel import CalculateModel, CalcMethodsRegistry
-from QMzyme.Writers import Writer
+from QMzyme.Writers import WriterFactory
 
 
 class GenerateModel(QMzymeModel):
@@ -160,11 +160,16 @@ class GenerateModel(QMzymeModel):
             to a region. 
         """
         if getattr(self, "truncated") == None:
-            print("\nWARNING: model has not been truncated. Resulting model may not be a chemically complete structure (i.e., incomplete atomic valencies due to removed atoms.).")
-            Writer(filename=filename, memory=memory, nprocs=nprocs).write()
-        else:
-            CalculateModel.calculation[self.truncated.method["type"]] = self.truncated
-            Writer(filename=filename, memory=memory, nprocs=nprocs, writer=self.truncated.method["type"]).write()
+            print("\nWARNING: model has not been truncated. Resulting model may "+
+                  "not be a chemically complete structure (i.e., incomplete atomic "+
+                  "valencies due to removed atoms).\n")
+        
+        writer_type = CalculateModel.calc_type
+        writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
+        writer.write()
+        # else:
+        #     CalculateModel.calculation[self.truncated.method["type"]] = self.truncated
+        #     Writer(filename=filename, memory=memory, nprocs=nprocs, writer=self.truncated.method["type"]).write()
 
 
     
