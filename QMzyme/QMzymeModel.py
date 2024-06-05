@@ -165,15 +165,3 @@ class QMzymeModel:
             if self.regions[i].name == region_name:
                 del self.regions[i]
                 break
-
-
-
-
-
-
-            
-
-
-
-         
-        
