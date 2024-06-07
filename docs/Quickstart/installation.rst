@@ -16,7 +16,7 @@ The source code is available from https://github.com/hklem/QMzyme.
 
 .. code-block:: bash
     
-    git clone https://github.com/hklem/QMzyme/QMzyme.git
+    git clone https://github.com/hklem/QMzyme.git
     cd QMzyme
 
     # The next 2 commands are optional, but recommended
