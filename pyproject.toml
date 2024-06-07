@@ -83,16 +83,16 @@ default-version = "1+unknown"
 #distance = "{base_version}+{distance}.{vcs}{rev}"
 #dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 #distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-distance = "{base_version}.dev{distance}"
-dirty = "{base_version}.dev{distance}"
-distance-dirty = "{base_version}.dev{distance}"
+distance = "{tag}.post{distance}"
+dirty = "{tag}.post{distance}"
+distance-dirty = "{tag}.post{distance}"
 
 [tool.versioningit.vcs]
 # The method key:
 method = "git"  # <- The method name
 # Parameters to pass to the method:
 match = ["*"]
-default-tag = "0.0.0"
+default-tag = "0.0.7.dev0"
 
 [tool.versioningit.write]
 file = "QMzyme/_version.py"
