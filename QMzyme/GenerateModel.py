@@ -4,7 +4,7 @@
 ###############################################################################
 
 """
-**GeneratModel** is the primary user-facing module in QMzyme. :class:`~GenerateModel`
+**GenerateModel** is the primary user-facing module in QMzyme. :class:`~GenerateModel`
 is used to load a starting structure, define QMzyme regions, and write calculation input.
 The starting structure is loaded in using MDAnalysis, converting it to a Universe object.
 There are a variety of ways to define the QMzyme regions, and once a region has been set it
