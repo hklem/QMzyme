@@ -154,8 +154,6 @@ class CalculationBase:
         self._set_charge(region, charge)
         region.set_atom_segid(region.method["type"])
         CalculateModel().add(type=self.type, region=region)
-        #region.set_atom_segid(region.method["type"])
-        #self._set_charge(CalculateModel.calculation[self.type], charge)
 
     def _set_charge(self, region, charge):
         if charge is None:
