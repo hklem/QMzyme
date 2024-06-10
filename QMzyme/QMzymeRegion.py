@@ -303,9 +303,11 @@ class QMzymeRegion:
             txt+=f"\nQMzymeRegion {self.name} has an estimated charge of {chrg}."
         else:    
             txt+=f"\nWARNING: Charge estimation may be inaccurate due to presence of residue(s) with unknown charge: {unk_res}." 
-            txt+=f"\nQMzymeRegion {self.name} has an estimated total charge of {chrg}."
+            txt+=f"QMzymeRegion {self.name} has an estimated total charge of {chrg}."
         if verbose == True:
             print(txt)
+        else:
+            print(txt.split('\n')[-1])
 
 
     def read_charges(self, verbose=True):
@@ -440,6 +442,8 @@ class QMzymeResidue(QMzymeRegion):
             txt+=f"\nQMzymeResidue {self.resname} has an unknown charge value based on conventional residue naming."
         if verbose == True:
             print(txt)
+        else:
+            print(txt.split('\n')[-1])
 
     def read_charges(self, verbose=True):
         txt = ''

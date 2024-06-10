@@ -160,7 +160,7 @@ class CalculationBase:
     def _set_charge(self, region, charge):
         if charge is None:
             if not hasattr(region, "charge"):
-                region.guess_charge()
+                region.guess_charge(verbose=False)
             self.charge = region.charge
         else:
             self.charge = charge
