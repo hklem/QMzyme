@@ -10,24 +10,28 @@ Requirements
 *  `aqme <https://aqme.readthedocs.io/en/latest/>`_
 *  `MDAnalysis <https://www.mdanalysis.org>`_
 
-Source Code
--------------
+Source Code (recommended)
+--------------------------
 The source code is available from https://github.com/hklem/QMzyme.
 
 .. code-block:: bash
     
-    git clone https://github.com/hklem/QMzyme/QMzyme.git
+    git clone https://github.com/hklem/QMzyme.git
     cd QMzyme
 
     # The next 2 commands are optional, but recommended
     conda create -n qmzyme "python==3.11"
     conda activate qmzyme
 
-    pip install -e . #-e signifies developer install 
+    pip install -e . # the -e signifies developer install 
 
 
 From PyPi
 -----------
+The data files used in the Tutorials and Cookbook documentation 
+section may not be included if you do the pip install. You can 
+download the data files as you wish directly from the 
+`GitHub repo <https://github.com/hklem/QMzyme/tree/main/QMzyme/data>`_.
 
 .. code-block:: bash
 
