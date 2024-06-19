@@ -41,7 +41,7 @@ class CalculateModel:
 
     def combine_regions_and_methods():
         """
-        This method is triggered in :class:`~QMzyme.GenerateModel.GenerateModel`: when 
+        This method is triggered in :class:`~QMzyme.GenerateModel.GenerateModel` when 
         :func:`~QMzyme.GenerateModel.GenerateModel.write_input` is called.
 
         It ensures the overall multiscale method contains all atoms of the QMzymeModel regions
