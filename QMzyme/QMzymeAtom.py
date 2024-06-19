@@ -9,6 +9,7 @@ class QMzymeAtom:
     """
     Required Parameters
     --------------------
+    
     :param name: Atom name: ex., 'C1'
     :type name: str
     
@@ -26,6 +27,7 @@ class QMzymeAtom:
 
     Pararmeters with defaults
     ---------------------------
+    
     :param id: Atom id. If the atom is generated from an MDAnalysis AtomGroup (probably the case) 
         the id will be the universe atom ID. 
     :type id: int, default=1
