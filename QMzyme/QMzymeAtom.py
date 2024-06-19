@@ -9,12 +9,31 @@ class QMzymeAtom:
     """
     Required Parameters
     --------------------
-    :param id: Atom id. If the atom is generated from an MDAnalysis AtomGroup (probably) the id will be the universe atom ID. 
     :param name: Atom name: ex., 'C1'
+    :type name: str
+    
     :param element: Element one-letter name: ex., 'C'
+    :type element: str
+    
     :param position: Array of cartesian coordinates.
+    :type position: List[float] or np.array
+    
     :param resid: Integer residue number.
+    :type resid: int
+    
     :param resname: Three letter residue name: ex., 'VAL'
+    :type resname: str
+
+    Pararmeters with defaults
+    ---------------------------
+    :param id: Atom id. If the atom is generated from an MDAnalysis AtomGroup (probably the case) 
+        the id will be the universe atom ID. 
+    :type id: int, default=1
+
+    :param region: Region the atom exists within (if any).
+    :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, default=None
+
+    .. note:: User may add any number of additional attributes as keyword arguments (kwargs).
     """
     def __init__(self, name, element, position, resid, resname, id=1, region=None, **kwargs):
         self.name = name
@@ -36,7 +55,8 @@ class QMzymeAtom:
     @property
     def region(self):
         """
-        Returns the QMzymeRegion this atom belongs to.
+        :returns: Region this atom belongs to. If it does not belong to a region, returns None.
+        :rtype: :class`~QMzyme.QMzymeRegion.QMzymeRegion`
         """
         return self.__region
     
@@ -50,20 +70,30 @@ class QMzymeAtom:
 
     def set_neighbor(self, value: bool=True):
         """
-        Method to set ``is_neighbor=True`` for QMzymeAtom instance."
+        Sets ``is_neighbor=True`` for QMzymeAtom instance, unless 'value=False' is passed.
+        
+        .. note:: The :class:`~QMzyme.SelectionSchemes.DistanceCutoff` class calls this method. This might
+            be useful if you want to further evaluate why what residues were included in a QMzymeRegion that
+            was selected based on the distance cutoff scheme.
         """
         self.is_neighbor = value
     
     def set_fixed(self, value: bool=True):
         """
-        Method to set ``is_fixed=True`` for QMzymeAtom instance."
+        Sets ``is_fixed=True`` for QMzymeAtom instance, unless 'value=False' is passed.
+
+        .. note:: The :module:`~QMzyme.CalculateModel` module will read what atoms have ``set_fixed=True`` and 
+            use that information to communicate to :module:`~QMzyme.Writers` what atoms to constrain in the
+            calculation input file.
         """
         self.is_fixed = value
 
     def set_point_charge(self, value: bool=True):
         """
-        Method to set ``is_point_charge=True`` for QMzymeAtom instance.
-        Note: only works if atom has charge attribute.
+        Sets ``is_point_charge=True`` for QMzymeAtom instance, unless 'value=False' is passed. This will eventually
+        be used for calculations with charge embedding.
+
+        :raises: UserWarning if the atom does not have the attribute 'charge'.
         """
         if not hasattr(self, "charge"):
             raise UserWarning(f"Cannot set atom {self} as point_charge because no charge information found.")
@@ -82,7 +112,10 @@ class QMzymeAtom:
     
     def is_within(self, region):
         """
-        Returns True if the same atom is found in Region. Used to avoid duplication.
+        :param region: Region to search for atom in.
+        :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required
+        :returns: True if the same atom is found in region. Used to avoid duplication.
+        :rtype: bool
         """
         atom = region.get_atom(id=self.id)
         if atom is None:
