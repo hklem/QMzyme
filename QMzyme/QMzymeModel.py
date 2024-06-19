@@ -101,7 +101,7 @@ class QMzymeModel:
         Creates a QMzymeModel_visualize.py script that you can load into PyMol.
 
         :param filename: Name of PyMol .py file. If not specified, the name 
-            attribute of the QMzymeModle will be used.
+            attribute of the QMzymeModel will be used.
         :type filename: str, optional
         
         """
