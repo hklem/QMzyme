@@ -3,6 +3,8 @@ CalculateModel
 
 .. automodule:: QMzyme.CalculateModel
 
+
+
 QM Treatment
 ---------------------
 
@@ -27,10 +29,17 @@ Under development.
 Developer Classes
 ------------------
 
+If you are interested in contributing to QMzyme by creating new calculation methods, you will need to interact with the classes.
+
 .. autoclass:: QMzyme.CalculateModel.CalculationBase
    :members:
-   :undoc-members:
+
+.. autoclass:: QMzyme.CalculateModel.MultiscaleCalculationBase
+   :show-inheritance:
+   :members:
 
 .. autoclass:: QMzyme.CalculateModel.CalculateModel
    :members:
-   :undoc-members:
+
+.. autoclass:: QMzyme.CalculateModel.CalculationFactory
+   :members:
