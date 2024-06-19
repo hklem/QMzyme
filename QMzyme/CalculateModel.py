@@ -17,8 +17,12 @@ class CalculateModel:
     This information is used to determine what type of calculation writer to call 
     in the Writers module.
 
-    This class also determines if there are any model issues, such as overlap between
-    two regions, which may lead to incorrect charge estimations.
+    This class also determines if there are any model issues, such as guessing region charge if partial 
+    overlap between occurs between regions (you do not want to double-count charge from duplicate atoms).
+
+    This class will also alert you if you if the methods you are assigning to regions do not add up to a 
+    multi-scale calculation method that exists as a subclass of :class:`~QMzyme.Writers.Writer`, because 
+    QMzyme would not know how to write that input file without the corresponding writer class.
     """
     calculation = {}
     calc_type = None
@@ -36,6 +40,14 @@ class CalculateModel:
         CalculateModel.calc_type = type
 
     def combine_regions_and_methods():
+        """
+        This method is triggered in :class:`~QMzyme.GenerateModel.GenerateModel`: when 
+        :func:`~QMzyme.GenerateModel.GenerateModel.write_input` is called.
+
+        It ensures the overall multiscale method contains all atoms of the QMzymeModel regions
+        that have been assigned a method. 
+        """
+        
         if len(CalculateModel.calculation) == 1:
             return
         # Start with QM region(s)
@@ -57,97 +69,28 @@ class CalculateModel:
         CalculationFactory._make_calculation(calc_type)().assign_to_region(region=combined)
         CalculateModel.calculation[calc_type] = combined
 
-    # def _add(self, type, region):
-    #     if type != 'QM':
-    #         if 'QM' not in CalculateModel.calculation:
-    #             raise UserWarning("You must set the high-region QM method first. "
-    #                               "See QMzyme.CalculateModel.QM_Method().")
-    #     if CalculateModel.calc_type == None:
-    #         CalculateModel.calc_type = 'QM'
-    #         CalculateModel.calculation[type] = region
-    #         return
-    #     if type in CalculateModel.calculation:
-    #         if type == 'QM':
-    #             if CalculateModel.calculation['QM'] == region:
-    #                 if CalculateModel.calc_type != 'QM':
-    #                     raise UserWarning("Cannot alter QM region after another region "
-    #                                       "has been assigned a method. Please reset calculation "
-    #                                       "by running QMzyme.CalculateModel.CalculateModel._reset(), then "
-    #                                       "you can reassign the methods.")
-    #                 del CalculateModel.calculation['QM']
-    #             elif 'QM2' in CalculateModel.calculation:
-    #                 if CalculateModel.calculation['QM2'] == region:
-    #                     del CalculateModel.calculation['QM2']
-    #                     CalculateModel.calc_type = CalculateModel.calc_type.remove('QM2')
-    #                     type = 'QM2'
-    #                     region.method["type"] = 'QM2'
-    #                     region.set_atom_segid(region.method["type"])
-    #                 else:
-    #                     raise UserWarning("Two QM regions have already been defined."
-    #                                       "QMzyme currently only supports a maximum "
-    #                                       "of two QM methods in a single calculation.")
-    #             else:
-    #                 type = 'QM2'
-    #                 region.method["type"] = 'QM2'
-    #                 region.set_atom_segid(region.method["type"])
-            
-    #         elif CalculateModel.calculation[type] == region:
-    #             CalculateModel.calc_type = CalculateModel.calc_type.remove(type)
-    #             del CalculateModel.calculation[type]
-
-    #     self.calc_type = type
-    #     self.region = region
-    #     CalculateModel.calculation[self.calc_type] = region
-    
-    #     if len(CalculateModel.calculation) > 1:
-    #         self.region = region
-    #         self._combine_regions()
-    #         #self._check_overlap(region)
-
-    # def _combine_regions(self):
-    #     #region = self.region
-    #     base_region = CalculateModel.calculation['QM']
-    #     calc_type = 'QM'
-    #     for calc in CalculateModel.calculation:
-    #         if calc == 'QM':
-    #             continue
-    #         calc_type+=calc
-    #         #if calc_type in CalculateModel.calculation and calc_type!=self.region.method["type"]:
-    #         if calc_type in CalculateModel.calculation and calc_type!=self.calc_type:
-    #             # makes 3-scale method possible (QMQMXTB, QMQMChargeField, QMXTBChargeField)
-    #             base_region = CalculateModel.calculation[calc_type]
-    #         combined_region = base_region+self.region
-    #         combined_region.set_method(self.region.method)
-    #         combined_region.method["type"] = calc_type
-    #         combined_region.method["program"] = base_region.method["program"]
-    #         combined_region.name = f'{calc_type}'
-    #         #self.calc_type = calc_type
-
-    #     if self.region != combined_region:
-    #         print(f"\nCombining regions {self.region} and {base_region} to create {calc_type} region.")
-    #         print(f"Region stored in CalculateModel.calculation dictionary under key '{calc_type}'.")
-    #         # If self.region does not contain base_region, just add base_region charge and self.region charge
-    #         if self.region-base_region == self.region:
-    #             combined_region.set_charge(self.region.charge+base_region.charge)
-    #         else:
-    #             combined_region.guess_charge(verbose=False)
-    #             print(f"\nEstimated charge for {combined_region}, the combination of {self.region} and {base_region}, is {combined_region.charge}.")
-    #             print(f"\nPlease double check this value. See QMzymeRegion.set_charge() to modify this value if it is incorrect.")
-    #     elif self.region == combined_region:
-    #         combined_region.set_charge(self.region.charge)
-    #     fixed_ids = [atom.id for atom in base_region.get_atoms(attribute='is_fixed', value=True)]
-    #     fixed_ids + [atom.id for atom in self.region.get_atoms(attribute='is_fixed', value=True)]
-    #     combined_region.set_fixed_atoms(fixed_ids)
-    #     CalculateModel.calculation[calc_type] = combined_region
-    #     CalculateModel.calc_type = calc_type
-    #     CalculationFactory._make_calculation(calc_type)().assign_to_region(region=combined_region)
-
     def _reset():
         CalculateModel.calculation = {}
         CalculateModel.calc_type = None
     
 class CalculationBase:
+    """
+    Base class for all single-method classes. Contains the inherited method assign_to_region().
+    """
     def assign_to_region(self, region, charge=None, mult=1):
+        """
+        Connects a calculation method instance to a QMzymeRegion. This method also searches for any
+            atoms in the region with attribute ``is_fixed=True`` to store what atoms will be constrained
+            in the calculation file.
+
+        :param region: Region to assign method istance to.
+        :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required
+
+        :param charge: Charge of the region. If not specified and the QMzymeRegion instance does not have
+            a `charge` attribute, the QMzymeRegion :func:`~QMzyme.QMzymeRegion.QMzymeRegion.guess_charge` method 
+            will be called.
+        :type charge: int, default=None
+        """
         self._set_constraints(region)
         self.mult = mult
         region.set_method(self.__dict__)
@@ -168,25 +111,30 @@ class CalculationBase:
 
 class QM_Method(CalculationBase):
     """
-    Class to prepare a QMzymeRegion for QM treatment.
+    Class to set a quantum mechanics method for a QMzymeRegion.
     
-    Required Parameters
-    ---------------------
-        region: QMzymeRegion to apply method to
-        basis_set: str, defines basis set to use for calculation
-        functional: str, defines functional to use for calculation
+    :param region: QMzymeRegion to apply method to
+    :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required
+    
+    :param basis_set: Defines the basis set to use for calculation.
+    :type param: str, required
+    
+    :param functional: Defines the functional to use for calculation.
+    :type functional: str, required
+    
+    :param charge: Charge of the region. If not provided in parameters, charge will be guessed.
+    :type charge: int
 
-    Optional Parameters 
-    ---------------------
-        charge: int, charge of the region. If not provided in parameters, charge will be guessed.
-        mult: int, multiplicity of the region. default = 1.
-        qm_input: str, default = ""
-            Keywords to include in the input file route line to 
-            declare any details beyond the basis set and functional.
-            E.g. "EmpiricalDispersion=GD3BJ opt freq". Not including anything
-            here means the calculation will be a single-point energy calculation.
-        qm_end: str, default = ""
-            Final line(s) in the input file.
+    :param mult: Multiplicity of the region.
+    :type mult: int, default=1
+
+    :param qm_input: Keywords to include in the input file route line to declare any details 
+        beyond the basis set and functional. E.g. "EmpiricalDispersion=GD3BJ opt freq". Not including 
+        anything here means the calculation will be a single-point energy calculation with no frequency analysis.
+    :type qm_input: str, default=''
+    
+    :param qm_end: Final line(s) in the input file.
+    :type qm_end: str, default=''
             
     """
     def __init__(self, basis_set, functional, qm_input="", qm_end="", program='orca'):
@@ -207,14 +155,14 @@ class QM_Method(CalculationBase):
     
 class XTB_Method(CalculationBase):
     """
-    Class to prepare a QMzymeRegion for xTB treatment.
+    Class to set an xTB method for a QMzymeRegion.
     """
     def __init__(self):
         self.type = 'XTB'
 
 class ChargeField_Method(CalculationBase):
     """
-    Under development. Class to prepare a QMzymeRegion for ChargeField treatment.
+    Under development. Class to prepare a QMzymeRegion for ChargeField treatment (aka charge embedding).
     """
     def __init__(self):
         self.type = 'ChargeField'
