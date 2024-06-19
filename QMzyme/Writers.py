@@ -75,22 +75,22 @@ class QMQM2Writer(Writer):
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
     :param filename: Name to be given to calculation input file. 
-        Does not need to contain file format suffix.
-    :type filename: str (required) Example: filename='1oh0_cutoff3'
+        Does not need to contain file format suffix. Example: filename='1oh0_cutoff3'.
+    :type filename: str, required 
 
     :param memory: Memory for the QM calculation 
         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-    :type memory: str (optional, default memory='12GB')
+    :type memory: str, default='12GB'
 
     :param nprocs: Number of processors used in the QM calculation.
-    :type nprocs: int (optional, default nprocs=12)
+    :type nprocs: int, default nprocs=12
 
     :param high_region: QMzymeRegion with assigned QM method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'QM' entry.
+        code will search in `CalculateModel.calculation` for the 'QM' entry.
     :type high_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
     :param low_region: QMzymeRegion with assigned QM method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'QM2' entry.
+        code will search in `CalculateModel.calculation` for the 'QM2' entry.
     :type low_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
     :notes:
@@ -201,22 +201,22 @@ class QMXTBWriter(Writer):
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
     :param filename: Name to be given to calculation input file. 
-        Does not need to contain file format suffix.
-    :type filename: str (required) Example: filename='1oh0_cutoff3'
+        Does not need to contain file format suffix. Example: filename='1oh0_cutoff3'
+    :type filename: str, required
 
     :param memory: Memory for the QM calculation 
         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-    :type memory: str (optional, default memory='12GB')
+    :type memory: str, default='12GB'
 
     :param nprocs: Number of processors used in the QM calculation.
-    :type nprocs: int (optional, default nprocs=12)
+    :type nprocs: int, default=12
 
     :param high_region: QMzymeRegion with assigned QM method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'QM' entry.
+        code will search in `CalculateModel.calculation` for the 'QM' entry.
     :type high_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
     :param low_region: QMzymeRegion with assigned xTB method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'XTB' entry.
+        code will search in `CalculateModel.calculation` for the 'XTB' entry.
     :type low_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
     :notes:
