@@ -18,7 +18,7 @@ class Writer(abc.ABC):
     imposes the required methods of all concrete writer classes to support community contributions. 
 
     If you are interested in contribute to QMzyme by creating a new writer class, see the 
-    `QMzyme Documention <https://qmzyme.readthedocs.io/en/latest/Contributing/writers.html>`_.
+    `QMzyme Documentation <https://qmzyme.readthedocs.io/en/latest/Contributing/writers.html>`_.
     """
     @abc.abstractmethod
     def __init__(self, filename, memory, nprocs, full_region):
