@@ -177,15 +177,19 @@ class QMzymeRegion:
     def add_atom(self, atom: _QMzymeAtom, override_same_id=False):
         """
         :param atom: The atom you want to add to the QMzymeRegion. 
-        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`. 
+        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
+
+        .. warning:: Ths will modify the QMzymeRegion directly.
         """
         self.atoms.append(atom)
         self.atoms = self.sorted_atoms(override_same_id=override_same_id)
 
     def remove_atom(self, atom: _QMzymeAtom):
         """
-        :param atom: The atom you want to add to the QMzymeRegion. 
-        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`. 
+        :param atom: The atom you want to remove from the QMzymeRegion. 
+        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
+
+        .. warning:: Ths will modify the QMzymeRegion directly.
         """
         self.atoms.remove(atom)
 
@@ -243,9 +247,10 @@ class QMzymeRegion:
     
     def set_fixed_atoms(self, ids: list= None, atoms: list=None):
         """
-        Example Usage: To fix all alpha carbons
-        > ids = get_ids(attribute='type', value='CA') 
-        > set_fixed_atoms(ids=ids)
+        Example Usage: 
+        To fix all alpha carbons
+        >>> ids = get_ids(attribute='type', value='CA') 
+        >>> set_fixed_atoms(ids=ids)
 
         :param ids: Atom ids in QMzymeRegion to fix.
         :type ids: List[int], optional, default=None
@@ -268,9 +273,10 @@ class QMzymeRegion:
 
     def get_ids(self, attribute: str, value):
         """
-        Example Usage: To fix all alpha carbons
-        > ids = get_ids(attribute='type', value='CA') 
-        > set_fixed_atoms(ids=ids)
+        :Example: 
+        To fix all alpha carbons
+        >>> ids = get_ids(attribute='type', value='CA') 
+        >>> set_fixed_atoms(ids=ids)
 
         :param attribute: QMzymeAtom object attribute name.
         :type attribute: str, required
@@ -291,8 +297,9 @@ class QMzymeRegion:
     
     def get_atoms(self, attribute: str, value):
         """
-        Example Usage: To see what atoms are in residue with resid 14.
-        > atoms = get_atoms(attribute='resid', value=14) 
+        :Example: 
+            To see what atoms are in residue with resid 14.
+            > atoms = get_atoms(attribute='resid', value=14) 
 
         :param attribute: QMzymeAtom object attribute name.
         :type attribute: str, required
@@ -319,7 +326,9 @@ class QMzymeRegion:
 
     def get_ix_array_from_ids(self, ids):
         """
-        Example: get_ids(attribute='type', value='CA')
+        :Example: 
+        >>> ixs = get_ids(attribute='type', value='CA')
+        
         """
         ix_array = []
         for ix, atom in enumerate(self.atoms):
@@ -336,6 +345,9 @@ class QMzymeRegion:
             raise UserWarning(f"The following atoms are missing {attr} information: {missing}")
         
     def set_method(self, method):
+        """
+        Used by the :module:`~QMzyme.CalculateModel` module when the region is passed to a Calculation Method class.
+        """
         if type(method) != dict:
             method = method.__dict__
         self.method = method
