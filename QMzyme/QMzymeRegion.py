@@ -3,10 +3,6 @@
 # e: heidiklem@yahoo.com or heidi.klem@nist.gov
 ###############################################################################
 
-"""
-Product of the RegionBuilder class.
-"""
-
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
 from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.converters import region_to_atom_group
@@ -20,6 +16,12 @@ from QMzyme.data import residue_charges
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
 class QMzymeRegion:
+    """
+    Product of the RegionBuilder class. A QMzymeRegion is composed of QMzymeAtom objects. 
+
+    .. seealso:: `QMzymeRegion.QMzymeResidue`
+    """
+    
     def __init__(self, name, atoms: list, atom_group = None, universe = None):
         self.name = name
         self.atoms = atoms
@@ -83,6 +85,10 @@ class QMzymeRegion:
         """
         Returns a list of the atom indices starting from 0. If the order of atoms changes the ix 
         assigned to an atom will change. See ids as an alternative.
+        :returns: Indices starting from 0 for number of atoms in region. Mostly for completeness.
+        :rtype: List[int]
+
+        .. seealso:: :method:`~QMzyme.QMzymeRegion.QMzymeRegion.ids`
         """
         return [ix for ix in range(self.n_atoms)]
         #return np.array([atom.ix for atom in self.atoms])
@@ -90,28 +96,32 @@ class QMzymeRegion:
     @property
     def resids(self):
         """
-        Returns a list of sorted residue IDs for residues within this region.
+        :returns: Sorted residue IDs for residues within this region.
+        :rtype: list
         """
         return sorted(list(set([atom.resid for atom in self.atoms])))
     
     @property
     def n_atoms(self):
         """
-        Returns the number of atoms within this region.
+        :returns: Number of atoms within this region.
+        :rtype: int
         """
         return len(self.atoms)
     
     @property
     def n_residues(self):
         """
-        Returns the number of residues within this region.
+        :returns: Number of residues within this region.
+        :rtype: int
         """
         return len(self.residues)
     
     @property 
     def residues(self):
         """
-        Returns a list of :class:`~QMzyme.QMzymeRegion.QMzymeResidue` instances within this region.
+        :returns: Residues in this region.
+        :rtype: List[:class:`~QMzyme.QMzymeRegion.QMzymeResidue`]
         """
         residues = []
         for resid in self.resids:
@@ -124,7 +134,8 @@ class QMzymeRegion:
     @property
     def positions(self):
         """
-        Returns a numpy array of the positions of all atoms in this region instance.
+        :returns: Positions of all atoms in region.
+        :rtype: NumPy array
         """
         coordinates = np.empty((self.n_atoms, 3), dtype=np.float32)
         for i, atom in enumerate(self.atoms):
@@ -200,10 +211,27 @@ class QMzymeRegion:
         self.name = name
 
     def write(self, filename=None, format='pdb'):
+        """
+        Converts QMzymeRegion to an `MDAnalysis AtomGroup <https://userguide.mdanalysis.org/stable/atomgroup.html>`_,
+        then uses the AtomGroup method to write file. 
+        
+        :param filename: Name of file. If not specified, the region name attribute will be used. If the region name 
+            is an empty string the name will become 'noname'. Note, if you specify a file format in filename (i.e., filename='name.xyz'),
+            but the value of the 'format' argument does not match, the value assigned to format will be used.
+        :type filename: str, optional
+
+        :param format: Format of created file. 
+        :type format: str, default='pdb'
+        
+        .. note:: Any file ending supported by the MDAnalysis AtomGroup write method is
+            supported as long as all the necessary information to write that file type is present in the region. 
+        """
         from QMzyme.utils import check_filename
         warnings.filterwarnings('ignore')
         # Housekeeping
         if filename is None:
+            if self.name == '':
+                self.name='noname'
             filename = f"{'_'.join(self.name.split(' '))}.{format}"
         filename = check_filename(filename, format)
         #ag = self.convert_to_AtomGroup()
@@ -215,6 +243,21 @@ class QMzymeRegion:
     #     return MDAwrapper.build_universe_from_QMzymeRegion(self)
     
     def set_fixed_atoms(self, ids: list= None, atoms: list=None):
+        """
+        Example Usage: To fix all alpha carbons
+        > ids = get_ids(attribute='type', value='CA') 
+        > set_fixed_atoms(ids=ids)
+
+        :param ids: Atom ids in QMzymeRegion to fix.
+        :type ids: List[int], optional, default=None
+
+        :param atoms: Atoms in QMzymeRegion to fix.
+        :type atoms: List[:class:`~QMzyme.QMzymeAtom.QMzymeAtom`], default=None
+
+        .. note:: Must specify either ids or atoms (if both are 
+            specified, atoms will be used). During calculation file writing if
+            an atom has attribute ``is_fixed=True``, that atom will be frozen.
+        """
         if atoms is not None:
             for atom in atoms:
                 setattr(atom, "is_fixed", True)
@@ -226,9 +269,20 @@ class QMzymeRegion:
 
     def get_ids(self, attribute: str, value):
         """
-        Example: get_ids(attribute='type', value='CA')
+        Example Usage: To fix all alpha carbons
+        > ids = get_ids(attribute='type', value='CA') 
+        > set_fixed_atoms(ids=ids)
 
-        Returns List[int]
+        :param attribute: QMzymeAtom object attribute name.
+        :type attribute: str, required
+
+        :param value: Value of interest for the corresponding attribute. 
+        :type value: Depends on the attribute, required
+
+        :returns: atom ids.
+        :rtype: List[int]
+
+        .. seealso:: :method:`~QMzyme.QMzymeRegion.QMzymeRegion.get_atoms()`
         """
         ids = []
         for atom in self.atoms:
@@ -238,9 +292,21 @@ class QMzymeRegion:
     
     def get_atoms(self, attribute: str, value):
         """
-        Example: get_atoms(attribute='type', value='CA')
+        Example Usage: To see what atoms are in residue with resid 14.
+        > atoms = get_atoms(attribute='resid', value=14) 
 
-        Returns List[QMzymeAtom]
+        :param attribute: QMzymeAtom object attribute name.
+        :type attribute: str, required
+
+        :param value: Value of interest for the corresponding attribute. 
+        :type value: Depends on the attribute, required
+
+        :returns: atom ids.
+        :rtype: List[int]
+
+        List[:class:`~QMzyme.QMzymeAtom.QMzymeAtom`]
+         
+        .. seealso:: :method:`~QMzyme.QMzymeRegion.QMzymeRegion.get_ids()`
         """
         atoms = []
         for atom in self.atoms:
@@ -334,18 +400,23 @@ class QMzymeRegion:
 
     def combine(self, other, name=None):
         """
-        Combine QMzymeRegion with another QMzymeRegion. 
-        Duplicates are not retained.
+        Combine region with another region. 
 
-        Parameters
-        -----------
-        other : QMzymeRegion
-        name : Name of new QMzymeRegion.
+        :param other: Region containing atoms to combine with self.
+        :type other: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
-        Returns
-        ---------
-        QMzymeRegion
-            Combined QMzymeRegion
+        :param name: Name of returned region. If no name is specified the name will be 
+            'self.name_other.name_combined.'.
+        :type name: str, default=None
+        
+        :returns: Combined region.
+        :rtype:  :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+        .. note:: Self region is not altered, and returned region will not contain 
+            properties or attributs of self region not described from the QMzymeAtom level 
+            (i.e., atom_group) except for _universe. Atoms found in both self and other will 
+            only be copied from self. This is important if you have different attribute values 
+            on an atom that appears in both regions (i.e., is_fixed=True and is_fixed=False).
         """
         combined_atoms = copy.copy(self.atoms)
         for atom in other.atoms:
@@ -360,26 +431,36 @@ class QMzymeRegion:
     
     def subtract(self, other, name = ''):
         """
-        Subtract components found in other QMzymeRegion. 
+        Creates a new QMzymeRegion that does not contain any atoms found in other. 
 
-        Parameters
-        -----------
-        other : QMzymeRegion
-        name : Name of new QMzymeRegion.
+        :param other: Region containing atoms to remove from self.
+        :type other: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
-        Returns
-        ---------
-        QMzymeRegion
-            Subtracted QMzymeRegion
+        :param name: Name of returned region.
+        :type name: str, default=''
+        
+        :returns: New region with atoms found in other region removed.
+        :rtype:  :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+        .. note:: Self region is not altered, and returned region will not contain 
+            properties or attributs of self region not described from the QMzymeAtom level 
+            (i.e., atom_group) except for _universe.
         """
         atoms = []
         for atom in self.atoms:
             if not atom.is_within(other):
                 atoms.append(atom)
-        region = QMzymeRegion(name=name, atoms=atoms)
+        region = QMzymeRegion(name=name, atoms=atoms, universe=self._universe)
         return region
     
     def get_overlap(self, other):
+        """
+        :param other: Other QMzymeRegion to measure overlap with.
+        :type other: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+        
+        :returns: Atoms in self that are also found in other.
+        :rtype: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`
+        """
         atoms = []
         for atom in self.atoms:
             if atom.is_within(other):
@@ -390,14 +471,18 @@ class QMzymeRegion:
         for atom in self.atoms:
             atom.segid = segid
     
-    def guess_bonds():
-        """
-        Method under development.
-        """
-        pass
+    # def guess_bonds():
+    #     """
+    #     Method under development.
+    #     """
+    #     pass
 
 
 class QMzymeResidue(QMzymeRegion):
+    """
+    Subclass of QMzymeRegion.
+    """
+    
     def __init__(self, resname, resid, atoms, chain=None):
         self.resname = resname
         self.resid = resid
