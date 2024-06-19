@@ -80,8 +80,8 @@ class CalculationBase:
     def assign_to_region(self, region, charge=None, mult=1):
         """
         Connects a calculation method instance to a QMzymeRegion. This method also searches for any
-            atoms in the region with attribute ``is_fixed=True`` to store what atoms will be constrained
-            in the calculation file.
+        atoms in the region with attribute ``is_fixed=True`` to store what atoms will be constrained
+        in the calculation file.
 
         :param region: Region to assign method istance to.
         :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required
@@ -168,6 +168,9 @@ class ChargeField_Method(CalculationBase):
         self.type = 'ChargeField'
 
 class MultiscaleCalculationBase(CalculationBase):
+    """
+    Base class for all multi-scale methods.
+    """
     def assign_to_region(self, region, charge=None, mult=1):
         self.region = region
         self._set_constraints(region)
