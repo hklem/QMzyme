@@ -75,20 +75,19 @@ class QMzymeRegion:
     @property
     def ids(self):
         """
-        Returns a list of the atom numbers/ids from the original starting structure. An atom id
+        A list of atom numbers/ids from the original starting structure. An atom id
         of an atom from the starting structure should not change.
+
         """
         return [atom.id for atom in self.atoms]
     
     @property
     def ix_array(self):
         """
-        Returns a list of the atom indices starting from 0. If the order of atoms changes the ix 
+        A list of atom indices starting from 0. If the order of atoms changes the ix 
         assigned to an atom will change. See ids as an alternative.
-        :returns: Indices starting from 0 for number of atoms in region. Mostly for completeness.
-        :rtype: List[int]
 
-        .. seealso:: :method:`~QMzyme.QMzymeRegion.QMzymeRegion.ids`
+        .. seealso:: :func:`~QMzyme.QMzymeRegion.QMzymeRegion.ids`
         """
         return [ix for ix in range(self.n_atoms)]
         #return np.array([atom.ix for atom in self.atoms])
@@ -282,7 +281,7 @@ class QMzymeRegion:
         :returns: atom ids.
         :rtype: List[int]
 
-        .. seealso:: :method:`~QMzyme.QMzymeRegion.QMzymeRegion.get_atoms()`
+        .. seealso:: :func:`~QMzyme.QMzymeRegion.QMzymeRegion.get_atoms`
         """
         ids = []
         for atom in self.atoms:
@@ -306,7 +305,7 @@ class QMzymeRegion:
 
         List[:class:`~QMzyme.QMzymeAtom.QMzymeAtom`]
          
-        .. seealso:: :method:`~QMzyme.QMzymeRegion.QMzymeRegion.get_ids()`
+        .. seealso:: :func:`~QMzyme.QMzymeRegion.QMzymeRegion.get_ids`
         """
         atoms = []
         for atom in self.atoms:
