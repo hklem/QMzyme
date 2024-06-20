@@ -126,7 +126,7 @@ class QMzymeRegion:
         for resid in self.resids:
             atoms = [atom for atom in self.atoms if atom.resid == resid]
             resname = atoms[0].resname
-            res = QMzymeResidue(resname, resid, atoms)
+            res = QMzymeResidue(resname, resid, atoms, region=self)
             residues.append(res)
         return residues
     
@@ -517,10 +517,11 @@ class QMzymeResidue(QMzymeRegion):
     Subclass of QMzymeRegion.
     """
     
-    def __init__(self, resname, resid, atoms, chain=None):
+    def __init__(self, resname, resid, atoms, region, chain=None):
         self.resname = resname
         self.resid = resid
         self.atoms = atoms
+        self.region = region
         if chain is None:
             chain = self.atoms[0].get_chain()
         self.chain = chain
@@ -561,8 +562,8 @@ class QMzymeResidue(QMzymeRegion):
             txt+=f"\nQMzymeResidue {self.resname} has an unknown charge value based on conventional residue naming."
         if verbose == True:
             print(txt)
-        else:
-            print(txt.split('\n')[-1])
+        #else:
+        #    print(txt.split('\n')[-1])
 
     def read_charges(self, verbose=True):
         txt = ''
