@@ -13,7 +13,7 @@ class QMzymeModel:
     Base class for :class:`QMzyme.GenerateModel`. Contains methods to create and 
     modify a ``QMzymeModel`` instance.
 
-    :param name: Name to give to the QMzymeModel. This is used for default filenaming 
+    :param name: Name to give to the QMzymeModel. This is used for default file naming 
         purposes throughout the QMzyme package. If not provided, it will default to
         the base name of the universe filename attribute. 
     :type name: str, optional
@@ -80,10 +80,30 @@ class QMzymeModel:
     def has_region(self, region_name):
         # return region_name in self.get_region_names()
         return hasattr(self, region_name)
+
+    def remove_region(self, region_name):
+        """
+        Removes a QMzymeRegion from the QMzymeModel.
+        
+        :param region_name: Name of the region to be removed.
+        :type region_name: str, required 
+        """
+        #del self.regions[region_idx]
+        delattr(self, region_name)
+        n_regions = len(self.regions)
+        for i in range(n_regions):
+            if self.regions[i].name == region_name:
+                del self.regions[i]
+                break
     
     def pymol_visualize(self, filename:str=None):
         """
         Creates a QMzymeModel_visualize.py script that you can load into PyMol.
+
+        :param filename: Name of PyMol .py file. If not specified, the name 
+            attribute of the QMzymeModel will be used.
+        :type filename: str, optional
+        
         """
         lines = ''
         lines += f"cmd.bg_color('white')\n"
@@ -154,17 +174,3 @@ class QMzymeModel:
             filename = filename+'.py'
         with open (filename, 'w+') as f:
             f.write(lines)
-
-    def remove_region(self, region_name):
-        """
-        Method to remove a region from the QMzymeModel.
-        :param region_name: Name of the region to be removed.
-        :type region_name: str, required 
-        """
-        #del self.regions[region_idx]
-        delattr(self, region_name)
-        n_regions = len(self.regions)
-        for i in range(n_regions):
-            if self.regions[i].name == region_name:
-                del self.regions[i]
-                break
