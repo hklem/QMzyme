@@ -396,6 +396,29 @@ class QMzymeRegion:
         """
         pass
 
+    def summarize(self, filename=None):
+        summary = {
+            "Resid": [],
+            "Resname": [],
+            "Charge": [],
+            "Removed atoms": [],
+            "Fixed atoms": [],
+        }
+        for res in self.residues:
+            summary["Resid"].append(res.resid)
+            summary["Resname"].append(res.resname)
+            if not hasattr(res, "charge"):
+                res.guess_charge(verbose=False)
+            summary["Charge"].append(res.charge)
+            summary["Removed atoms"].append(res.removed_atoms)
+            summary["Fixed atoms"].append([a.name for a in res.get_atoms('is_fixed', True)])
+        summary["Segids"] = [res.atoms[0].segid for res in self.residues]
+        if filename == None:
+            return summary
+        if not filename.endswith('.txt'):
+            filename += '.txt'
+        with open(filename, 'w') as f:
+            print(summary, file=f)
 
 class QMzymeResidue(QMzymeRegion):
     def __init__(self, resname, resid, atoms, chain=None):
