@@ -588,7 +588,20 @@ class QMzymeResidue(QMzymeRegion):
                 bb_atoms.append(self.get_atom(atom))
         return bb_atoms
 
+    def remove_atom(self, atom):
+        if atom in self.atoms:
+            self.atoms.remove(atom)
+            self.region.remove_atom(atom)
 
-
-
-
+    @property
+    def removed_atoms(self):
+        removed_atoms=[]
+        u = self.region._universe
+        sel = f'resid {self.resid} and resname {self.resname}'
+        if self.chain is not None and self.chain != 'X':
+            sel += f' and chainID {self.chain}'
+        ag = u.select_atoms(sel)
+        for atom in ag:
+            if atom.name not in [a.name for a in self.atoms]:
+                removed_atoms.append(atom.name)
+        return removed_atoms
