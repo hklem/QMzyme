@@ -49,7 +49,7 @@ class TerminalAlphaCarbon(TruncationScheme):
     backbone bond vector.
 
     .. image:: ../../docs/Images/terminal_alpha_carbon.png
-        :width: 400
+        :width: 250
 
     Image modified from Klem, H., McCullagh, M. & Paton, R. S. Top Catal. 
     65, 165–186 (2022). 
@@ -100,7 +100,7 @@ class AlphaCarbon(TruncationScheme):
     This method is still under development. 
 
     .. image:: ../../docs/Images/all_alpha_carbon.png
-        :width: 400
+        :width: 250
 
     Image modified from Klem, H., McCullagh, M. & Paton, R. S. Top Catal. 
     65, 165–186 (2022). 
