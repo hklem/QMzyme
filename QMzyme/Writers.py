@@ -34,6 +34,12 @@ class Writer(abc.ABC):
     def write(self):
         ...
 
+    # def aqme_acknowledgement():
+    #     txt = "QMzyme uses AQME to write QM software calculation input files, please include this "+
+    #            "citation: Alegre-Requena, J. V.; Sowndarya, S.; Pérez-Soto, R.; Alturaifi, T.; Paton, "+
+    #            "R. AQME: Automated Quantum Mechanical Environments for Researchers and Educators. Wiley "+
+    #            "Interdiscip. Rev. Comput. Mol. Sci. 2023, 13, e1663. (DOI: 10.1002/wcms.1663)."
+
     def set_constraints(self):
         self.full_region.method['freeze_atoms'] = self.full_region.get_indices('is_fixed', True) 
         # These indices are 0 indexed and in order of increasing atom id
