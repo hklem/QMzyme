@@ -555,9 +555,9 @@ class QMzymeResidue(QMzymeRegion):
                 chrg = 'UNK'
         else: 
             chrg = residue_charges[self.resname.upper()]
-        #self.set_charge(chrg)
+        self.set_charge(chrg)
         if chrg != 'UNK':
-            self.set_charge(chrg)
+            #self.set_charge(chrg)
             txt+=f"\nQMzymeResidue {self.resname} has an estimated charge of {chrg}."
         else:    
             txt+=f"\nQMzymeResidue {self.resname} has an unknown charge value based on conventional residue naming."
