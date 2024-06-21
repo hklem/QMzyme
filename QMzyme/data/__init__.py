@@ -23,6 +23,7 @@ protein_residues = {
     'GLN': 0,
     'GLU': -1,
     'GLY': 0,
+    'HIS': 0
     'HID': 0,
     'HIE': 0,
     'HIP': 1,
