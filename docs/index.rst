@@ -4,12 +4,14 @@
 |logo|
 
 :QMzyme version: |release|
-:Last updated: |today|
+..
+   :Last updated: |today|
 
-> [!NOTE] QMzyme is currently under-development. 
-Please note the user interface may change! 
-The first stable API version will be released 
-as version 1.0.0 (QMzyme==1.0.0) on PyPi.*
+.. note::
+   QMzyme is currently under-development. 
+   Please note the user interface may change! 
+   The first stable API version will be released 
+   as version 1.0.0 (QMzyme==1.0.0) on PyPi.*
 
 =============================================
 Introduction
