@@ -23,6 +23,7 @@ protein_residues = {
     'GLN': 0,
     'GLU': -1,
     'GLY': 0,
+    'HIS': 0,
     'HID': 0,
     'HIE': 0,
     'HIP': 1,
@@ -43,3 +44,7 @@ protein_residues = {
 
 residue_charges = copy.copy(protein_residues)
 residue_charges['WAT'] = 0
+residue_charges['HOH'] = 0
+residue_charges['Na+'] = +1
+residue_charges['Cl-'] = -1
+

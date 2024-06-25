@@ -16,7 +16,11 @@ QMzyme is a Python toolkit to facilitate (quantum mechanical) QM-based enzyme ca
 Full documentation with installation instructions, technical details and examples can be found in [Read the Docs](https://qmzyme.readthedocs.io/).
 
 ## Contributing to QMzyme
-For suggestions and improvements of the code (greatly appreciated!), please reach out through the issues and pull requests options of Github.  
+For suggestions and improvements of the code (greatly appreciated!), please reach out through the issues and pull requests options of Github. See documentation about [contributing guidelines](https://qmzyme.readthedocs.io/en/latest/Contributing/index.html).
+
+### Current Contributors
+- Heidi Klem, NIST (main developer)
+- Demian Riccardi, NIST
 
 ## References
 

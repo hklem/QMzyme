@@ -47,6 +47,12 @@ class TerminalAlphaCarbon(TruncationScheme):
     the case of Proline, if the preceding sequence residue is not present 
     the Proline N atom is kept and a hydrogen is added along the N–(resid-1)C
     backbone bond vector.
+
+    .. image:: ../../docs/Images/terminal_alpha_carbon.png
+        :width: 250
+
+    Image modified from Klem, H., McCullagh, M. & Paton, R. S. Top Catal. 
+    65, 165–186 (2022). 
     """
     def __init__(self, region, name):
         super().__init__(region, name)
@@ -91,8 +97,13 @@ class TerminalAlphaCarbon(TruncationScheme):
 class AlphaCarbon(TruncationScheme):
     """
     Function to truncate a QMzymeRegion accoring to the AlphaCarbon scheme. 
-    See Documentation for scheme descriptions.
-    *I still need to write up some documentation about how various schemes works."
+    This method is still under development. 
+
+    .. image:: ../../docs/Images/all_alpha_carbon.png
+        :width: 250
+
+    Image modified from Klem, H., McCullagh, M. & Paton, R. S. Top Catal. 
+    65, 165–186 (2022). 
     """
     def __init__(self, region, name):
         super().__init__(region, name)

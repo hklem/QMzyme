@@ -13,6 +13,13 @@ import abc
 
 ### Writer abstract class ###
 class Writer(abc.ABC):
+    """
+    Abstract Base Class for all calculation input file concrete writer classes. This class provides a rigid structure that
+    imposes the required methods of all concrete writer classes to support community contributions. 
+
+    If you are interested in contribute to QMzyme by creating a new writer class, see the 
+    `QMzyme Documentation <https://qmzyme.readthedocs.io/en/latest/Contributing/writers.html>`_.
+    """
     @abc.abstractmethod
     def __init__(self, filename, memory, nprocs, full_region):
         self.memory = memory
@@ -27,6 +34,12 @@ class Writer(abc.ABC):
     def write(self):
         ...
 
+    # def aqme_acknowledgement():
+    #     txt = "QMzyme uses AQME to write QM software calculation input files, please include this "+
+    #            "citation: Alegre-Requena, J. V.; Sowndarya, S.; Pérez-Soto, R.; Alturaifi, T.; Paton, "+
+    #            "R. AQME: Automated Quantum Mechanical Environments for Researchers and Educators. Wiley "+
+    #            "Interdiscip. Rev. Comput. Mol. Sci. 2023, 13, e1663. (DOI: 10.1002/wcms.1663)."
+
     def set_constraints(self):
         self.full_region.method['freeze_atoms'] = self.full_region.get_indices('is_fixed', True) 
         # These indices are 0 indexed and in order of increasing atom id
@@ -34,7 +47,7 @@ class Writer(abc.ABC):
 ### Concrete writer subclasses ###
 class QMWriter(Writer):
     """
-    Writes a QM input file for ORCA or Gaussian using AQME qprep. 
+    Writes a QM input file for ORCA or Gaussian using `AQME qprep <https://aqme.readthedocs.io/en/latest/API/aqme.qprep.html>`_. 
 
     :param filename: Name to be given to calculation input file. 
         Does not need to contain file format suffix.
@@ -47,8 +60,6 @@ class QMWriter(Writer):
     :param nprocs: Number of processors used in the QM calculation.
     :type nprocs: int (optional, default nprocs=12)
 
-    :returns:
-        Saves QM input file and region pdb file to working directory. 
     """
     def __init__(self, filename, memory, nprocs, full_region=None):
         if full_region is None:
@@ -70,29 +81,26 @@ class QMQM2Writer(Writer):
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
     :param filename: Name to be given to calculation input file. 
-        Does not need to contain file format suffix.
-    :type filename: str (required) Example: filename='1oh0_cutoff3'
+        Does not need to contain file format suffix. Example: filename='1oh0_cutoff3'.
+    :type filename: str, required 
 
     :param memory: Memory for the QM calculation 
         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-    :type memory: str (optional, default memory='12GB')
+    :type memory: str, default='12GB'
 
     :param nprocs: Number of processors used in the QM calculation.
-    :type nprocs: int (optional, default nprocs=12)
+    :type nprocs: int, default nprocs=12
 
     :param high_region: QMzymeRegion with assigned QM method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'QM' entry.
+        code will search in `CalculateModel.calculation` for the 'QM' entry.
     :type high_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
     :param low_region: QMzymeRegion with assigned QM method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'QM2' entry.
+        code will search in `CalculateModel.calculation` for the 'QM2' entry.
     :type low_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
-    :returns:
-        Saves QM input file and combined regions pdb file to working directory. 
-
     :notes:
-
+        Useful reminder for developers:
         Example text added to QM input file:
         .. code-block:: bash
 
@@ -199,30 +207,27 @@ class QMXTBWriter(Writer):
     Writes a QM input file for ORCA or Gaussian using AQME qprep. 
 
     :param filename: Name to be given to calculation input file. 
-        Does not need to contain file format suffix.
-    :type filename: str (required) Example: filename='1oh0_cutoff3'
+        Does not need to contain file format suffix. Example: filename='1oh0_cutoff3'
+    :type filename: str, required
 
     :param memory: Memory for the QM calculation 
         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-    :type memory: str (optional, default memory='12GB')
+    :type memory: str, default='12GB'
 
     :param nprocs: Number of processors used in the QM calculation.
-    :type nprocs: int (optional, default nprocs=12)
+    :type nprocs: int, default=12
 
     :param high_region: QMzymeRegion with assigned QM method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'QM' entry.
+        code will search in `CalculateModel.calculation` for the 'QM' entry.
     :type high_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
     :param low_region: QMzymeRegion with assigned xTB method. If not provided, the
-    code will search in `CalculateModel.calculation` for the 'XTB' entry.
+        code will search in `CalculateModel.calculation` for the 'XTB' entry.
     :type low_region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, optional
 
-    :returns:
-        Saves QM input file and combined regions pdb file to working directory. 
-
     :notes:
+        Useful for developers.
         Example input:
-
         .. code-block:: bash
 
             !QM/XTB WB97X-D3 DEF2-TZVP
@@ -285,46 +290,6 @@ WriterFactory.register_writer('QMQM2', QMQM2Writer)
 WriterFactory.register_writer('QMXTB', QMXTBWriter)
 WriterFactory.register_writer('QMChargeField', QMMMWriter)
 
-
-### Main Writer Class that GenerateModel Calls ###
-
-# class Writer:
-#     """
-#     Base Writer class that configures common calculation input information and then
-#     sends information to more specific writer classes to deal with remaining information.
-
-#     Parameters
-#     -----------
-#     :param filename: Name to be given to calculation input file. 
-#         Does not need to contain file format suffix.
-#     :type filename: str (required) Example: filename='1oh0_cutoff3'
-
-#     :param writer: Tells the class what format of input file to create. Options
-#         are entries in the writers dict found in Writers.py
-#     :type writer: str (required), available options are in WritersRegistry.writers.keys()
-
-#     :param memory: Memory for the QM calculation 
-#         (i) Gaussian: total memory; (ii) ORCA: memory per processor.
-#     :type memory: str (optional, default memory='12GB')
-
-#     :param nprocs: Number of processors used in the QM calculation.
-#     :type nprocs: int (optional, default nprocs=12)
-
-#     """
-#     def __init__(self, filename, memory, nprocs, writer=None):
-#         self.filename = filename
-#         self.memory = memory
-#         self.nprocs = nprocs
-#         if writer is None:
-#             writer = WritersRegistry._get_writer(CalculateModel.calc_type)
-#         else:
-#             writer = WritersRegistry._get_writer(writer)
-#         self.writer = writer
-
-#     def write(self):
-#         self.writer(self.filename, self.memory, self.nprocs)
-
-
 ### Auxilliary functions ###
 def print_details(filename, format):
     filename = check_filename(filename, format)
@@ -338,18 +303,3 @@ def qprep_dict(method_dict):
         if key in d:
             del d[key]
     return d
-
-# def get_atom_range(atom_indices: list):
-#     """
-#     Utility function used for ORCA file input.
-#     """
-#     range = ''
-#     for i in np.arange(1, np.max(atom_indices)+1):
-#         if i in atom_indices:
-#             if i-1 not in atom_indices:
-#                 range += "{"+str(i)
-#                 if i+1 not in atom_indices:
-#                     range += "} "
-#             elif i+1 not in atom_indices:
-#                 range += f":{i}"+"} "
-#     return range.strip()

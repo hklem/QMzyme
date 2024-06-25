@@ -4,12 +4,14 @@
 |logo|
 
 :QMzyme version: |release|
-:Last updated: |today|
+..
+   :Last updated: |today|
 
-*QMzyme is currently under-development. 
-Please note the user interface may change! 
-The first stable API version will be released 
-as version 1.0.0 (QMzyme==1.0.0) on PyPi.*
+.. note::
+   QMzyme is in a developmental stage. 
+   Please note the user interface may change! 
+   The first API version with guaranteed stability 
+   will be released as version 1.0.0 (QMzyme==1.0.0) on PyPi (pip).
 
 =============================================
 Introduction
@@ -18,9 +20,9 @@ Introduction
 
 **QMzyme** is a Python toolkit to facilitate (quantum mechanical) QM-based enzyme 
 calculations. The :class:`~QMzyme.GenerateModel.GenerateModel` class guides the process of generating 
-QM-calculation ready truncated or partitioned enzyme models. The code 
-framework can accept any input files MDAnalysis would accept to formulate an
-MDAnalysis Universe object. The QMzyme framework works with MDAnalysis modules
+QM-calculation ready truncated or partitioned models. The code 
+framework can accept any input files `MDAnalysis <https://userguide.mdanalysis.org/stable/index.html>`_ would accept to formulate an
+MDAnalysis `Universe <https://userguide.mdanalysis.org/stable/universe.html>`_ object. The QMzyme framework works with MDAnalysis modules
 to create more dynamic QMzyme objects: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, 
 :class:`~QMzyme.QMzymeRegion.QMzymeResidue`, :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, and
 :class:`~QMzyme.QMzymeModel.QMzymeModel`. QMzymeModel is an abstraction of a molecular system, such as a real enzyme. 
