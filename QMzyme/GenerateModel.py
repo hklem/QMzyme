@@ -35,8 +35,31 @@ class GenerateModel(QMzymeModel):
     :param universe: MDAnalysis Universe object. If not specified, user will need to provide file(s) that
         MDAnalysis can use to create a Universe object.
     :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
+    :param select_atoms: `MDAnalysis selection command <https://docs.mdanalysis.org/stable/documentation_pages/selections.html>`_ 
+        to specify which atoms are stored in the universe. 
+    :type: str, default='all'
     :param frame: If trajectory was provided, specify a frame to base coordinates on
     :type frame: int, default=0
+
+    Examples
+    ----------
+    
+    To instantiate a model from a PDB file called "filename.pdb":
+
+    .. code-block:: python
+        model = QMzyme.GenerateModel("filename.pdb")
+
+    If "filename.pdb" contains any components you know you do not want included in your model, you can initialize the
+    GenerateModel instance from a subselection of atoms by using the select_atoms argument:
+
+    .. code-block:: python
+        model = QMzyme.GenerateModel("filename.pdb", select_atoms="not resname WAT")
+
+    You can also initialize the model from a topology and trajectory file(s) and specify what frame to take coordinates from:
+
+    .. code-block:: python
+        model = QMzyme.GenerateModel("filename.pdb", "filename.dcd", frame=100)
+
     """
     def __init__(self, *args, name=None, universe=None, select_atoms='all', frame=0, **kwargs):
         CalculateModel._reset()
