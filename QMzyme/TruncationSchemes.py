@@ -4,13 +4,14 @@
 ###############################################################################
 
 """
-Module containing functions to truncate a QMzymeRegion based on some logic/workflow.
+Module containing functions to truncate a QMzymeRegion based on some logic/scheme.
 """
 
-from QMzyme.data import protein_residues
+from QMzyme.data import protein_residues, backbone_atoms
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.truncation_utils import *
 import abc
+
 
 class TruncationScheme(abc.ABC):
     def __init__(self, region, name):
@@ -65,14 +66,14 @@ class TerminalAlphaCarbon(TruncationScheme):
             if resname not in protein_residues:
                 continue
             # Define necessary backbone atoms
-            Natom = res.get_atom('N')
-            CAatom = res.get_atom('CA')
-            Catom = res.get_atom('C')
-            Oatom = res.get_atom('O')
+            Natom = res.get_atom(backbone_atoms['N'])
+            CAatom = res.get_atom(backbone_atoms['CA'])
+            Catom = res.get_atom(backbone_atoms['C'])
+            Oatom = res.get_atom(backbone_atoms['O'])
             preceding_Catom = get_preceding_Catom(self.region, res.resid)
             following_Natom = get_following_Natom(self.region, res.resid)
             if resname != 'PRO':
-                Hatom = res.get_atom('H')
+                Hatom = res.get_atom(backbone_atoms['H'])
             if preceding_Catom is not None and preceding_Catom.id not in self.region.ids:
                 if resname != 'PRO':
                     cap_atom = cap_H(Natom, CAatom)
@@ -88,10 +89,10 @@ class TerminalAlphaCarbon(TruncationScheme):
                 r.remove_atom(r.get_atom(id=Catom.id))
                 r.remove_atom(r.get_atom(id=Oatom.id))
                 r.add_atom(cap_atom)
-        if hasattr(self.region, "charge"):
-            r.set_charge(self.region.charge)
-        if getattr(self.region, "method") != None:
-            r.set_method(self.region.method)
+        # if hasattr(self.region, "charge"):
+        #     r.set_charge(self.region.charge)
+        # if getattr(self.region, "method") != None:
+        #     r.set_method(self.region.method)
         self.truncated_region = r
         
 class AlphaCarbon(TruncationScheme):
@@ -109,4 +110,31 @@ class AlphaCarbon(TruncationScheme):
         super().__init__(region, name)
 
     def truncate(self):
-        raise UserWarning("This method is currently under development.")  
+        remove_atoms = []
+        r = QMzymeRegion(name=self.name, atoms=self.region.atoms, universe=self.region._universe)
+        for res in self.region.residues:
+            resname = res.resname
+            if resname not in protein_residues:
+                continue
+            # Define necessary backbone atoms
+            Natom = res.get_atom(backbone_atoms['N'])
+            CAatom = res.get_atom(backbone_atoms['CA'])
+            Catom = res.get_atom(backbone_atoms['C'])
+            Oatom = res.get_atom(backbone_atoms['O'])
+            if preceding_Catom is not None: # fixes issues if this is the very first res in sequence
+                if resname != 'PRO':
+                    Hatom = res.get_atom(backbone_atoms['H'])
+                    cap_atom = cap_H(Natom, CAatom)
+                    r.remove_atom(r.get_atom(id=Natom.id))
+                    r.remove_atom(r.get_atom(id=Hatom.id))
+                    r.add_atom(cap_atom)
+                if resname == 'PRO':
+                    cap_atom = cap_H(preceding_Catom, Natom)
+                    setattr(cap_atom, "id", cap_atom.id-1)
+                    r.add_atom(cap_atom)
+            if following_Natom is not None: # fixes issues if this is the very last res in sequence
+                cap_atom = cap_H(Catom, CAatom)
+                r.remove_atom(r.get_atom(id=Catom.id))
+                r.remove_atom(r.get_atom(id=Oatom.id))
+                r.add_atom(cap_atom)
+        self.truncated_region = r
