@@ -10,7 +10,7 @@ import warnings
 import numpy as np
 import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
-from QMzyme.data import residue_charges
+from QMzyme.data import residue_charges, backbone_atoms
 
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
@@ -578,14 +578,14 @@ class QMzymeResidue(QMzymeRegion):
         if verbose == True:
             print(txt)
 
-    def get_backbone_atoms(self, backbone_atoms={'C':'C', 'CA':'CA', 'O':'O', 'N':'N', 'HA':'HA'}):
+    def get_backbone_atoms(self, backbone_atoms=backbone_atoms):
         bb_atoms = []
         for atom_name, atom in backbone_atoms.items():
             if self.get_atom(atom) == None:
-                if self.get_atom('H1') != None:
-                    bb_atoms.append(self.get_atom('H1'))
-                if self.get_atom('H2') != None:
-                    bb_atoms.append(self.get_atom('H2'))
+                if self.get_atom('HN') != None:
+                    bb_atoms.append(self.get_atom('HN'))
+                if self.get_atom('HC') != None:
+                    bb_atoms.append(self.get_atom('HC'))
             else:
                 bb_atoms.append(self.get_atom(atom))
         return bb_atoms

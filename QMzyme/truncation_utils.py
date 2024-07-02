@@ -11,6 +11,7 @@ import numpy as np
 from QMzyme.QMzymeAtom import QMzymeAtom
 from QMzyme.RegionBuilder import RegionBuilder
 from QMzyme.converters import *
+from QMzyme.data import backbone_atoms
 
 
 def cap_H(replace_atom, fixed_atom, bond_length=1.09, base_atom=None):
@@ -28,7 +29,7 @@ def cap_H(replace_atom, fixed_atom, bond_length=1.09, base_atom=None):
         }
     if base_atom is None:
         base_atom = replace_atom
-        if fixed_atom.resname == 'PRO' and fixed_atom.name == 'N':
+        if fixed_atom.resname == 'PRO' and fixed_atom.name == backbone_atoms['N']:
             new_atom_dict['charge'] = 0.0
             new_atom_dict['name'] = 'HN'
             base_atom = fixed_atom
@@ -67,15 +68,6 @@ def set_bond_length(mobile_coords, fixed_coords, new_length):
     return new_coords
 
 
-# def name_cap_H(region, resid, name='H1'):
-#     residue_atoms = region.get_residue_atoms(resid)
-#     i = 1
-#     while name in [atom.name for atom in residue_atoms]:
-#         i += 1
-#         name = f'H{i}'
-#     return name
-
-
 def create_new_atom(base_atom, new_atom_dict):
     for key, val in base_atom.__dict__.items():
         if key.startswith('_QMzymeAtom__'):
@@ -90,7 +82,7 @@ def get_preceding_Catom(region, resid):
     if resid == 1:
         return None
     if region._universe != None:
-        mda_atom = region._universe.select_atoms(f'resid {resid-1} and name C').atoms[0]
+        mda_atom = region._universe.select_atoms(f'resid {resid-1} and name {backbone_atoms["C"]}').atoms[0]
         atom = mda_atom_to_qmz_atom(mda_atom)
     return atom
 
@@ -98,7 +90,7 @@ def get_preceding_Catom(region, resid):
 def get_following_Natom(region, resid):
     try:
         if region._universe != None:
-            mda_atom = region._universe.select_atoms(f'resid {resid+1} and name N').atoms[0]
+            mda_atom = region._universe.select_atoms(f'resid {resid+1} and name {backbone_atoms["N"]}').atoms[0]
         atom = mda_atom_to_qmz_atom(mda_atom)
     except:
         atom = None # covers if res is last protein res in universe
