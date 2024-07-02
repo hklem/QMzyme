@@ -43,7 +43,7 @@ We hope to support multi-scale methods beyond 2 layers in the bear future.
    :members:
    :undoc-members:
 
-.. autoclass:: QMzyme.Writers.WritersFactory
+.. autoclass:: QMzyme.Writers.WriterFactory
    :members:
    :undoc-members:
 

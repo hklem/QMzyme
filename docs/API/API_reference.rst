@@ -41,6 +41,7 @@ Other Modules
 .. toctree::
    :maxdepth: 1
 
+   QMzyme.configuration
    QMzyme.utils
    QMzyme.truncation_utils
    QMzyme.aqme.qprep
