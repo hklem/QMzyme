@@ -34,9 +34,12 @@ def select_atoms(universe, selection):
     :param selection: Selection of atoms to be made- based on `MDAnalysis selection command language <https://docs.mdanalysis.org/stable/documentation_pages/selections.html>`_.
     :type selection: str, required
     """
-    u = universe.select_atoms(selection)
-    return u
+    atom_group = universe.select_atoms(selection)
+    return atom_group
 
+def universe_selection(universe, selection):
+    sel = universe.select_atoms(selection)
+    return mda.Merge(sel.atoms)
 
 def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
     """
@@ -62,5 +65,4 @@ def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
                 atoms.append(atom)
         else:
             atoms.append(atom)
-    
     return sum(atoms)

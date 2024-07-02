@@ -35,14 +35,10 @@ class QMzymeModel:
     def __init__(self, *args, name, universe, select_atoms='all', frame=0, **kwargs):
         if universe is None:
             universe = MDAwrapper.init_universe(*args, frame=frame, **kwargs)
-        self.universe = universe
-        sel = universe.select_atoms(select_atoms)
+        self.universe = MDAwrapper.universe_selection(universe, select_atoms)
         self.select_atoms = select_atoms
-        self.universe.atoms = sel.atoms
-        self.universe.residues = sel.residues
-        self.universe.segments = sel.segments
         if name is None:
-            name = os.path.basename(self.universe.filename).split('.')[0]
+            name = os.path.basename(universe.filename).split('.')[0]
         self.name = name
         self.frame = frame
         self.filename = universe.filename
