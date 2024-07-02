@@ -28,16 +28,19 @@ class GenerateModel(QMzymeModel):
     accepts to create a Universe i.e., (example.prmtop, example.dcd, dt=5).
     See https://userguide.mdanalysis.org/stable/universe.html for details.
 
-    :param name: Name of QMzymeModel.
-    :type name: str, default=None
-    :param universe: MDAnalysis Universe object.
+    :param name: Name to give to the QMzymeModel. This is used for default file naming 
+        purposes throughout the QMzyme package. If not provided, it will default to
+        the base name of the universe filename attribute. 
+    :type name: str, optional
+    :param universe: MDAnalysis Universe object. If not specified, user will need to provide file(s) that
+        MDAnalysis can use to create a Universe object.
     :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
     :param frame: If trajectory was provided, specify a frame to base coordinates on
     :type frame: int, default=0
     """
-    def __init__(self, *args, name=None, universe=None, frame=0, **kwargs):
+    def __init__(self, *args, name=None, universe=None, select_atoms='all', frame=0, **kwargs):
         CalculateModel._reset()
-        super().__init__(*args, name=name, universe=universe, frame=frame, **kwargs)
+        super().__init__(*args, name=name, universe=universe, frame=frame, select_atoms=select_atoms, **kwargs)
 
     def __repr__(self):
         return f"<QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"

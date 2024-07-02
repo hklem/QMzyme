@@ -11,7 +11,11 @@ from QMzyme.data import protein_residues, residue_charges
 class QMzymeModel:
     """
     Base class for :class:`QMzyme.GenerateModel`. Contains methods to create and 
-    modify a ``QMzymeModel`` instance.
+    modify a ``QMzymeModel`` instance. A QMzymeModel an be instantiated with an 
+    MDAnalysis Universe directly, or any combination of parameters that 
+    MDAnalysis.core.universe.Universe accepts to create a Universe i.e., 
+    (example.prmtop, example.dcd, dt=5).
+    See https://userguide.mdanalysis.org/stable/universe.html for details.
 
     :param name: Name to give to the QMzymeModel. This is used for default file naming 
         purposes throughout the QMzyme package. If not provided, it will default to
@@ -20,14 +24,27 @@ class QMzymeModel:
     :param universe: MDAnalysis Universe object.
     :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
     
+
+    :param name: Name of QMzymeModel.
+    :type name: str, default=None
+    :param universe: MDAnalysis Universe object.
+    :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
+    :param frame: If trajectory was provided, specify a frame to base coordinates on
+    :type frame: int, default=0
     """
-    def __init__(self, *args, name, universe, frame=0, **kwargs):
+    def __init__(self, *args, name, universe, select_atoms='all', frame=0, **kwargs):
         if universe is None:
             universe = MDAwrapper.init_universe(*args, frame=frame, **kwargs)
         self.universe = universe
+        sel = universe.select_atoms(select_atoms)
+        self.select_atoms = select_atoms
+        self.universe.atoms = sel.atoms
+        self.universe.residues = sel.residues
+        self.universe.segments = sel.segments
         if name is None:
             name = os.path.basename(self.universe.filename).split('.')[0]
         self.name = name
+        self.frame = frame
         self.filename = universe.filename
         self.regions = []
 
@@ -61,14 +78,16 @@ class QMzymeModel:
         return len(self.regions)
     
     def add_region(self, region):
-         if hasattr(self, region.name):
-             raise UserWarning(f"Region with name {region.name} already exists in QMzymeModel {self.name}."+
+        if region.n_atoms == 0:
+            raise UserWarning(f"Region contains no atoms and will not be created.")
+        if hasattr(self, region.name):
+            raise UserWarning(f"Region with name {region.name} already exists in QMzymeModel {self.name}."+
                                "Please use a different region name or remove the existing region via remove_region({region.name}).")
-         setattr(self, region.name, region)
-         self.regions.append(region)
+        setattr(self, region.name, region)
+        self.regions.append(region)
 
     def get_region_names(self):
-         return [r.name for r in self.regions]
+        return [r.name for r in self.regions]
     
     def get_region(self, region_name=None):
         try:
