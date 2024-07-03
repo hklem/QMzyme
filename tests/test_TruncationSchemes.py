@@ -23,10 +23,56 @@ from QMzyme.data import PDB
         ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
     ]
 )
-def test_truncate(Test, init_file, region_selection, truncation_scheme=TerminalAlphaCarbon):
+def test_AlphaCarbon(Test, init_file, region_selection, truncation_scheme=AlphaCarbon):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
-    region_truncated = TerminalAlphaCarbon(model.region, name=None).return_region()
+    region_truncated = truncation_scheme(model.region, name=None).return_region()
+    assert region_truncated != model.region
+
+    for i, res in enumerate(model.region.residues):
+        truncated_res = region_truncated.residues[i]
+        res_atoms = [atom.name for atom in res.atoms]
+        truncated_res_atoms = [atom.name for atom in truncated_res.atoms]
+        if res.resid == 1:
+            assert 'N' in res_atoms
+            assert 'N' in truncated_res_atoms
+        elif res.resname != 'PRO':
+            assert 'N' in res_atoms
+            assert 'H' in res_atoms
+            assert 'N' not in truncated_res_atoms
+            assert 'HN' in truncated_res_atoms
+        elif res.resname == 'PRO':
+            assert 'N' in res_atoms
+            assert 'H' not in res_atoms
+            assert 'N' in truncated_res_atoms
+            assert 'HN' in truncated_res_atoms
+        assert 'C' in res_atoms
+        assert 'O' in res_atoms
+        if res.resid != 262:
+            assert 'C' not in truncated_res_atoms
+            assert 'O' not in truncated_res_atoms
+            assert 'HC' in truncated_res_atoms
+        elif res.resid == 262:
+            assert 'C' in truncated_res_atoms
+            assert 'O' in truncated_res_atoms
+
+
+@pytest.mark.parametrize(
+    "Test, init_file, region_selection",[
+        ('First and last residue in protein: MET1 GLN262', PDB, 'resid 1 or resid 262'),
+        ('MET1 ASN2', PDB, 'resid 1 or resid 2'),
+        ('MET1 LEU3', PDB, 'resid 1 or resid 3'),
+        ('ASN2 THR5', PDB, 'resid 2 or resid 5'),
+        ('ASN2 LEU3 THR5 ALA6', PDB, 'resid 2 or resid 3 or resid 5 or resid 6'),
+        ('PRO4 THR5', PDB, 'resid 4 or resid 5'),
+        ('LEU3 PRO4', PDB, 'resid 3 or resid 4'),
+        ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
+    ]
+)
+def test_TerminalAlphaCarbon(Test, init_file, region_selection, truncation_scheme=TerminalAlphaCarbon):
+    model = GenerateModel(init_file)
+    model.set_region(name='region', selection=region_selection)
+    region_truncated = truncation_scheme(model.region, name=None).return_region()
     #model.truncate()
     #region_truncated = model.truncated
     assert region_truncated != model.region
@@ -57,7 +103,6 @@ def test_truncate(Test, init_file, region_selection, truncation_scheme=TerminalA
         assert 'H' not in [atom.name for atom in original_first_res.atoms]
         assert 'N' in [atom.name for atom in truncated_first_res.atoms]
         assert 'HN' in [atom.name for atom in truncated_first_res.atoms]
-    
 
     for i in range(model.region.n_residues-1):
         resid = model.region.resids[i]

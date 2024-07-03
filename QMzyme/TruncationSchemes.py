@@ -121,6 +121,8 @@ class AlphaCarbon(TruncationScheme):
             CAatom = res.get_atom(backbone_atoms['CA'])
             Catom = res.get_atom(backbone_atoms['C'])
             Oatom = res.get_atom(backbone_atoms['O'])
+            preceding_Catom = get_preceding_Catom(self.region, res.resid)
+            following_Natom = get_following_Natom(self.region, res.resid)
             if preceding_Catom is not None: # fixes issues if this is the very first res in sequence
                 if resname != 'PRO':
                     Hatom = res.get_atom(backbone_atoms['H'])
