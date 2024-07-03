@@ -25,7 +25,7 @@ class GenerateModel(QMzymeModel):
     """
     GenerateModel can be instantiated with an MDAnalysis Universe directly,
     or any combination of parameters that MDAnalysis.core.universe.Universe
-    accepts to create a Universe i.e., (example.prmtop, example.dcd, dt=5).
+    accepts to create a Universe.
     See https://userguide.mdanalysis.org/stable/universe.html for details.
 
     :param name: Name to give to the QMzymeModel. This is used for default file naming 
@@ -37,28 +37,30 @@ class GenerateModel(QMzymeModel):
     :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
     :param select_atoms: `MDAnalysis selection command <https://docs.mdanalysis.org/stable/documentation_pages/selections.html>`_ 
         to specify which atoms are stored in the universe. 
-    :type: str, default='all'
-    :param frame: If trajectory was provided, specify a frame to base coordinates on
+    :type select_atoms: str, default='all'
+    :param frame: If trajectory was provided, specify a frame to extract coordinates from.
     :type frame: int, default=0
 
-    Examples
-    ----------
-    
-    To instantiate a model from a PDB file called "filename.pdb":
+    :Usage:
 
-    .. code-block:: python
-        model = QMzyme.GenerateModel("filename.pdb")
+        To instantiate a model from a PDB file called "filename.pdb":
 
-    If "filename.pdb" contains any components you know you do not want included in your model, you can initialize the
-    GenerateModel instance from a subselection of atoms by using the select_atoms argument:
+        .. code-block:: python
 
-    .. code-block:: python
-        model = QMzyme.GenerateModel("filename.pdb", select_atoms="not resname WAT")
+            model = QMzyme.GenerateModel("filename.pdb")
 
-    You can also initialize the model from a topology and trajectory file(s) and specify what frame to take coordinates from:
+        If "filename.pdb" contains any components you know you do not want included in your model, you can initialize the
+        GenerateModel instance from a subselection of atoms by using the select_atoms argument:
 
-    .. code-block:: python
-        model = QMzyme.GenerateModel("filename.pdb", "filename.dcd", frame=100)
+        .. code-block:: python
+
+            model = QMzyme.GenerateModel("filename.pdb", select_atoms="not resname WAT")
+
+        You can also initialize the model from a topology and trajectory file(s) and specify what frame to take coordinates from:
+
+        .. code-block:: python
+
+            model = QMzyme.GenerateModel("filename.pdb", "filename.dcd", frame=100)
 
     """
     def __init__(self, *args, name=None, universe=None, select_atoms='all', frame=0, **kwargs):
@@ -85,18 +87,32 @@ class GenerateModel(QMzymeModel):
 
             * str that can be interpreted by `MDAnalysis selection commands <https://docs.mdanalysis.org/stable/documentation_pages/selections.html>`_
 
-            * an :class:`~MDAnalysis.core.groups.AtomGroup`
+            * an `MDAnalysis AtomGroup`
 
             * a :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
-            * any concrete class of :class:`~QMzyme.SelectionSchemes.SelectionScheme`, i.e., :class:`~QMzyme.SelectionSchemes.DistanceCutoff` (note, the class must be imported)
+            * any concrete class of :class:`~QMzyme.SelectionSchemes.SelectionScheme`, i.e., :class:`~QMzyme.SelectionSchemes.DistanceCutoff`. Options can be found in :py:mod:`~QMzyme.SelectionSchemes`.
         
-        :type selection: Any, see description above, reqiured
+        :type selection: See options below, required
         :param name: Name of the resulting region.
         :type name: str, optional
-        :param kwargs: Other parameters might need to be passed if a :class:`~QMzyme.SelectionSchemes.SelectionScheme`
+        :param kwargs: Keyword arguments that might be needed if a :class:`~QMzyme.SelectionSchemes.SelectionScheme`
             is used. For example, the parameter `cutoff` is required to use the :class:`~QMzyme.SelectionSchemes.DistanceCutoff` 
             scheme. 
+
+        :Usage:
+
+            .. code-block:: python
+
+                model.set_region(selection="resid 10 or resid 15", name="two_residues")
+
+            .. code-block:: python
+
+                from QMzyme.SelectionSchemes import DistanceCutoff
+                model.set_region(selection=DistanceCutoff, cutoff=5)
+
+        .. note::
+            When using a :class:`~QMzyme.SelectionSchemes.SelectionScheme` the scheme class must be imported. 
 
         """
         region = make_selection(selection, model=self, name=name, **kwargs)
@@ -112,9 +128,9 @@ class GenerateModel(QMzymeModel):
         :param scheme: Specifies the truncation scheme to use. Options can be found
             in :py:mod:`~QMzyme.TruncationSchemes`.
         :type scheme: :py:class:`~QMzyme.TruncationSchemes.TruncationScheme` concrete class, 
-            default=:py:class:`~QMzyme.TruncationSchemes.CA_terminal`
-        :param name: Name to give the truncated model to. If None, the original
-            region name will be the combination of calculation methods '_combined_region_truncated' appended.
+            default=:class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon`
+        :param name: Name to give the truncated model. If None, the original
+            region name will be the combination of calculation methods and the suffix '_combined_region_truncated'.
         :type name: str, optional
         """
         #combine regions
@@ -150,8 +166,9 @@ class GenerateModel(QMzymeModel):
         :param nprocs: Number of processors to specify in the input file.
         :type nprocs: int, optional
 
-        :notes:
-            A :class:`~QMzyme.CalculateModel.QM_Method` must have been assigned
+        .. note::
+
+            A :class:`~QMzyme.CalculateModel.QM_Method` must first be assigned
             to a region. 
         """
         if not hasattr(self, "truncated"):
