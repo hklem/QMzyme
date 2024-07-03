@@ -100,3 +100,12 @@ file = "QMzyme/_version.py"
 
 [tool.coverage.run]
 omit = ["QMzyme/aqme/*", "QMzyme/_version.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+    ]
+skip_empty = true
+
+    
