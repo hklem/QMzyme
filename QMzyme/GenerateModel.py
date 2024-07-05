@@ -151,7 +151,7 @@ class GenerateModel(QMzymeModel):
               "and stored in QMzyme.CalculateModel.calculation under key "+
               f"{calc_type}. This model will be used to write the calculation input.")
 
-    def write_input(self, filename=None, memory='24GB', nprocs=12):
+    def write_input(self, filename=None, memory='24GB', nprocs=12, reset_calculation=True):
         """
         Method to write calculation file input. The code will automatically
         detect what type of calculation file to prepare based on the 
@@ -179,4 +179,6 @@ class GenerateModel(QMzymeModel):
         
         writer_type = CalculateModel.calc_type
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
+        if reset_calculation == True:
+            CalculateModel._reset()
         #writer.write()
