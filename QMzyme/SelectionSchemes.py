@@ -31,42 +31,39 @@ class SelectionScheme(abc.ABC):
         This is an example docstring.
 
         Include a detailed description of how the scheme works in the class level doc string. Also
-        include any parameters the __init__ method of your class accepts so it will automatically
-        documented online (the __init__ method doc string is not documented online by default).
+        include any parameters the `__init__()` method of your class accepts.
 
-        :param model: QMzymeModel to provide starting structure that selection will be performed on. When
-            using the main :class:`~QMzyme.GenerateModel.GenerateModel` class, the QMzyme model is automatically 
-            passed as an argument to the selection scheme. It is recommended you use the Universe (universe attribute)
-            representing the starting structure to perform the selection on. 
-        :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`
-        :param name: Name of the region generated.
-        :type name: str, required
+        :Parameters:
+            :model: (:class:`~QMzyme.QMzymeModel.QMzymeModel`) QMzymeModel to provide starting structure that selection will be performed on. When
+                using the main :class:`~QMzyme.GenerateModel.GenerateModel` class, the QMzyme model is automatically 
+                passed as an argument to the selection scheme. It is recommended you use the Universe (universe attribute)
+                representing the starting structure to perform the selection on. 
+            :param name: (str, required) Name of the region generated.
 
         The return should always be a QMzyme region.
 
         :Returns:
             :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
         
-        :Notes:
+        .. note::
+
             Include any notes you want users to be aware of.
 
-
-        def method_name(self):
-            You can add whatever other methods you want in your class, but 
-            you should call those methods as necessary in __init__() otherwise
-            your scheme will not work in GenerateModel.set_region(). 
     """
     def __init__(self, model, name):
         """
         Assign any key word arguments as attributes to self. Then in your
-        select_atoms method you can pull any necessary args from
+        `select_atoms()` method you can pull any necessary args from
         self attributes, instead of relying on passing them.
 
-        Every concrete scheme __init__ should include this line at the very end:
+        Every concrete scheme `__init__()` method should include this line 
+        at the very end:
 
-        super().__init__(model, name)
+        .. code:: python
 
-        This will automatically run your select_atoms method and return the resulting region.
+            super().__init__(model, name)
+
+        This will automatically run your `select_atoms()` method and return the resulting region.
         """
         self.name = name
         self.model: QMzymeModel = model
@@ -82,28 +79,28 @@ class SelectionScheme(abc.ABC):
         """
         Write your code to perform the selection. 
 
-        At the end of your code you should set self.region = {region}. 
+        At the end of your code you should set `self.region = {region}`. 
 
         The product of your selection scheme needs to be a QMzymeRegion 
-        in order for it to work with GenerateModel().set_region().
+        in order for it to work with `GenerateModel().set_region()`.
 
         This method is automatically called in the ``super().__init__(model, name)``
-        line of your __init__ method.
+        line of your `__init__()` method.
         """
         ...
     
     def method_name(self):
         """
         You can add whatever other methods you want in your class, but 
-        you should call those methods as necessary in __init__() otherwise
-        your scheme will be automated in GenerateModel.set_region()
+        you should call those methods as necessary in `__init__()` otherwise
+        your scheme will be automated in `GenerateModel.set_region()`
         """
         pass
 
     def return_region(self):
         """
         This method belongs to the base class and is automatically called in 
-        the ``super().__init__(model, name)`` line of your __init__ method. All
+        the ``super().__init__(model, name)`` line of your `__init__()` method. All
         you have to do is make sure you have created a class attribute called `region`.
         """
         self.region.rename(self.name)
@@ -116,11 +113,12 @@ class SelectionScheme(abc.ABC):
         attribute called `reference` that provides a citable reference of the scheme, to 
         give credit where credit is due. The reference will be automatically printed when
         the class is instantiated. This is taken care of in the the ``super().__init__(model, name)`` 
-        line of your __init__ method.  
+        line of your `__init__()` method.  
         
         Example:
 
         .. code:: python
+
             self.reference = "1. Alegre‐Requena, J. V., Sowndarya S. V., S., Pérez‐Soto, R., Alturaifi, T. M. & Paton, R. S. AQME: Automated quantum mechanical environments for researchers and educators. WIREs Comput Mol Sci 13, e1663 (2023)."
 
         In some cases, there might not be a direct reference (see DistanceCutoff class), but 
@@ -130,6 +128,7 @@ class SelectionScheme(abc.ABC):
         If there are no references, please only include the line:
 
         .. code:: python
+
             self.reference = None
 
         """
@@ -140,8 +139,8 @@ class DistanceCutoff(SelectionScheme):
     """
     The DistanceCutoff class performs a selection simply based on the distance of 
     atoms from a pre-defined catalytic_center region. Users must first call 
-    GenerateModel().set_catalytic_center() in order to then run DistanceCutoff via
-    GenerateModel().set_region(selection=DistanceCutoff, name={str}, cutoff={int}). 
+    ``GenerateModel().set_catalytic_center(kwargs)`` in order to then run DistanceCutoff via
+    ``GenerateModel().set_region(selection=DistanceCutoff, name={str}, cutoff={int})``. 
     
     This scheme is known to require rather large QM regions to achieve agreement 
     with experiment (Ex., Kulik HJ, Zhang J, Klinman JP, Martínez TJ. How Large 
@@ -168,7 +167,8 @@ class DistanceCutoff(SelectionScheme):
 
     :returns: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
-    :notes:
+    .. note::
+
         Users are encouraged to evaluate the resulting region. There may be situations where
         a charged residue is within the cutoff distance, however, its charge partner is not. 
         Such situations can drastically alter the chemistry of the model! Maybe someone could
@@ -178,6 +178,8 @@ class DistanceCutoff(SelectionScheme):
         
     """
     def __init__(self, model, name, cutoff, include_whole_residues=True):
+        """
+        """
         if name is None:
             name = f'cutoff_{cutoff}'
         self.cutoff = cutoff
@@ -185,6 +187,8 @@ class DistanceCutoff(SelectionScheme):
         super().__init__(model, name)
 
     def select_atoms(self):
+        """
+        """
         if not self.model.has_region('catalytic_center'):
             raise UserWarning("You must first define a catalytic_center. See method `set_catalytic_center()`.")
         
@@ -212,4 +216,6 @@ class DistanceCutoff(SelectionScheme):
         self.region = region
 
     def reference(self):
+        """
+        """
         self.reference = None
