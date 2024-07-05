@@ -151,7 +151,7 @@ class GenerateModel(QMzymeModel):
               "and stored in QMzyme.CalculateModel.calculation under key "+
               f"{calc_type}. This model will be used to write the calculation input.")
 
-    def write_input(self, filename=None, memory='24GB', nprocs=12, reset_calculation=True):
+    def write_input(self, filename=None, memory='24GB', nprocs=12, reset_calculation=False):
         """
         Method to write calculation file input. The code will automatically
         detect what type of calculation file to prepare based on the 

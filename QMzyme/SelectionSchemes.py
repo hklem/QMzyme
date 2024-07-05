@@ -18,42 +18,38 @@ import abc
 
 class SelectionScheme(abc.ABC):
     """
-    SelectionScheme is the abstract class used to prescribe concrete selection scheme
-    classes. Fork QMzyme to build your own concrete selection scheme class and submit
-    a Pull Request on github to have your scheme added to QMzyme! 
+    SelectionScheme is the abstract base class used to prescribe concrete selection scheme
+    sub classes. Fork QMzyme to build your own concrete selection scheme class and submit
+    a Pull Request (PR) on github to have your scheme added to QMzyme! You will need to create
+    comprehensive tests before the PR is accepted. See the 
+    `documentation on contributing <https://qmzyme.readthedocs.io/en/latest/Contributing/index.html>`_ 
+    for more information.
 
-    Below is a template that you can use to design a selection scheme concrete class:
+    Below is a template that you can use to implement your own selection scheme class:
 
     class InformativeName(SelectionScheme):
         This is an example docstring.
 
-        Include a detailed description of how the scheme works, including references 
-        to any relevant literature.
+        Include a detailed description of how the scheme works in the class level doc string. Also
+        include any parameters the __init__ method of your class accepts so it will automatically
+        documented online (the __init__ method doc string is not documented online by default).
 
-        :Parameters:
-            - :model: QMzymeModel to provide starting structure that selection will be performed on.
-            - :name: Name of the region generated.
+        :param model: QMzymeModel to provide starting structure that selection will be performed on. When
+            using the main :class:`~QMzyme.GenerateModel.GenerateModel` class, the QMzyme model is automatically 
+            passed as an argument to the selection scheme. It is recommended you use the Universe (universe attribute)
+            representing the starting structure to perform the selection on. 
+        :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`
+        :param name: Name of the region generated.
+        :type name: str, required
+
+        The return should always be a QMzyme region.
 
         :Returns:
             :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
         
         :Notes:
             Include any notes you want users to be aware of.
-        
-        def __init__(self, model, name, {any additional kwargs}):
-            Assign any kwargs as attributes to self. Then in your
-            select_atoms method you can pull any necessary args from
-            self attributes, instead of relying on passing them.
 
-            super().__init__(model, name)
-        
-        def select_atoms(self):
-            Write your code to perform the selection. 
-
-            At the end of your code you should set self.region = {region}. 
-
-            The product of your selection scheme needs to be a QMzymeRegion 
-            in order for it to work with GenerateModel().set_region().
 
         def method_name(self):
             You can add whatever other methods you want in your class, but 
@@ -61,19 +57,84 @@ class SelectionScheme(abc.ABC):
             your scheme will not work in GenerateModel.set_region(). 
     """
     def __init__(self, model, name):
+        """
+        Assign any key word arguments as attributes to self. Then in your
+        select_atoms method you can pull any necessary args from
+        self attributes, instead of relying on passing them.
+
+        Every concrete scheme __init__ should include this line at the very end:
+
+        super().__init__(model, name)
+
+        This will automatically run your select_atoms method and return the resulting region.
+        """
         self.name = name
         self.model: QMzymeModel = model
         self.region: QMzymeRegion
         self.select_atoms()
+        self.reference()
+        if self.reference is not None:
+            print(f"Use of this selection scheme requires citing the following reference(s): \n \t{self.reference}")
         self.return_region()
 
     @abc.abstractmethod
     def select_atoms(self):
+        """
+        Write your code to perform the selection. 
+
+        At the end of your code you should set self.region = {region}. 
+
+        The product of your selection scheme needs to be a QMzymeRegion 
+        in order for it to work with GenerateModel().set_region().
+
+        This method is automatically called in the ``super().__init__(model, name)``
+        line of your __init__ method.
+        """
         ...
+    
+    def method_name(self):
+        """
+        You can add whatever other methods you want in your class, but 
+        you should call those methods as necessary in __init__() otherwise
+        your scheme will be automated in GenerateModel.set_region()
+        """
+        pass
 
     def return_region(self):
+        """
+        This method belongs to the base class and is automatically called in 
+        the ``super().__init__(model, name)`` line of your __init__ method. All
+        you have to do is make sure you have created a class attribute called `region`.
+        """
         self.region.rename(self.name)
         return self.region
+
+    @abc.abstractmethod
+    def reference(self):
+        """
+        This method needs to be included in your class. All it should do is create an
+        attribute called `reference` that provides a citable reference of the scheme, to 
+        give credit where credit is due. The reference will be automatically printed when
+        the class is instantiated. This is taken care of in the the ``super().__init__(model, name)`` 
+        line of your __init__ method.  
+        
+        Example:
+
+        .. code:: python
+            self.reference = "1. Alegre‐Requena, J. V., Sowndarya S. V., S., Pérez‐Soto, R., Alturaifi, T. M. & Paton, R. S. AQME: Automated quantum mechanical environments for researchers and educators. WIREs Comput Mol Sci 13, e1663 (2023)."
+
+        In some cases, there might not be a direct reference (see DistanceCutoff class), but 
+        there might be relevant work a user might be interested in. Please only refer to the 
+        work of interest in the class doc string, not in the reference method. 
+        
+        If there are no references, please only include the line:
+
+        .. code:: python
+            self.reference = None
+
+        """
+        ...
+
 
 class DistanceCutoff(SelectionScheme):
     """
@@ -150,3 +211,5 @@ class DistanceCutoff(SelectionScheme):
         setattr(region, 'catalytic_center', self.model.get_region('catalytic_center'))
         self.region = region
 
+    def reference(self):
+        self.reference = None
