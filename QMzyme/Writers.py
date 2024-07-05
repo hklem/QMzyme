@@ -29,9 +29,17 @@ class Writer(abc.ABC):
         self.filename = filename
         self.full_region.method["starting_file"] = filename
         self.set_constraints()
+        self.reference()
+        if self.reference is not None:
+            print(f"Use of this Writer class requires citing the following: \n \t{self.reference}")
+
 
     @abc.abstractmethod
     def write(self):
+        ...
+    
+    @abc.abstractmethod
+    def reference(self):
         ...
 
     # def aqme_acknowledgement():
@@ -74,6 +82,9 @@ class QMWriter(Writer):
         if self.full_region.method["program"] == 'gaussian':
             format = '.com'
         print_details(self.filename, format)
+
+    def reference(self):
+        self.reference = "1. Alegre‐Requena, J. V., Sowndarya S. V., S., Pérez‐Soto, R., Alturaifi, T. M. & Paton, R. S. AQME: Automated quantum mechanical environments for researchers and educators. WIREs Comput Mol Sci 13, e1663 (2023)."
 
    
 class QMQM2Writer(Writer):
@@ -136,6 +147,10 @@ class QMQM2Writer(Writer):
 
         qprep(**method, mem=self.memory, nprocs=self.nprocs)
         print_details(self.filename, 'inp')
+    
+    def reference(self):
+        self.reference = "1. Alegre‐Requena, J. V., Sowndarya S. V., S., Pérez‐Soto, R., Alturaifi, T. M. & Paton, R. S. AQME: Automated quantum mechanical environments for researchers and educators. WIREs Comput Mol Sci 13, e1663 (2023)."
+
 
 
 class QMMMWriter(Writer):
@@ -262,6 +277,10 @@ class QMXTBWriter(Writer):
         method['mult'] = self.total_mult
         qprep(**method, mem=self.memory, nprocs=self.nprocs)
         print_details(self.filename, 'inp')
+    
+    def reference(self):
+        self.reference = "1. Alegre‐Requena, J. V., Sowndarya S. V., S., Pérez‐Soto, R., Alturaifi, T. M. & Paton, R. S. AQME: Automated quantum mechanical environments for researchers and educators. WIREs Comput Mol Sci 13, e1663 (2023)."
+
         
 
 ### Factory Class to Register Concrete Writer Classes ###
