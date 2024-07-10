@@ -20,15 +20,22 @@ Introduction
 
 **QMzyme** is a Python toolkit to facilitate (quantum mechanical) QM-based enzyme 
 calculations. The :class:`~QMzyme.GenerateModel.GenerateModel` class guides the process of generating 
-QM-calculation ready truncated or partitioned models. The code 
-framework can accept any input files `MDAnalysis <https://userguide.mdanalysis.org/stable/index.html>`_ would accept to formulate an
+QM-calculation ready truncated or partitioned structures. The code 
+framework can accept all input files that `MDAnalysis <https://userguide.mdanalysis.org/stable/index.html>`_ accepts to create an
 MDAnalysis `Universe <https://userguide.mdanalysis.org/stable/universe.html>`_ object. The QMzyme framework works with MDAnalysis modules
-to create more dynamic QMzyme objects: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, 
+to create more dynamic QMzyme data structures: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, 
 :class:`~QMzyme.QMzymeRegion.QMzymeResidue`, :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, and
-:class:`~QMzyme.QMzymeModel.QMzymeModel`. QMzymeModel is an abstraction of a molecular system, such as a real enzyme. 
-Its utility comes from the ability to perform calculations on it. The calculation
-results will (ideally) be validatable through comparison to experiment, and 
-(hopefully) provide new chemical or methodological insights. 
+:class:`~QMzyme.QMzymeModel.QMzymeModel`. QMzymeModel is an abstraction of a molecular system, such as a real enzyme, that 
+comprises at least one QMzymeRegion. Its utility comes from the ability to perform calculations on it. 
+Calculation methods (think Hamiltonians) are assigned at the QMzymeRegion level. QMzyme, as its namesake suggests,
+takes a QM-centric perspective. Therefore, the CalculateModel and Writers modules are designed for compatibility with QM-focused 
+software, rather than MD-focused software, even though many MD software support QM program interfacing. The calculation
+results will (ideally) be validatable through comparison to experiment, and (hopefully) provide new chemical or methodological insights. 
+
+If you have ideas or suggestions on how to improve QMzyme please do not hesitate to either reach out directly via email to 
+heidi.klem{AT}nist{dot}gov, or `submit an Issue on GitHub <https://github.com/hklem/QMzyme/issues>`_ 
+with the label ``enhancement``.
+
 
 .. toctree::
    :maxdepth: 2
