@@ -32,19 +32,34 @@ takes a QM-centric perspective. Therefore, the CalculateModel and Writers module
 software, rather than MD-focused software, even though many MD software support QM program interfacing. The calculation
 results will (ideally) be validatable through comparison to experiment, and (hopefully) provide new chemical or methodological insights. 
 
-If you have ideas or suggestions on how to improve QMzyme please do not hesitate to either reach out directly via email to 
-heidi.klem{AT}nist{dot}gov, or `submit an Issue on GitHub <https://github.com/hklem/QMzyme/issues>`_ 
-with the label ``enhancement``.
+If you have ideas or suggestions on how to improve QMzyme please do not hesitate to engage on the `QMzyme Ideas GitHub Project space <https://github.com/users/hklem/projects/11/views/1>`_, or contribute directly by `forking the repository and submitting a pull request <https://qmzyme.readthedocs.io/en/latest/Contributing/general.html>`_. Questions can be directed via email to 
+heidi.klem{AT}nist{dot}gov.
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Table of contents
+   :maxdepth: 1
+   :caption: Quickstart
 
    Quickstart/installation
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Examples
+
    Examples/index
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Code Documentation
+
    API/index
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contribution to QMzyme
+
    Contributing/index
+
 
 .. Hide the contents from the front page because they are already in
 .. the side bar in the Alabaster sphinx style; requires Alabaster
