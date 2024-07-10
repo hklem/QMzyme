@@ -4,6 +4,7 @@
 ###############################################################################
 
 import inspect
+import numpy as np
 
 class QMzymeAtom:
     """
@@ -53,6 +54,16 @@ class QMzymeAtom:
 
     def __repr__(self):
         return f"<QMzymeAtom {self.id}: {self.name} of resname {self.resname}, resid {self.resid}>"
+
+    def __eq__(self, other):
+        if other == None:
+            return
+        self_attrs = [self.name, self.element, self.resid, self.resname]
+        other_attrs = [other.name, other.element, other.resid, other.resname]
+        self_position, other_position = self.position, other.position
+        eq_attrs = np.array_equal(self_attrs, other_attrs)
+        eq_position = np.array_equal(self_position, other_position)
+        return (eq_attrs, eq_position) == (True, True)
 
     @property
     def region(self):
