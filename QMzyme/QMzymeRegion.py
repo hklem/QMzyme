@@ -432,7 +432,15 @@ class QMzymeRegion:
         combined_atoms = copy.copy(self.atoms)
         for atom in other.atoms:
             # if not atom.is_within(self):
-            if not atom.id in self.ids:
+            # if not atom.id in self.ids:
+            #     combined_atoms.append(atom)
+            # for atom2 in self.atoms:
+            #     if atom != atom2:
+            #         combined_atoms.append(atom)
+            if atom not in self.atoms:
+                if atom.id in self.ids:
+                    atom = copy.copy(atom)
+                    atom.id = np.max([a.id for a in combined_atoms])+1
                 combined_atoms.append(atom)
         if name == None:
             name = f"{self.name}_{other.name}_combined"
@@ -511,6 +519,22 @@ class QMzymeRegion:
             filename += '.txt'
         with open(filename, 'w') as f:
             print(summary, file=f)
+
+    def align_to(self, other, self_selection='all', other_selection='all', update_region=True):
+        from QMzyme.utils import compute_translation_and_rotation, kabsch_transform
+        mobile = self._atom_group.select_atoms(self_selection)
+        target = other._atom_group.select_atoms(other_selection)
+        if len(mobile.atoms) != len(target.atoms):
+            raise UserWarning("The same number of atoms must be selected for alignment. Please adjust selections.")
+        t, r = compute_translation_and_rotation(mobile.positions, target.positions)
+        aligned_positions = kabsch_transform(self.positions, t, r)
+        if update_region is True:
+            self._atom_group.positions = aligned_positions
+            for i, atom in enumerate(self.atoms):
+                atom.position = aligned_positions[i]
+        else:
+            return aligned_positions
+
 
 class QMzymeResidue(QMzymeRegion):
     """
