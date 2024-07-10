@@ -50,13 +50,11 @@ heidi.klem{AT}nist{dot}gov.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Code Documentation
 
    API/index
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contribution to QMzyme
 
    Contributing/index
 
