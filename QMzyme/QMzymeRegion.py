@@ -472,7 +472,7 @@ class QMzymeRegion:
         region = QMzymeRegion(name=name, atoms=atoms, universe=self._universe)
         return region
     
-    def get_overlap(self, other):
+    def get_overlapping_atoms(self, other):
         """
         :param other: Other QMzymeRegion to measure overlap with.
         :type other: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
@@ -482,7 +482,7 @@ class QMzymeRegion:
         """
         atoms = []
         for atom in self.atoms:
-            if atom.is_within(other):
+            if atom in other.atoms:
                 atoms.append(atom)
         return atoms
     
@@ -521,19 +521,26 @@ class QMzymeRegion:
             print(summary, file=f)
 
     def align_to(self, other, self_selection='all', other_selection='all', update_region=True):
-        from QMzyme.utils import compute_translation_and_rotation, kabsch_transform
-        mobile = self._atom_group.select_atoms(self_selection)
-        target = other._atom_group.select_atoms(other_selection)
+        from QMzyme.utils import compute_translation_and_rotation, kabsch_transform, rmsd
+        mobile = self.atom_group.select_atoms(self_selection)
+        target = other.atom_group.select_atoms(other_selection)
+        rmsd_before_alignment = rmsd(mobile.positions, target.positions)
         if len(mobile.atoms) != len(target.atoms):
             raise UserWarning("The same number of atoms must be selected for alignment. Please adjust selections.")
         t, r = compute_translation_and_rotation(mobile.positions, target.positions)
         aligned_positions = kabsch_transform(self.positions, t, r)
+        mobile_aligned_positions = kabsch_transform(mobile.positions, t, r)
+        rmsd_after_alignment = rmsd(mobile_aligned_positions, target.positions)
+        print(f"RMSD before alignment: {rmsd_before_alignment} r\AA")
+        print(f"RMSD after alignment: {rmsd_after_alignment} r\AA")
         if update_region is True:
             self._atom_group.positions = aligned_positions
             for i, atom in enumerate(self.atoms):
                 atom.position = aligned_positions[i]
         else:
             return aligned_positions
+
+
 
 
 class QMzymeResidue(QMzymeRegion):

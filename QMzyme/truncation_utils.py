@@ -82,18 +82,21 @@ def get_preceding_Catom(region, resid):
     if resid == 1:
         return None
     if region._universe != None:
-        mda_atom = region._universe.select_atoms(f'resid {resid-1} and name {backbone_atoms["C"]}').atoms[0]
-        atom = mda_atom_to_qmz_atom(mda_atom)
+        try:
+            mda_atom = region._universe.select_atoms(f'resid {resid-1} and name {backbone_atoms["C"]}').atoms[0]
+            atom = mda_atom_to_qmz_atom(mda_atom)
+        except: #Possibly a structure that had been previous truncated.. or weird backbone atom names!
+            return None
     return atom
 
 
 def get_following_Natom(region, resid):
-    try:
-        if region._universe != None:
+    if region._universe != None:
+        try:
             mda_atom = region._universe.select_atoms(f'resid {resid+1} and name {backbone_atoms["N"]}').atoms[0]
-        atom = mda_atom_to_qmz_atom(mda_atom)
-    except:
-        atom = None # covers if res is last protein res in universe
+            atom = mda_atom_to_qmz_atom(mda_atom)
+        except: #Possibly a structure that had been previous truncated.. or weird backbone atom names!
+            atom = None # covers if res is last protein res in universe
     return atom
 
 

@@ -62,8 +62,9 @@ class QMzymeAtom:
         other_attrs = [other.name, other.element, other.resid, other.resname]
         self_position, other_position = self.position, other.position
         eq_attrs = np.array_equal(self_attrs, other_attrs)
-        eq_position = np.array_equal(self_position, other_position)
-        return (eq_attrs, eq_position) == (True, True)
+        #eq_position = np.array_equal(self_position, other_position)
+        #return (eq_attrs, eq_position) == (True, True)
+        return (eq_attrs) == (True)
 
     @property
     def region(self):
