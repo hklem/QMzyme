@@ -26,6 +26,9 @@ def init_universe(*args, frame=0, **kwargs):
         guessed_elements = guess_types(u.atoms.names)
         u.add_TopologyAttr("elements", guessed_elements)
         warnings.warn("Element information was missing from input. MDAnalysis.topology.guessers.guess_types was used to infer element types.", UserWarning)
+    if not hasattr(u.atoms, 'chainID') or u.atoms[0].chainID == '':
+        u.add_TopologyAttr("chainID")
+        u.atoms.chainIDs = 'X'
     return u
 
 def select_atoms(universe, selection):
