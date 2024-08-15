@@ -35,7 +35,6 @@ def region_to_atom_group(region):
     # Store atom attributes
     atom_attributes = {}
     for atom in region.atoms:
-
         for attr in atom.__dict__:
             if attr.startswith('_'):
                 continue
@@ -71,14 +70,9 @@ def region_to_atom_group(region):
                 if atom.segid == segid:
                     ag.append(u.select_atoms(f'id {atom.id}')[0])
             sum(ag).residues.segments=segment
-            #print(sum(ag).residues.segments)
-            
-        #segids = np.array([atom.segid for atom in region.atoms])
-        #segids = region.segids
-        #u.add_TopologyAttr("segids", segids)
 
     # Create AtomGroup and sort by resids
-    atom_group = sum(list(u.atoms.sort(key='resids')))
+    atom_group = sum(list(u.atoms.sort(key='ids')))
 
     return atom_group
 
