@@ -7,6 +7,7 @@
 Code to integrate MDAnalysis utilities in QMzyme. 
 """
 import numpy as np
+import pickle
 import warnings
 import MDAnalysis as mda
 from MDAnalysis.lib.pkdtree import *
@@ -18,6 +19,10 @@ def init_universe(*args, frame=0, **kwargs):
     can accept to create a Universe instance. Note, you may need to pass the 
     format key word in some cases. 
     """
+    warnings.filterwarnings(
+        action='ignore',
+        category=DeprecationWarning
+        )
     u = mda.Universe(*args, **kwargs)
     if frame != 0:
             u.trajectory[frame]
@@ -25,7 +30,7 @@ def init_universe(*args, frame=0, **kwargs):
         from MDAnalysis.topology.guessers import guess_types
         guessed_elements = guess_types(u.atoms.names)
         u.add_TopologyAttr("elements", guessed_elements)
-        warnings.warn("Element information was missing from input. MDAnalysis.topology.guessers.guess_types was used to infer element types.", UserWarning)
+        warnings.warn("Element information was missing from input. MDAnalysis.topology.guessers.guess_types was used to infer element types.", UserWarning, stacklevel=2)
     if not hasattr(u.atoms, 'chainID') or u.atoms[0].chainID == '':
         u.add_TopologyAttr("chainID")
         u.atoms.chainIDs = 'X'
