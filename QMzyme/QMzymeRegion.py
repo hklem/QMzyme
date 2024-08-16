@@ -540,7 +540,20 @@ class QMzymeRegion:
         else:
             return aligned_positions
 
-
+    def store_calculation_results(self, calculation_file):
+        """
+        Once you run a calculation on a QMzymeRegion you can then store the calculation 
+        results. This method uses `cclib <https://cclib.github.io/index.html>`_ to parse the output, 
+        so any calculation file that cclib can read can be stored to your QMzymeRegion, and the 
+        stored dictionary will contain all the `data that cclib parses <https://cclib.github.io/data.html>`_.
+        """
+        import cclib
+        data = cclib.io.ccread(calculation_file)
+        if not hasattr(self, 'calculations'):
+            self.calculations = {}
+        if data.metadata['methods'] == []:
+            data.metadata['methods'] = method
+        self.calculations[calculation_file] = data
 
 
 class QMzymeResidue(QMzymeRegion):
