@@ -6,9 +6,20 @@
 """
 **GenerateModel** is the primary user-facing module in QMzyme. :class:`~GenerateModel`
 is used to load a starting structure, define QMzyme regions, and write calculation input.
-The starting structure is loaded in using MDAnalysis, converting it to a Universe object.
-There are a variety of ways to define the QMzyme regions, and once a region has been set it
-can be further modified through truncation schemes. Lastly, this module interfaces with 
+To avoid unintended behavior, the initial stucture must be pre-processed. I.e., ensure
+hydrogens have been added, and the structure is representative of the system you hope
+to study. If atomic charge information is not present in the input file(s), QMzyme
+will guess atomic charges by refering to the residue names. Any residue name corresponding
+to standard protein residue names, defined `here <https://userguide.mdanalysis.org/1.1.1/standard_selections.html>`_, 
+are able to be parsed for their total charge. This library can also be found in :py:mod:`~QMzyme.configuration` under
+the dictionary protein_residues. If you have a non-protein residue QMzyme will assume its charge is 0. This
+is important if you have a ligand with a non-zero charge that you will include in your calculation. After importing
+QMzyme you can update the charge dictionary to add this information by adding to the residue_charges dictionary found 
+in :py:mod:`~QMzyme.configuration`. 
+
+The starting structure is loaded in using MDAnalysis and converted to a Universe object.
+There are a variety of ways to define QMzyme region(s), and once a region has been set it
+can be further modified, i.e., through truncation schemes. Lastly, this module interfaces with 
 :class:`~QMzyme.CalculateModel.CalculateModel`, :class:`~QMzyme.Writers.Writer` and 
 :class:`~QMzyme.aqme.qprep.qprep` to automate the creation of single- or multi-scale 
 calculation input files. 
