@@ -4,6 +4,7 @@
 ###############################################################################
 
 import os
+import pickle
 from QMzyme.CalculateModel import CalculateModel
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import protein_residues, residue_charges
@@ -25,15 +26,21 @@ class QMzymeModel:
     :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
     
 
-    :param name: Name of QMzymeModel.
+    :param name: Name of QMzymeModel
     :type name: str, default=None
-    :param universe: MDAnalysis Universe object.
+    :param universe: MDAnalysis Universe object
     :type universe: `MDAnalysis.Universe <https://userguide.mdanalysis.org/stable/universe.html>`_, default=None
     :param frame: If trajectory was provided, specify a frame to base coordinates on
     :type frame: int, default=0
+    :param pickle_file: Provide name/path+file of previously pickled QMzymeModel object to inialize
+    :type pickle_file: str, default=None
     """
-    def __init__(self, *args, name, universe, select_atoms='all', frame=0, **kwargs):
-        if universe is None:
+    def __init__(self, *args, name, universe, select_atoms='all', frame=0, pickle_file=None, **kwargs):
+        if pickle_file is not None:
+            with open(pickle_file, 'rb') as f:
+                self.__dict__ = pickle.load(f).__dict__
+            return
+        elif universe is None:
             universe = MDAwrapper.init_universe(*args, frame=frame, **kwargs)
         self.universe = MDAwrapper.universe_selection(universe, select_atoms)
         self.select_atoms = select_atoms
@@ -189,3 +196,21 @@ class QMzymeModel:
             filename = filename+'.py'
         with open (filename, 'w+') as f:
             f.write(lines)
+
+    def store_pickle(self, filename=None):
+        """
+        The pickle file will by default be named after the QMzymeModel.name 
+        attribute, which by default is the base name of the file originally 
+        used to initialize the model. You can also specify a filename by 
+        passing the argument 'filename'.
+
+        :param filename: Name of the pickle file generated. If no extension 
+        is provided the '.pkl' extension will be added to the str
+        :type filename: str
+        """
+        if filename == None:
+            filename = self.name+'.pkl'
+        if len(filename.split('.')) < 2:
+            filename += '.pkl'
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)

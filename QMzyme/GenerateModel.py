@@ -63,9 +63,9 @@ class GenerateModel(QMzymeModel):
             model = QMzyme.GenerateModel("filename.pdb", "filename.dcd", frame=100)
 
     """
-    def __init__(self, *args, name=None, universe=None, select_atoms='all', frame=0, **kwargs):
+    def __init__(self, *args, name=None, universe=None, select_atoms='all', frame=0, pickle_file=None, **kwargs):
         CalculateModel._reset()
-        super().__init__(*args, name=name, universe=universe, frame=frame, select_atoms=select_atoms, **kwargs)
+        super().__init__(*args, name=name, universe=universe, frame=frame, select_atoms=select_atoms, pickle_file=pickle_file, **kwargs)
 
     def __repr__(self):
         return f"<QMzymeModel built from {self.universe} contains {self.n_regions} region(s)>"
@@ -155,7 +155,9 @@ class GenerateModel(QMzymeModel):
         """
         Method to write calculation file input. The code will automatically
         detect what type of calculation file to prepare based on the 
-        calculation methods that have been assigned to the model region(s). 
+        calculation methods that have been assigned to the model region(s). Once this is called
+        the QMzymeModel object will automatically be serialized using the pickle library and saved
+        under the filename {self.name+'.pkl'} in the current working directory.
 
         :param filename: Name to use for resulting file. If not specified, the 
             file will be named according to the region(s) name. The file format ending
@@ -181,4 +183,5 @@ class GenerateModel(QMzymeModel):
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
         if reset_calculation == True:
             CalculateModel._reset()
+        self.store_pickle()
         #writer.write()
