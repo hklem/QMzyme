@@ -57,7 +57,13 @@ heidi.klem{AT}nist{dot}gov.
    :maxdepth: 2
    :caption: Contributing to QMzyme!
 
-   Contributing/index
+   Contributing/CODE_OF_CONDUCT
+   Contributing/suggestions
+   Contributing/general
+   Contributing/selection_schemes
+   Contributing/truncation_schemes
+   Contributing/calculation_methods
+   Contributing/writers
 
 
 .. Hide the contents from the front page because they are already in
