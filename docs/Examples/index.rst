@@ -13,6 +13,7 @@ Example Workflows
    QMxTB Calculation
    Ligand Parameterization
    Working with Trajectories
+   Serialization
 
 
 Cookbook
