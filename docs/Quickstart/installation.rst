@@ -25,7 +25,7 @@ The source code is available from https://github.com/hklem/QMzyme.
 
     pip install -e . # the -e signifies developer install 
 
-    # If you want to run tests you can install the required dependecies by executing:
+    # If you want to run tests you can install the required dependencies by executing:
     pip install 'QMzyme[test]'
 
 
