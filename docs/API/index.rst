@@ -1,4 +1,7 @@
+Code Documentation
+--------------------
+
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    API_reference
