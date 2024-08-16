@@ -19,12 +19,11 @@ Full documentation with installation instructions, technical details and example
 ## Contributing to QMzyme
 For suggestions and improvements of the code (greatly appreciated!), please reach out through the issues and pull requests options of Github. See documentation about [contributing guidelines](https://qmzyme.readthedocs.io/en/latest/Contributing/index.html).
 
-### Current Contributors
-- Heidi Klem, NIST (main developer)
-- Demian Riccardi, NIST
+## Current Contributors
+* Heidi Klem, NIST (main developer)
+* Demian Riccardi, NIST
 
 ## References
-
 QMzyme has not been formally published. Please refer back here for the proper citation once it has.
 
 QMzyme's main dependency is MDAnalysis. When using QMzyme please [cite MDAnalysis accordingly](https://www.mdanalysis.org/pages/citations/):
@@ -37,9 +36,18 @@ If you use QMzyme to write QM software calculation input files, please include t
 
 * Alegre-Requena, J. V.; Sowndarya, S.; Pérez-Soto, R.; Alturaifi, T.; Paton, R. AQME: Automated Quantum Mechanical Environments for Researchers and Educators. Wiley Interdiscip. Rev. Comput. Mol. Sci. 2023, 13, e1663. (DOI: 10.1002/wcms.1663).  
 
+### Acknowledgements
+MolSSI for providing the [CMS Cookiecutter](https://github.com/molssi/cookiecutter-cms) that informed initial project architecture.
+
+We really THANK all the testers for their feedback, including:
+
+* **Helena Giramé** (2024, Feixas and Garcia-Borràs groups at University of Girona, IQCC)
+* **Cristina Berga** (2024, Feixas and Garcia-Borràs groups at University of Girona, IQCC)
+* **Aqza Elza John** (2024, Feixas and Garcia-Borràs groups at University of Girona, IQCC)
+* **Hande Abeş** (2024, Feixas and Garcia-Borràs groups at University of Girona, IQCC)
+* **Raul Perez-Soto** (2024, Kim group at Colorado State University)
+* **Alex Platt** (2024, Paton group at Colorado State University)
 
 #### Copyright
 Copyright (c) 2024, Heidi Klem
 
-#### Acknowledgements
-Project architecture initially inspired by [MolSSI CMS Cookiecutter](https://github.com/molssi/cookiecutter-cms).
