@@ -40,6 +40,8 @@ class GenerateModel(QMzymeModel):
     :type select_atoms: str, default='all'
     :param frame: If trajectory was provided, specify a frame to extract coordinates from.
     :type frame: int, default=0
+    :param pickle_file: Provide name/path+file of previously pickled QMzymeModel object to inialize
+    :type pickle_file: str, default=None
 
     :Usage:
 
