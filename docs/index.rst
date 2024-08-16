@@ -37,24 +37,25 @@ heidi.klem{AT}nist{dot}gov.
 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Quickstart
+   :maxdepth: 2
 
    Quickstart/installation
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Examples
+   :maxdepth: 2
+   :caption: Examples/Tutorials
 
    Examples/index
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :caption: Code Documentation
 
    API/index
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :caption: Contributing to QMzyme!
 
    Contributing/index
 

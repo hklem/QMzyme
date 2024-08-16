@@ -1,5 +1,3 @@
-Tutorials & Cookbook
-======================
 
 Example Workflows
 -------------------
