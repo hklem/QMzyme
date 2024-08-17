@@ -45,13 +45,19 @@ heidi.klem{AT}nist{dot}gov.
    :maxdepth: 2
    :caption: Examples/Tutorials
 
-   Examples/index
+   Examples/Getting_Started
+   Examples/QM-only Calculation
+   Examples/QMQM2 Calculation
+   Examples/QMxTB Calculation
+   Examples/Ligand Parameterization
+   Examples/Working with Trajectories
+   Examples/Serialization
 
 .. toctree::
    :maxdepth: 2
    :caption: Code Documentation
 
-   API/index
+   API/API_reference
 
 .. toctree::
    :maxdepth: 2
