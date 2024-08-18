@@ -113,7 +113,7 @@ class SelectionScheme(abc.ABC):
         attribute called `reference` that provides a citable reference of the scheme, to 
         give credit where credit is due. The reference will be automatically printed when
         the class is instantiated. This is taken care of in the the ``super().__init__(model, name)`` 
-        line of your `__init__()` method.  
+        line of your `__init__()` method.
         
         Example:
 
