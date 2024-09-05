@@ -48,6 +48,10 @@ We really THANK all the testers for their feedback, including:
 * **Raul Perez-Soto** (2024, Kim group at Colorado State University)
 * **Alex Platt** (2024, Paton group at Colorado State University)
 
+We greatly acknowledge HPC resources obtained through ACCESS:
+* Timothy J. Boerner, Stephen Deems, Thomas R. Furlani, Shelley L. Knuth, and John Towns. 2023. ACCESS: Advancing Innovation: NSF’s Advanced Cyberinfrastructure Coordination Ecosystem: Services & Support. “In Practice and Experience in Advanced Research Computing (PEARC ’23)”, July 23–27, 2023, Portland, OR, USA. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3569951.3597559.
+* This work used Expanse at SDSC through allocation BIO230144 from the Advanced Cyberinfrastructure Coordination Ecosystem: Services & Support (ACCESS) program, which is supported by National Science Foundation grants #2138259, #2138286, #2138307, #2137603, and #2138296.
+
 #### Copyright
 Copyright (c) 2024, Heidi Klem
 
