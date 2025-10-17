@@ -78,7 +78,7 @@ QMzyme = [
 
 [tool.versioningit]
 #default-version = "1+unknown"
-default-version = "0.0.7.dev0"
+default-version = "0.0.8.dev0"
 
 [tool.versioningit.format]
 #distance = "{base_version}+{distance}.{vcs}{rev}"
