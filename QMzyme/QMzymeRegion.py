@@ -189,6 +189,29 @@ class QMzymeRegion:
         
         return self._creation_params
     
+    def reset_creation_params(self):
+        """
+        Resets the selection and creation parameters for the region.
+        """
+        self._selection_params = {}
+        self._creation_params = {}
+
+    def set_creation_params(self, params=None, **kwargs):
+        """
+        Manually sets or updates the selection parameters for the region. This is
+        particularly useful for assigning parameters to internally generated regions
+        that need to inherit the creation history of their parent selection scheme.
+        """
+        
+        if not hasattr(self, '_selection_params'):
+            self._selection_params = {}
+            
+        if params is not None:
+            self._selection_params.update(params)
+            
+        if kwargs:
+            self._selection_params.update(kwargs)
+
     def get_atom(self, id):
         for i in self.atoms:
             if i.id == id:
