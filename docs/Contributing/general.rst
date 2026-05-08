@@ -24,7 +24,7 @@ Viewing Documentation Locally
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also add onto the read the docs webpage in the QMzyme/docs directory.
-To build the documentaion pages locally go to the QMzyme/docs dirctory and run:
+To build the documentaion pages locally go to the QMzyme/docs directory and run:
 
 .. code-block:: bash
 
