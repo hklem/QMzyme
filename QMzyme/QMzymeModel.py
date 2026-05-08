@@ -118,13 +118,14 @@ class QMzymeModel:
                 del self.regions[i]
                 break
     
-    def pymol_visualize(self, filename:str=None):
+    def pymol_visualize(self, filename:str=None, model_surface:bool=True):
         """
         Creates a QMzymeModel_visualize.py script that you can load into PyMol.
 
         :param filename: Name of PyMol .py file. If not specified, the name 
             attribute of the QMzymeModel will be used.
         :type filename: str, optional
+        :model_surface: boolean, optional. Turning this into False will reduce the GPU load for PyMOL, sometimes preventing GL error.
         
         """
         lines = ''
@@ -180,8 +181,9 @@ class QMzymeModel:
             lines += f"cmd.set('label_size', 14)\n"
             lines += f"cmd.label('n. ha and residue_labels', 'resn+resi')\n"
             lines += f"cmd.zoom('visible')\n"
-            lines += f"cmd.create('model_surface', '{region.name}')\n"
-            lines += f"cmd.show_as('surface', 'model_surface')\n"
+            if model_surface is True:
+                lines += f"cmd.create('model_surface', '{region.name}')\n"
+                lines += f"cmd.show_as('surface', 'model_surface')\n"
             lines += f"cmd.orient('visible')\n"
             lines += f"cmd.scene('{region.name}', 'store')\n"
             lines += f"cmd.set('cartoon_transparency', 0.6)\n"
