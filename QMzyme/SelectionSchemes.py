@@ -331,10 +331,7 @@ class CSACutoff(SelectionScheme):
     """
 
     def __init__(self, model, name, method: QM_Method, min_atoms=900, max_atoms=1000, include_whole_residues=True, alanine_mutation=[], memory=None, nprocs=None, holo_output_files=None, apo_output_files=None, pop="hirshfeld", charge_threshold=float):
-        """
-        """
-        if name is None:
-            name = "CSA"
+
         self.min_atoms = min_atoms
         self.max_atoms = max_atoms
         self.model = model
@@ -349,13 +346,29 @@ class CSACutoff(SelectionScheme):
         self.pop = pop
         self.charge_threshold = charge_threshold
 
-        # Function that selects catalytic center atoms that are not protein or water
+        # Store the parameters that you want the regions to "remember"
+        self.holo_selection_params = {
+            'selection_scheme': self.__class__,
+            'min_atoms': min_atoms,
+            'max_atoms': max_atoms
+        }
+
+        self.apo_selection_params = {
+            'selection_scheme': self.__class__,
+            'min_atoms': min_atoms,
+            'max_atoms': max_atoms,
+            'alanine_mutation': alanine_mutation
+        }
+
+        # Function that selects catalytic center atoms that are not protein or water.
         self.select_cat_residues()
         catalytic_center = self.model.get_region('catalytic_center')
 
+        # Raise user warning if catalytic_center is missing.
         if catalytic_center is None:
             raise UserWarning("You must first define a catalytic_center. See method `set_catalytic_center()`.")
         
+        # Raises user warning if catalytic center does not contain non-protein and non-water atoms for apo form.
         if self.cat_center_atoms is None or len(self.cat_center_atoms) == 0:
             raise UserWarning("The catalytic center must contain non-protein and non-water atoms.")
         
@@ -375,11 +388,17 @@ class CSACutoff(SelectionScheme):
         else:
             print("Creating Holo and Apo input files for partial charge calculations.")
             self.create_apo_holo_regions()
-            self.name = name
+            self.name = "CSA_initial_selection_conditions"
+
+            self.full_method = self.method.__class__.__new__(self.method.__class__)
+            self.full_method.__dict__.update(self.method.__dict__)
+            self.full_method.starting_file = f"{self.model.name}"
+
+            self.full_method.assign_to_region(self.region)
             self.reference()
             if self.reference is not None:
                 print(f"Use of this selection scheme requires citing the following reference(s): \n \t{self.reference}")
-            self.return_region()
+            self.region.reset_creation_params()
 
     def select_cat_residues(self):
         """
@@ -408,6 +427,7 @@ class CSACutoff(SelectionScheme):
         
         # Examine what the total number of atom is!
         all_atoms = self.model.universe.select_atoms('all')
+        CSA_initial_region = RegionBuilder(name="CSA_initial", atom_group=all_atoms).get_region()
 
         # Check if the total number of atoms within the system is less than max atom limit
         if len(all_atoms.atoms) <= self.max_atoms:
@@ -452,10 +472,22 @@ class CSACutoff(SelectionScheme):
 
                 # Check if the number of atoms is within the min and max atoms set
                 if self.min_atoms <= len(holo_region.atoms) <= self.max_atoms:
-
                     # This sets a region attribute to a QMzymeRegion object. So a potential subregion...?
                     # But it does not change the catalytic center region of the original model
                     setattr(holo_region, 'catalytic_center', self.model.get_region('catalytic_center'))
+
+                    # Create a fresh instance of the same class without calling __init__
+                    holo_method = self.method.__class__.__new__(self.method.__class__)
+
+                    # Copy the attributes over (this is a shallow clone)
+                    holo_method.__dict__.update(self.method.__dict__)
+
+                    # Assign the unique clone to the region
+                    holo_method.assign_to_region(holo_region)
+
+                    # Now, save region and creation_param for the pickle file
+                    self.model.set_region(holo_region)
+                    holo_region.set_creation_params(self.holo_selection_params)
 
                     # Assign method to region
                     self.method.assign_to_region(holo_region)
@@ -469,10 +501,6 @@ class CSACutoff(SelectionScheme):
 
                 elif self.max_atoms < len(holo_region.atoms):
                     self.cutoff -= 0.25
-
-        CSA_holo_truncated = QMzymeRegion(name="CSA_holo_truncated", atoms=self.model.truncated.atoms)
-        
-        self.model.set_region(CSA_holo_truncated)
 
         # Write holo input file
         kwargs = {}
@@ -501,14 +529,15 @@ class CSACutoff(SelectionScheme):
             BetaCarbon(apo_region, ala_atom_group, model=self.model, name="apo_Ala_mutation")
 
         # Set name of apo region and assign QM menthod
-        self.method.assign_to_region(apo_region)
+        apo_method = self.method.__class__.__new__(self.method.__class__)
+        apo_method.__dict__.update(self.method.__dict__)
+        apo_method.assign_to_region(apo_region)
+
         del self.model.truncated
         apo_region.name = "CSA_apo"
+        self.model.set_region(apo_region)
+        apo_region.set_creation_params(self.apo_selection_params)
         self.model.truncate()
-
-        CSA_apo_truncated = QMzymeRegion(name="CSA_apo_truncated", atoms=self.model.truncated.atoms)
-
-        self.model.set_region(CSA_apo_truncated)
 
         # Method and truncation for apo region should be the same as holo region, so I think we can just write input
         self.model.write_input(**kwargs)
@@ -518,7 +547,7 @@ class CSACutoff(SelectionScheme):
         with open("CSA_holo_apo.pkl", "wb") as file:
             pickle.dump(self.model, file)
 
-        self.region = holo_region
+        self.region = CSA_initial_region
 
 
     def select_atoms(self):
