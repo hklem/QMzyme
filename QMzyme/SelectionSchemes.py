@@ -427,11 +427,11 @@ class CSACutoff(SelectionScheme):
         
         # Examine what the total number of atom is!
         all_atoms = self.model.universe.select_atoms('all')
-        CSA_initial_region = RegionBuilder(name="CSA_initial", atom_group=all_atoms).get_region()
 
         # Check if the total number of atoms within the system is less than max atom limit
         if len(all_atoms.atoms) <= self.max_atoms:
             holo_region = RegionBuilder(name="CSA_holo", atom_group=all_atoms).get_region()
+            CSA_initial_region = RegionBuilder(name="CSA_initial", atom_group=all_atoms).get_region()
             # This sets a region attribute to a QMzymeRegion object. So a potential subregion...? But it does not change the catalytic center region of the original model.
             setattr(holo_region, 'catalytic_center', self.model.get_region('catalytic_center'))
 
@@ -472,6 +472,7 @@ class CSACutoff(SelectionScheme):
 
                 # Check if the number of atoms is within the min and max atoms set
                 if self.min_atoms <= len(holo_region.atoms) <= self.max_atoms:
+                    CSA_initial_region = RegionBuilder(name="CSA_initial", atom_group=neighbors_byres).get_region()
                     # This sets a region attribute to a QMzymeRegion object. So a potential subregion...?
                     # But it does not change the catalytic center region of the original model
                     setattr(holo_region, 'catalytic_center', self.model.get_region('catalytic_center'))
