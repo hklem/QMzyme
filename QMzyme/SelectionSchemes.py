@@ -381,6 +381,8 @@ class CSACutoff(SelectionScheme):
                 print("Calculating partial charge differences from provided QM output files.")
                 name = "CSA_cutoff_region"
                 super().__init__(model, name)
+                QMzyme.CalculateModel._reset()
+                self.method.assign_to_region(self.region)
 
             elif charge_threshold is None or not isinstance(charge_threshold, (float)):
                 raise UserWarning("You must set charge_threshold as float or int for partial charge calculation.")
@@ -490,8 +492,6 @@ class CSACutoff(SelectionScheme):
                     self.model.set_region(holo_region)
                     holo_region.set_creation_params(self.holo_selection_params)
 
-                    # Assign method to region
-                    self.method.assign_to_region(holo_region)
                     self.model.truncate()
 
                     break
@@ -706,12 +706,12 @@ class CSACutoff(SelectionScheme):
         df_delta = pd.DataFrame(delta_data)
         df_delta.to_csv(f"delta_charges_{self.pop}.csv", index=False)
 
-        # Setting the method to the model
-
+        # Removing methods from the model
         self.model.CSA_holo_truncated.method = None
+        self.model.CSA_holo.method = None
         self.model.CSA_apo_truncated.method = None
-
-        self.method.assign_to_region(region)
+        self.model.CSA_apo.method = None
+        
         self.region = region
         
     def reference(self):
