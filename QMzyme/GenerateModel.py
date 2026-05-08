@@ -30,6 +30,7 @@ from QMzyme.utils import make_selection
 from QMzyme.TruncationSchemes import TerminalAlphaCarbon
 from QMzyme.CalculateModel import CalculateModel, CalculationFactory
 from QMzyme.Writers import WriterFactory
+from QMzyme.QMzymeRegion import QMzymeRegion
 
 
 class GenerateModel(QMzymeModel):
@@ -159,11 +160,26 @@ class GenerateModel(QMzymeModel):
         if len(CalculateModel.calculation) > 1:
             CalculateModel.combine_regions_and_methods()
         calc_type = CalculateModel.calc_type
+
+        # Remember the original region name prior to making truncated region
+        source_region_name = CalculateModel.calculation[calc_type].name
+
+        # Selecting a region based on the truncation scheme
         s = scheme(region=CalculateModel.calculation[calc_type], name=name)
         region = s.return_region()
+
+        # Handle the naming of the newly formed region
+        if not region.name.endswith("_truncated"):
+            region.name = f"{region.name}_truncated"
+
         if calc_type != 'QM':
             CalculationFactory._make_calculation(calc_type)().assign_to_region(region=region)
         CalculateModel.calculation[calc_type] = region
+
+        # Creates the truncated region as a whole region
+        self.set_region(region)
+        region.set_creation_params(selection_scheme=f"truncated from {source_region_name}")
+
         setattr(self, "truncated", region)
         print(f"\nTruncated model has been created and saved to attribute 'truncated' "+
               "and stored in QMzyme.CalculateModel.calculation under key "+
