@@ -217,13 +217,17 @@ class QMzymeModel:
             method = getattr(region, 'method', None)
             print(f"  - method: {method}")
             
-            # Retrieve the property optimized in QMzymeRegion.py
-            params = region.creation_params
-            for key, value in params.items():
-                # Avoid duplicate printing of counts
-                if key not in ['total_atoms', 'total_residues']:
-                    print(f"  - {key}: {value}")
+            # If it does not have any creation_params, state that information is not avaialable!
+            try:
+                params = region.creation_params
+                for key, value in params.items():
+                    # Avoid duplicate printing of counts
+                    if key not in ['total_atoms', 'total_residues']:
+                        print(f"  - {key}: {value}")
             
+            except AttributeError:
+                print("  - selection_scheme: information not available")
+
             print("-" * 29)
 
     def store_pickle(self, filename=None):
