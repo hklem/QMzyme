@@ -127,7 +127,7 @@ def test_CSACutoff():
     model = GenerateModel(PDB)
     model.set_catalytic_center('resid 263')
     model.set_region(selection=CSACutoff, name=None, min_atoms=950, max_atoms=1050, memory=None, nprocs=None, method=qm_method)
-    assert len(model.regions) == 4
+    assert len(model.regions) == 6
     assert model.catalytic_center.n_residues == 1
     assert model.catalytic_center.n_atoms == 37
     assert model.CSA_holo_truncated.n_residues == 88
@@ -139,14 +139,14 @@ def test_CSACutoff():
     model.set_catalytic_center('resid 263')
 
     # Parameters for D103A selection
-    model.set_region(selection=CSACutoff, name=None, min_atoms=950, max_atoms=1050, memory='64GB', nprocs=200, method=qm_method, alanine_mutation="resid 103")
-    assert len(model.regions) == 4
+    model.set_region(selection=CSACutoff, name=None, min_atoms=950, max_atoms=1050, memory='64GB', nprocs=200, method=qm_method, alanine_mutation="resid 40")
+    assert len(model.regions) == 6
     assert model.catalytic_center.n_residues == 1
     assert model.catalytic_center.n_atoms == 37
     assert model.CSA_holo_truncated.n_residues == 88
     assert model.CSA_holo_truncated.n_atoms == 982
     assert model.CSA_apo_truncated.n_residues == 87
-    assert model.CSA_apo_truncated.n_atoms == 942
+    assert model.CSA_apo_truncated.n_atoms == 943
 
     # Second part of the CSACutoff
     # With non-pickle file, error raised
