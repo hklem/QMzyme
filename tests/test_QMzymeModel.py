@@ -45,6 +45,9 @@ def test_QMzymeModel():
     assert model.has_region('test_region') 
     assert model.n_regions == 1
 
+    # do the summarize
+    model.print_summary()
+
     # check region related methods
     assert model.get_region_names() == ['test_region']
     assert model.get_region(region_name='test_region') == region

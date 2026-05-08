@@ -12,6 +12,7 @@ import QMzyme
 from QMzyme.RegionBuilder import RegionBuilder
 import MDAnalysis as mda
 from QMzyme.data import PDB
+from QMzyme import GenerateModel
 
 u = mda.Universe(PDB)
 atom_group = u.select_atoms('resid 2-5')
@@ -133,4 +134,46 @@ def test_QMzymeResidue():
     assert residue.chain == 'A'
     assert not residue.has_atom(100000000)
 
+def test_get_overlapping_atoms():
+    model = GenerateModel(PDB)
+    model.set_region(name='reg_A', selection='resid 1-3')
+    model.set_region(name='reg_B', selection='resid 3-5')
     
+    reg_A = model.reg_A
+    reg_B = model.reg_B
+
+    # Test overlapping atoms (Residue 3 intersection)
+    overlap = reg_A.get_overlapping_atoms(reg_B)
+    assert len(overlap) > 0
+    assert any(a.resid == 3 for a in overlap)
+
+    # Test summary dictionary (Fixed keys based on FAILED output)
+    summary = reg_A.summarize()
+    assert 'Resname' in summary
+    assert 'Resid' in summary
+    assert 'Charge' in summary
+    assert 'MET' in summary['Resname']
+
+    # Test residue-level access and backbone retrieval
+    res = reg_A.residues[0]
+    bb = res.get_backbone_atoms()
+    # Standard protein backbone consists of N, CA, C, O
+    assert len(bb) >= 4 
+    
+    # Verify atom naming
+    assert res.get_atom("CA").name == "CA"
+
+def test_guess_charge():
+
+    model = GenerateModel(PDB)
+    model.set_region(name='test_reg', selection='resid 1')
+    res = model.test_reg.residues[0] 
+
+    assert "MET" in repr(res)
+    res.set_chain("A")
+    assert res.get_atom("CA").name == "CA"
+    
+    # Touch backbone and charge guessing
+    assert len(res.get_backbone_atoms()) >= 4 
+    res.guess_charge(verbose=False)
+    assert res.charge is not None

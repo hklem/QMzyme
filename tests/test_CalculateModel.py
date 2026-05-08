@@ -50,3 +50,6 @@ def test_QM_Method(Test, program):
 
     model.write_input()
     restore_directory()
+
+    qm_method.assign_to_region(region=region, charge = -5)
+    assert region.method["charge"] == -5

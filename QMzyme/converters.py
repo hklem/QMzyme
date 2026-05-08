@@ -21,6 +21,7 @@ from MDAnalysis.core.topologyattrs import (
     Occupancies,
     Tempfactors,
 )
+
 def region_to_atom_group(region):
     
     n_atoms = region.n_atoms

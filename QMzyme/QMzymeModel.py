@@ -118,13 +118,14 @@ class QMzymeModel:
                 del self.regions[i]
                 break
     
-    def pymol_visualize(self, filename:str=None):
+    def pymol_visualize(self, filename:str=None, model_surface:bool=True):
         """
         Creates a QMzymeModel_visualize.py script that you can load into PyMol.
 
         :param filename: Name of PyMol .py file. If not specified, the name 
             attribute of the QMzymeModel will be used.
         :type filename: str, optional
+        :model_surface: boolean, optional. Turning this into False will reduce the GPU load for PyMOL, sometimes preventing GL error.
         
         """
         lines = ''
@@ -132,7 +133,7 @@ class QMzymeModel:
         starting_structure = self.name
         self.universe.atoms.write(f"{self.name}_universe.pdb")
         file = os.path.abspath(f'{self.name}_universe.pdb')
-        lines += f"cmd.load('{file}', '{self.name}')\n"
+        lines += f"cmd.load(r'{file}', '{self.name}')\n"
         #lines += f"cmd.color('gray70', self.name)\n"
         lines += f"cmd.set('surface_color', 'gray')\n"
         lines += f"cmd.set('transparency', 0.75)\n"
@@ -144,7 +145,7 @@ class QMzymeModel:
         for region in self.regions:
             region.write(f'{region.name}.pdb')
             file = os.path.abspath(f'{region.name}.pdb')
-            lines += f"cmd.load('{file}', '{region.name}')\n"
+            lines += f"cmd.load(r'{file}', '{region.name}')\n"
             lines += f"cmd.hide('cartoon', '{region.name}')\n"
             lines += f"cmd.show_as('sticks', '{region.name}')\n"
             lines += f"cmd.zoom('visible')\n"
@@ -156,7 +157,7 @@ class QMzymeModel:
             region = CalculateModel.calculation[CalculateModel.calc_type]
             region.write(f'{region.name}.pdb')
             file = os.path.abspath(f'{region.name}.pdb')
-            lines += f"cmd.load('{file}', '{region.name}')\n"
+            lines += f"cmd.load(r'{file}', '{region.name}')\n"
             lines += f"cmd.hide('cartoon', '{region.name}')\n"
             lines += f"cmd.color('gray85', '{region.name} and elem c')\n"
             lines += f"cmd.color('oxygen','{region.name} and elem o')\n"
@@ -180,8 +181,9 @@ class QMzymeModel:
             lines += f"cmd.set('label_size', 14)\n"
             lines += f"cmd.label('n. ha and residue_labels', 'resn+resi')\n"
             lines += f"cmd.zoom('visible')\n"
-            lines += f"cmd.create('model_surface', '{region.name}')\n"
-            lines += f"cmd.show_as('surface', 'model_surface')\n"
+            if model_surface is True:
+                lines += f"cmd.create('model_surface', '{region.name}')\n"
+                lines += f"cmd.show_as('surface', 'model_surface')\n"
             lines += f"cmd.orient('visible')\n"
             lines += f"cmd.scene('{region.name}', 'store')\n"
             lines += f"cmd.set('cartoon_transparency', 0.6)\n"
@@ -196,6 +198,39 @@ class QMzymeModel:
             filename = filename+'.py'
         with open (filename, 'w+') as f:
             f.write(lines)
+
+    def print_summary(self):
+        """
+        Prints a formatted summary of the model and its regions, including 
+        atom/residue counts, designated methods, and creation parameters.
+        """
+        print(f"---- Model Summary: {self.name} ----")
+        print(f"Total Regions Found: {len(self.regions)}")
+        print("-" * 29) 
+        
+        for region in self.regions:
+            print(f"Region Name: {region.name}")
+            
+            # Use built-in QMzymeRegion attributes
+            print(f"  - atoms: {region.n_atoms}")
+            print(f"  - residues: {region.n_residues}")
+            
+            # Safely retrieve the method, defaulting to None if it doesn't exist
+            method = getattr(region, 'method', None)
+            print(f"  - method: {method}")
+            
+            # If it does not have any creation_params, state that information is not avaialable!
+            try:
+                params = region.creation_params
+                for key, value in params.items():
+                    # Avoid duplicate printing of counts
+                    if key not in ['total_atoms', 'total_residues']:
+                        print(f"  - {key}: {value}")
+            
+            except AttributeError:
+                print("  - selection_scheme: information not available")
+
+            print("-" * 29)
 
     def store_pickle(self, filename=None):
         """

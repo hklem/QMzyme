@@ -32,6 +32,8 @@ class QMzymeRegion:
         self._universe = universe
         if not hasattr(self, "method"):
             self.method = None
+        self._selection_params = {}
+        self._creation_params = {}
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
@@ -159,6 +161,57 @@ class QMzymeRegion:
         else:
             return
     
+    @property
+    def creation_params(self):
+        """
+        Filters _selection_params into _creation_params.
+        Ultimately, it creates a property to the region of how the region was created.
+        :rtype: List[:class:`~QMzyme.QMzymeRegion.creation_params`]
+        """
+        # Clear previous state to avoid doubling up
+        self._creation_params = {}
+
+        # Creates selection_scheme first
+        if 'selection_scheme' in self._selection_params:
+            v = self._selection_params['selection_scheme']
+            self._creation_params['selection_scheme'] = v.__name__ if hasattr(v, '__name__') else str(v)
+
+        # Loop through everything else
+        for k, v in self._selection_params.items():
+
+            # Skip method since it is saved elsewhere
+            if k == 'method' or k == 'selection_scheme':
+                continue
+            
+            # Append the list of other values within the attribute of set_region
+            else:
+                self._creation_params[k] = v
+        
+        return self._creation_params
+    
+    def reset_creation_params(self):
+        """
+        Resets the selection and creation parameters for the region.
+        """
+        self._selection_params = {}
+        self._creation_params = {}
+
+    def set_creation_params(self, params=None, **kwargs):
+        """
+        Manually sets or updates the selection parameters for the region. This is
+        particularly useful for assigning parameters to internally generated regions
+        that need to inherit the creation history of their parent selection scheme.
+        """
+        
+        if not hasattr(self, '_selection_params'):
+            self._selection_params = {}
+            
+        if params is not None:
+            self._selection_params.update(params)
+            
+        if kwargs:
+            self._selection_params.update(kwargs)
+
     def get_atom(self, id):
         for i in self.atoms:
             if i.id == id:
@@ -531,8 +584,8 @@ class QMzymeRegion:
         aligned_positions = kabsch_transform(self.positions, t, r)
         mobile_aligned_positions = kabsch_transform(mobile.positions, t, r)
         rmsd_after_alignment = rmsd(mobile_aligned_positions, target.positions)
-        print(f"RMSD before alignment: {rmsd_before_alignment} r\AA")
-        print(f"RMSD after alignment: {rmsd_after_alignment} r\AA")
+        print(rf"RMSD before alignment: {rmsd_before_alignment} \AA")
+        print(rf"RMSD after alignment: {rmsd_after_alignment} \AA")
         if update_region is True:
             self._atom_group.positions = aligned_positions
             for i, atom in enumerate(self.atoms):

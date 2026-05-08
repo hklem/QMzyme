@@ -25,6 +25,8 @@ dependencies = [
     "scipy",
     "MDAnalysis",
     "jupyterlab", #not super necessary, but helpful to follow along with examples
+    "cclib", #needed for reading QM output files
+    "pandas", #needed to read and make .csv files
     "PyYAML", #aqme dependency
     #"aqme", #bc lots of dependencies
     "rdkit", # dependency of aqme but doesn't get installed with pip install aqme

@@ -139,3 +139,59 @@ def test_TerminalAlphaCarbon(Test, init_file, region_selection, truncation_schem
                 print(original_res.atoms)
                 assert 'HN' in names
                 assert 'HC' in names
+
+@pytest.mark.parametrize(
+    "Test, init_file, region_selection, truncation_selection",[
+        ('MET1', PDB, 'resid 1', 'resid 1'),
+        ('MET1 LEU3', PDB, 'resid 1 or resid 3', 'resid 1 or resid 3'),
+        ('PRO4 (Should Skip)', PDB, 'resid 4', 'resid 4'),
+        ('GLY11 (Should Skip)', PDB, 'resid 11', 'resid 11'),
+        ('Selective Truncation', PDB, 'resid 1:20', 'resid 5') 
+    ]
+)
+def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
+    model = GenerateModel(init_file)
+    model.set_region(name='region', selection=region_selection)
+    
+    # Capture original atom names BEFORE truncation manually
+    original_state = {}
+    for res in model.region.residues:
+        original_state[res.resid] = [atom.name for atom in res.atoms]
+    
+    ala_group = model.universe.select_atoms(truncation_selection)
+    
+    # Run Truncation
+    truncator = BetaCarbon(region=model.region, ala_atom_group=ala_group, model=model, name='truncated_reg')
+    region_truncated = truncator.return_region()
+
+    assert region_truncated is not None
+    
+    for trunc_res in region_truncated.residues:
+        resid = trunc_res.resid
+        resname = trunc_res.resname
+        
+        orig_names = original_state[resid]
+        trunc_names = [atom.name for atom in trunc_res.atoms]
+
+        # Skip Logic (PRO/GLY or not in ala_group)
+        if resname in ["GLY", "PRO"] or resid not in ala_group.resids:
+            assert len(trunc_names) == len(orig_names)
+            continue
+
+        # Active Truncation
+        # Detecting change in atom numbers
+        assert len(trunc_names) != len(orig_names)
+
+        # Check Scaffold Preservation (N, CA, C, O, CB)
+        for atom in ['N', 'CA', 'C', 'O', 'CB']:
+            if atom in orig_names:
+                assert atom in trunc_names
+        
+        # Verify that heavy atoms beyond CB are removed
+        for sc_atom in ['CG', 'SD', 'OG', 'CD', 'CE']:
+            if sc_atom in orig_names:
+                assert sc_atom not in trunc_names
+
+        # Check for Capping (Presence of new Hydrogens from cap_H)
+        new_atoms = [n for n in trunc_names if n not in orig_names]
+        assert len(new_atoms) > 0

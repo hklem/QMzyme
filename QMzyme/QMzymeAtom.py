@@ -5,6 +5,8 @@
 
 import inspect
 import numpy as np
+from QMzyme.data import element_name_to_atomic_number
+
 
 class QMzymeAtom:
     """
@@ -78,6 +80,18 @@ class QMzymeAtom:
     def region(self, value):
         fname = inspect.currentframe().f_code.co_name
         raise AttributeError(f"This attribute is protected. If you truly wish to change its value use self.set_{fname}({value}).")
+
+    @property
+    def atomic_number(self):
+        """
+        :returns: Atomic number corresponding to QMzymeAtom.element.
+        :rtype: integer
+        """ 
+        return element_name_to_atomic_number[self.element]
+    
+    @atomic_number.setter
+    def atomic_number(self, value):
+        pass
 
     def _set_region(self, value):
         self.__region = value
