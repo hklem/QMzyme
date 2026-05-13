@@ -25,7 +25,7 @@ dependencies = [
     "scipy",
     "MDAnalysis",
     "jupyterlab", #not super necessary, but helpful to follow along with examples
-    "cclib", #needed for reading QM output files
+    #"cclib", #needed for reading QM output files
     "pandas", #needed to read and make .csv files
     "PyYAML", #aqme dependency
     #"aqme", #bc lots of dependencies
@@ -42,7 +42,8 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest",
-    "pytest-cov"
+    "pytest-cov",
+    "cclib", #needed for reading QM output files
 ]
 
 
