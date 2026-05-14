@@ -1,6 +1,6 @@
 ###############################################################################
 # Code written by Heidi Klem.
-# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+# e: heidiklem@lsu.edu
 ###############################################################################
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar
