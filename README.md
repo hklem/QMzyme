@@ -55,5 +55,5 @@ We greatly acknowledge HPC resources obtained through ACCESS:
 * This work used Expanse at SDSC through allocation BIO230144 from the Advanced Cyberinfrastructure Coordination Ecosystem: Services & Support (ACCESS) program, which is supported by National Science Foundation grants #2138259, #2138286, #2138307, #2137603, and #2138296.
 
 #### Copyright
-Copyright (c) 2026, Heidi Klem
+Copyright (c) 2024, Heidi Klem
 
