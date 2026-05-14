@@ -19,8 +19,10 @@ Full documentation with installation instructions, technical details and example
 ## Contributing to QMzyme
 For suggestions and improvements of the code (greatly appreciated!), please reach out through the issues and pull requests options of Github. See documentation about [contributing guidelines](https://qmzyme.readthedocs.io/en/latest/Contributing/index.html).
 
-## Current Contributors
+## Code Contributors/Developers
 * Heidi Klem, LSU (main developer)
+* Young Woo Kim, LSU
+* Arkanil Roy, LSU
 * Demian Riccardi, NIST
 
 ## References
