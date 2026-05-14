@@ -1,7 +1,7 @@
 
 ![](logo.png)
 
-![GitHub Release](https://img.shields.io/github/v/release/hklem/QMzyme?label=Release)
+![GitHub Version](https://img.shields.io/github/v/tag/hklem/QMzyme?label=Version)
 ![Read the Docs](https://img.shields.io/readthedocs/qmzyme?label=Documentation)
 [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main)
 ![Codecov](https://img.shields.io/codecov/c/github/hklem/QMzyme?label=Coverage)
