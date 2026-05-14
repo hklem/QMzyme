@@ -68,7 +68,8 @@ zip-safe = false
 # recursively because of its __init__.py file, but the data subdirectory is excluded
 # with include-package-data = false and namespaces = false.
 
-#include-package-data = false
+include-package-data = true
+
 [tool.setuptools.packages.find]
 #namespaces = false
 where = [".","QMzyme/data"] # use "." and not "QMzyme" so pytest can find tests.
@@ -77,7 +78,8 @@ where = [".","QMzyme/data"] # use "." and not "QMzyme" so pytest can find tests.
 [tool.setuptools.package-data]
 QMzyme = [
     "py.typed",
-    "QMzyme/data/*",
+    "data/*",
+    "data/**/*"
 ]
 
 [tool.versioningit]
