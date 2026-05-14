@@ -225,6 +225,7 @@ class DistanceCutoff(SelectionScheme):
         """
         self.reference = None
 
+
 class ChargeShiftAnalysis(SelectionScheme):
     """
     The ChargeShiftAnalysis Selection Scheme is based on the CSA approach developed by 
@@ -723,3 +724,8 @@ class ChargeShiftAnalysis(SelectionScheme):
         """
         """
         self.reference = "(1) Kulik, Heather J.; Zhang, Jianyu; Klinman, Judith P.; Martinez, Todd J.(2016) How Large Should the QM Region Be in QM/MM Calculations? The Case of Catechol O-Methyltransferase. Journal of Physical Chemistry B, 120(44). and (2) Karelina, M., & Kulik, H. J. (2017). Systematic quantum mechanical region determination in QM/MM simulation. Journal of chemical theory and computation, 13(2)."
+
+# This line is necessary because an earlier version used CSACutoff as the class name, and test files were pickled with that version, 
+# so the pytests fail if we don't make this equality.
+CSACutoff = ChargeShiftAnalysis
+
