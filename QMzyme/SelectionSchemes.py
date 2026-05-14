@@ -225,6 +225,12 @@ class DistanceCutoff(SelectionScheme):
         """
         self.reference = None
 
+
+# This line is necessary because an earlier version used CSACutoff as the class name, and test files were pickled with that version, 
+# so the pytests fail if we don't make this equality.
+
+CSACutoff = ChargeShiftAnalysis
+
 class ChargeShiftAnalysis(SelectionScheme):
     """
     The ChargeShiftAnalysis Selection Scheme is based on the CSA approach developed by 
