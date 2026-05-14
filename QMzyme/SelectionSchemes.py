@@ -15,7 +15,6 @@ from QMzyme.QMzymeModel import QMzymeModel
 from QMzyme.TruncationSchemes import BetaCarbon
 from QMzyme.CalculateModel import QM_Method
 from typing import Type
-import cclib
 import pickle
 import pandas as pd
 
@@ -558,6 +557,7 @@ class ChargeShiftAnalysis(SelectionScheme):
 
 
     def select_atoms(self):
+        import cclib
         """
         """
         # List to hold selected atoms based on CSA cutoff
