@@ -83,7 +83,7 @@ class CalculationBase:
         atoms in the region with attribute ``is_fixed=True`` to store what atoms will be constrained
         in the calculation file.
 
-        :param region: Region to assign method istance to.
+        :param region: Region to assign method instance to.
         :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required
 
         :param charge: Charge of the region. If not specified and the QMzymeRegion instance does not have

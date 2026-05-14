@@ -40,7 +40,7 @@ class QMzymeRegion:
     
     def __sub__(self, other, name=None):
         """
-        Remove any atoms with IDs matching atom IDs in `other` reigon.
+        Remove any atoms with IDs matching atom IDs in `other` region.
         """
         diff_array = np.setdiff1d(np.array(self.ids), np.array(other.ids))
         atoms = [self.get_atom(id=id) for id in diff_array]
@@ -477,7 +477,7 @@ class QMzymeRegion:
         :rtype:  :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
         .. note:: Self region is not altered, and returned region will not contain 
-            properties or attributs of self region not described from the QMzymeAtom level 
+            properties or attributes of self region not described from the QMzymeAtom level 
             (i.e., atom_group) except for _universe. Atoms found in both self and other will 
             only be copied from self. This is important if you have different attribute values 
             on an atom that appears in both regions (i.e., is_fixed=True and is_fixed=False).
@@ -515,7 +515,7 @@ class QMzymeRegion:
         :rtype:  :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
 
         .. note:: Self region is not altered, and returned region will not contain 
-            properties or attributs of self region not described from the QMzymeAtom level 
+            properties or attributes of self region not described from the QMzymeAtom level 
             (i.e., atom_group) except for _universe.
         """
         atoms = []

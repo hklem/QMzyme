@@ -28,7 +28,7 @@ def check_filename(filename, format):
 @singledispatch
 def make_selection(selection, model: QMzymeModel, name=None, **kwargs):
     """
-    Method to enable variable input comability: will return an MDA AtomGroup if 
+    Method to enable variable input compatibility: will return an MDA AtomGroup if 
     input was an MDA selection command str, or return the input if it was either 
     an MDA AtomGroup or QMzymeRegion.
     """
