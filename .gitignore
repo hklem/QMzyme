@@ -106,3 +106,4 @@ ENV/
 
 # In-tree generated files
 */_version.py
+QMzyme/_version.py
