@@ -227,51 +227,30 @@ class DistanceCutoff(SelectionScheme):
 
 class CSACutoff(SelectionScheme):
     """
-    The CSACutoff class performs a selection initially based on the atom number 
-    provided by the user with pre-defined catalytic_center region. Then, it takes
-    .log file to perform charge shift analysis, providing final region for QM study.
-    
-    Users must first call ``GenerateModel().set_catalytic_center(kwargs)``,
-    ``CalculateModel().QM_Method(kwargs)`` in order to then run CSACutoff
-    ``GenerateModel().set_region(selection=CSACutoff, name={str}, method:{str}, min_atoms={int},
-    max_atoms={int}, include_whole_residues={bool}, alanine_mutation={str}, memory={str},
-    nprocs={int}, CSA_elbow={bool}, holo_output_files={str}, apo_output_files={str}, pop={str},
-    charge_threshold={float})``. 
-
-    As intimidating as it looks, CSACutoff class contains 2 varying functions:
-    1) CSACutoff class will make 2 input files of Holo and Apo form of an enzyme for population analysis
-    2) It will take the pickled file from the first CSACutoff run and output files from running
-    QM calculation on 2 input files to undergo charge shift analysis and provides a final QMzyme region
-    for making QM input file.
-
-    To use CSACutoff class appropriately, first run ``GenerateModel().set_region(selection=CSACutoff,
-    name={str}, method:{str}, min_atoms={int}, max_atoms={int}, include_whole_residues={bool},
-    alanine_mutation={str}, memory={str}, nprocs={int}, pop={str} method=qm_method)``.
-    This will give 2 QM method input files, one in Holo form of an enzyme and one in Apo form
-    of an enzyme. Apo form is made by first removing a non-amino acid residue from the predefined
-    catalytic_center region and then mutating selected residues in alanine_mutation to alanine.
-    The amino acid name is retained during the process, and only the side chain gets mutated to Ala.
-    CSACutoff class will also output a .pkl file. It is crucial that this .pkl file is kept for
-    charge shift analysis.
-    
-    After running the QM input file, the two output files then can be used to run the second half of
-    CSACutoff by running ``GenerateModel().set_region(selection=CSACutoff, name={str}, method:{str},
-    holo_output_files={str}, apo_output_files={str}, pop={str}, charge_threshold={float})``. 
-
-    This scheme is known to require 900-1000 initial QM regions to achieve agreement 
-    with experiment (Ex., Karelina, M., & Kulik, H. J. (2017). Systematic quantum 
+    The ChargeShiftAnalysis Selection Scheme is based on the CSA approach developed by 
+    Prof. Heather Kulik (see (1) Kulik, Heather J.; Zhang, Jianyu; Klinman, Judith P.; Martinez, Todd J.(2016) 
+    How Large Should the QM Region Be in QM/MM Calculations? The Case of Catechol O-Methyltransferase. Journal of Physical 
+    Chemistry B, 120(44). and (2) Karelina, M., & Kulik, H. J. (2017). Systematic quantum 
     mechanical region determination in QM/MM simulation. Journal of chemical theory 
-    and computation, 13(2), 563-576.).
+    and computation, 13(2)). In this scheme, two initial large single-point QM calculations
+    are performed with atomic population analysis with and without the substrate present (Holo and Apo, respectively). 
+    The rank, or importance of including a residue in the QM region is determined by how much the residue-summed partial
+    charges shift in the presence of the substrate. Residues above a threshold charge shift value will be included in 
+    the returned QMzymeRegion.
     
-    :param model: QMzymeModel to provide starting structure that selection 
-        will be performed on.
+    This class requires two steps, and therefore two separate calls. The first call will create the Apo and Holo QM calculation 
+    input files. The user will then need to run those calculations. After the calculations are complete, the user can reload 
+    their saved serialized QMzyme.GenerateModel object (".pkl" format) and then call the ChargeShiftAnalysis class, this time 
+    uploading the Apo and Holo QM output files and specifying a charge shift cutoff to return the QMzymeRegion. 
+    
+    :param model: QMzymeModel to provide starting structure that selection will be performed on.
     :type model: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
 
     :param name: Name of the region generated.
     :type name: str, required.
 
     :param method: Method used to write QM input file.
-    :type method: str, must be CalculateModel().QM_Method(kwargs)
+    :type method: :class:`~QMzyme.CalculateModel.QM_Method`, required.
 
     :param min_atoms: Minimum number of atoms for first QM input file.
     :type min_atoms: int, default=900.
@@ -310,6 +289,32 @@ class CSACutoff(SelectionScheme):
     :type charge_threshold: float, required.
 
     :returns: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+    
+    
+    :Usage:
+        Users must first set a catalytic center and define a QM_Method:
+        
+        .. code-block:: python
+                import QMzyme
+                model = QMzyme.GenerateModel("filename.pdb")
+                model.set_catalytic_center(kwargs)
+                qm_method = QMzyme.CalculateModel.QM_Method(kwargs)
+                
+        Then they can call the ChargeShiftAnalysis Selection Scheme:
+        
+        .. code-block:: python
+                model.set_region(selection=QMzyme.SelectionSchemes.ChargeShiftAnalysis, method=qm_method, name={str})
+            
+        This will create the Holo and Apo input files. The user will then run these QM calculations. 
+        Once the calculations have completed, the user can start back where they left off by loading in the saved .pkl file 
+        containing the QMzyme.GenerateModel object they instantiated in the previous step:
+        
+        .. code-block:: python
+                import QMzyme
+                model = QMzyme.GenerateModel("model.pkl") 
+                model.set_region(selection=QMzyme.SelectionSchemes.ChargeShiftAnalysis, holo_output_files={str}, apo_output_files={str}, pop={str}, charge_threshold={float})
+                
+
 
     .. note::
 
@@ -717,4 +722,4 @@ class CSACutoff(SelectionScheme):
     def reference(self):
         """
         """
-        self.reference = None
+        self.reference = "(1) Kulik, Heather J.; Zhang, Jianyu; Klinman, Judith P.; Martinez, Todd J.(2016) How Large Should the QM Region Be in QM/MM Calculations? The Case of Catechol O-Methyltransferase. Journal of Physical Chemistry B, 120(44). and (2) Karelina, M., & Kulik, H. J. (2017). Systematic quantum mechanical region determination in QM/MM simulation. Journal of chemical theory and computation, 13(2)."
