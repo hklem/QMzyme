@@ -225,7 +225,7 @@ class DistanceCutoff(SelectionScheme):
         """
         self.reference = None
 
-class CSACutoff(SelectionScheme):
+class ChargeShiftAnalysis(SelectionScheme):
     """
     The ChargeShiftAnalysis Selection Scheme is based on the CSA approach developed by 
     Prof. Heather Kulik (see (1) Kulik, Heather J.; Zhang, Jianyu; Klinman, Judith P.; Martinez, Todd J.(2016) 
@@ -330,8 +330,8 @@ class CSACutoff(SelectionScheme):
         for performing the initial population analysis and defining the QMzyme region using charge
         shift analysis. Any other method selection will return an error message.
 
-        For the second part of the CSACutoff class, you must have the .pkl file generated from the
-        first run. Without this file, the CSACutoff class cannot perform the charge shift analysis.
+        For the second part of the ChargeShiftAnalysis class, you must have the .pkl file generated from the
+        first run. Without this file, the ChargeShiftAnalysis class cannot perform the charge shift analysis.
         
     """
 
