@@ -89,9 +89,9 @@ default-version = "0.0.0"
 #distance = "{base_version}+{distance}.{vcs}{rev}"
 #dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 #distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-distance = "{base_version}.{distance}"
-dirty = "{base_version}.{distance}+dirty"
-distance-dirty = "{base_version}.{distance}+dirty"
+distance = "{base_version}.dev{distance}"
+dirty = "{base_version}.dev{distance}+dirty"
+distance-dirty = "{base_version}.dev{distance}+dirty"
 
 [tool.versioningit.vcs]
 # The method key:
