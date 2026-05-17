@@ -55,14 +55,14 @@ class Writer(abc.ABC):
 ### Concrete writer subclasses ###
 class QMWriter(Writer):
     """
-    Writes a QM input file for ORCA or Gaussian using `AQME qprep <https://aqme.readthedocs.io/en/latest/API/aqme.qprep.html>`_. 
+    Writes a QM input file for ORCA, Gaussian, or QChem using `AQME qprep <https://aqme.readthedocs.io/en/latest/API/aqme.qprep.html>`_. 
 
     :param filename: Name to be given to calculation input file. 
         Does not need to contain file format suffix.
     :type filename: str (required) Example: filename='1oh0_cutoff3'
 
     :param memory: Memory for the QM calculation 
-        (i) Gaussian: total memory; (ii) ORCA: memory per processor.
+        (i) Gaussian/QChem: total memory; (ii) ORCA: memory per processor.
     :type memory: str (optional, default memory='24GB')
 
     :param nprocs: Number of processors used in the QM calculation.
@@ -79,6 +79,8 @@ class QMWriter(Writer):
         qprep(**qprep_dict(self.full_region.method), mem=self.memory, nprocs=self.nprocs)
         if self.full_region.method["program"] == 'orca':
             format = '.inp'
+        if self.full_region.method["program"] == 'qchem':
+            format = '.inp'
         if self.full_region.method["program"] == 'gaussian':
             format = '.com'
         print_details(self.filename, format)
@@ -89,7 +91,7 @@ class QMWriter(Writer):
    
 class QMQM2Writer(Writer):
     """
-    Writes a QM input file for ORCA or Gaussian using AQME qprep. 
+    Writes a QM input file for ORCA using AQME qprep. 
 
     :param filename: Name to be given to calculation input file. 
         Does not need to contain file format suffix. Example: filename='1oh0_cutoff3'.
@@ -219,7 +221,7 @@ class ChargeFieldWriter:
 
 class QMXTBWriter(Writer):
     """
-    Writes a QM input file for ORCA or Gaussian using AQME qprep. 
+    Writes a QM input file for ORCA using AQME qprep. 
 
     :param filename: Name to be given to calculation input file. 
         Does not need to contain file format suffix. Example: filename='1oh0_cutoff3'

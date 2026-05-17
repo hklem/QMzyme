@@ -82,6 +82,14 @@ from QMzyme.aqme.utils import (
 from QMzyme.aqme.crest import xyzall_2_xyz
 from pathlib import Path
 
+QCHEM_BASIS = ['STO-2G', 'STO-3G', 'STO-6G, "3-21G", "4-31G", "6-31G", "6-311G", "G3LARGE", 'G3MP2LARGE',  'SV', 'DZ', 'TZ', "cc-pVDZ", 'cc-pVTZ', 'cc-pVQZ', 'cc-pV5Z', 'cc-pV6Z', 'cc-pC', 'cc-pw', 'aug-cc', "def2"]
+QCHEM_METHOD = [
+    "SPW92", "LDA", "SVWN5", "B97", "B97", "PBE", "BLYP", "revPBE", "BEEF-vdW", "BOP", "BP86", 
+    "BP86VWN", "EDF", "GAM", "HCTH93 (HCTH/93)", "HCTH120 (HCTH/120)",  "HCTH147 (HCTH/147)", 
+    "HCTH407 (HCTH/407)", "HLE16 – HCTH/407", "KT", "mPW91", "N12", "LYP",  "PW", "VV10", 
+    "SOGGA", "M06", "TPSS", "BLOC", "M11-L", "mBEEF", "GGA", "MN", "PKZB", "SCAN", 
+    "t-HCTH", "TM", "TASK", "VSXC", "B3P86", "HFLYP",   
+]
 
 class qprep:
     """
@@ -419,12 +427,19 @@ class qprep:
                     method, basis = keyword.split("/")
                     txt += f"METHOD {method}\n"
                     txt += f"BASIS {basis}\n"
-                else:
-                    txt += f"{keyword.upper()}\n"
+                elif keyword.upper() in QCHEM_BASIS:
+                    txt += f"BASIS {keyword}\n"
+                elif keyword.upper() in QCHEM_METHOD:
+                    txt += f"METHOD {keyword}\n"
+                elif keyword.upper() in ['SP', 'OPT', 'FREQ']:
+                    txt += f"JOBTYPE {keyword}\n"
+                
 
             # Memory + CPU
-            self.args.mem = int(self.args.mem.replace("GB","")) * 1024
-            self.args.mem = int(self.args.mem.replace("MB",""))
+            if 'GB' in self.args.mem.upper():    
+                self.args.mem = int(self.args.mem.replace("GB","")) * 1000 #convert to MB
+            elif 'MB' in self.args.mem.upper():  
+                self.args.mem = int(self.args.mem.replace("MB",""))
             txt += f"MEM_TOTAL {self.args.mem}\n"
             txt += f"NUM_THREADS {self.args.nprocs}\n"
             
