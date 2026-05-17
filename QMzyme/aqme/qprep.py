@@ -16,7 +16,7 @@ Parameters
    varfile : str, default=None
       Option to parse the variables using a yaml file (specify the filename)
    program : str, default=None
-      Program required to create the new input files. Current options: 'gaussian', 'orca'
+      Program required to create the new input files. Current options: 'gaussian', 'orca', 'qchem'
    qm_input : str, default=''
       Keywords line for new input files (i.e. 'B3LYP/6-31G opt freq')
    qm_end : str, default=''
@@ -35,7 +35,7 @@ Parameters
       PATH to store CHK files. For example, if chk_path='root/user, the chk line of the input file would be
       %chk=root/user/FILENAME.chk
    mem : str, default='4GB'
-      Memory for the QM calculations (i) Gaussian: total memory; (ii) ORCA: memory per processor
+      Memory for the QM calculations (i) Gaussian: total memory; (ii) ORCA: memory per processor; (iii) QChem: total memory in MB
    nprocs : int, default=2
       Number of processors used in the QM calculations
    gen_atoms : list of str, default=[]
@@ -53,7 +53,10 @@ Parameters
       of the SDF file
    freeze_atoms : list of int, default=[]
       Atom indices (zero indexed) to be constrained during optimization. This adds the -1 frozen 
-      flag if program=gaussian, or a %geom Constraints section if program=orca 
+      flag if program=gaussian, a %geom Constraints section if program=orca, or a $harmonic_opt section if program=qchem. 
+      In QChem, the harmonic potential will be set to 450 in the input file. This achieves the same effect as a traditional 
+      fixed-atom approach, however the harmonic potentials enables zero-point vibrational corrections. More information for 
+      the QChem approach can be found here (https://manual.q-chem.com/6.2/subsec_HarmonicConfiner.html).
 """
 ######################################################.
 #        This file stores the QPREP class            #
@@ -104,7 +107,7 @@ class qprep:
         if self.args.program is None:
             qprep_program = False
         if qprep_program:
-            if self.args.program.lower() not in ["gaussian", "orca"]:
+            if self.args.program.lower() not in ["gaussian", "orca", "qchem"]:
                 qprep_program = False
         if not qprep_program:
             self.args.log.write('\nx  Program not supported for QPREP input file creation! Specify: program="gaussian" (or "orca")')
@@ -334,6 +337,10 @@ class qprep:
                 txt += " end\n" 
                 txt += "end\n" 
             txt += f'* xyz {qprep_data["charge"]} {qprep_data["mult"]}\n'
+            
+        elif self.args.program.lower() == "qchem":
+            txt += "$molecule\n"
+            txt += f"{qprep_data['charge']} {qprep_data['mult']}\n"
 
         return txt
 
@@ -403,6 +410,58 @@ class qprep:
 
                 txt += "\n"
                 
+        elif self.args.program.lower() == "qchem":
+            txt += "$rem\n"
+                        
+            # Parse qm_input (basic support)
+            for keyword in self.args.qm_input.split():
+                if "/" in keyword:
+                    method, basis = keyword.split("/")
+                    txt += f"METHOD {method}\n"
+                    txt += f"BASIS {basis}\n"
+                else:
+                    txt += f"{keyword.upper()}\n"
+
+            # Memory + CPU
+            self.args.mem = int(self.args.mem.replace("GB","")) * 1024
+            self.args.mem = int(self.args.mem.replace("MB",""))
+            txt += f"MEM_TOTAL {self.args.mem}\n"
+            txt += f"NUM_THREADS {self.args.nprocs}\n"
+            
+            # Add frozen atoms (QChem FIXED section)
+            if self.args.freeze_atoms != []:
+                txt += "NO_REORIENT true\n"
+                txt += "HARM_OPT 1 ! Turn on harmonic confining potential\n"
+                txt += f"HOATOMS {len(self.args.freeze_atoms)} ! No. of confined atoms\n"
+                txt += "HARM_FORCE 450 ! Force constant of the potential\n"
+            
+            # Close the $rem section
+            txt += "$end\n"
+            
+            # Add harmonic constraint sections
+            if self.args.freeze_atoms != []:
+                # ---- $harmonic_opt ----
+                txt += "\n$harmonic_opt\n"
+
+                # convert indices to 1-based
+                frozen_atoms_1based = [str(idx + 1) for idx in self.args.freeze_atoms]
+                txt += " ".join(frozen_atoms_1based) + "! indices of the confined atoms\n"
+
+                txt += "$end\n"
+
+                # ---- $coords ----
+                txt += "\n$coords ! coordinates of confined atoms\n"
+
+                for idx in self.args.freeze_atoms:
+                    atom_idx = idx + 1  # 1-based index
+                    atom_symbol = qprep_data["atom_types"][idx]
+
+                    x, y, z = qprep_data["cartesians"][idx]
+
+                    txt += f"{atom_symbol}{atom_idx} {x:.10f} {y:.10f} {z:.10f}\n"
+
+                txt += "$end\n"  
+                
         txt = txt.lstrip('\n')
         txt += modifysph_line
         return txt
@@ -413,6 +472,9 @@ class qprep:
             extension = "com"
 
         elif self.args.program.lower() == "orca":
+            extension = "inp"
+            
+        elif self.args.program.lower() == "qchem":
             extension = "inp"
 
         name_file = add_prefix_suffix(qprep_data["name"], self.args)
@@ -461,8 +523,12 @@ class qprep:
 
         if self.args.program.lower() == "gaussian":
             fileout.write("\n\n")
+            
         elif self.args.program.lower() == "orca":
             fileout.write("\n*")
+        
+        elif self.args.program.lower() == "qchem":
+            fileout.write("\n$end\n\n")
 
         fileout.write(tail)
         fileout.close()
