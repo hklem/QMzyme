@@ -132,8 +132,8 @@ class GenerateModel(QMzymeModel):
         region = make_selection(selection, model=self, name=name, **kwargs)
 
         # A short module that allows for storing the selection parameters used to make region selection
-        region._selection_params.update(kwargs)
-        region._selection_params['selection_scheme'] = selection
+        region._selection_attr.update(kwargs)
+        region._selection_attr['selection_scheme'] = selection
         
         self.add_region(region)
     
@@ -178,7 +178,7 @@ class GenerateModel(QMzymeModel):
 
         # Creates the truncated region as a whole region
         self.set_region(region)
-        region.set_creation_params(selection_scheme=f"truncated from {source_region_name}")
+        region.set_creation_attr(selection_scheme=f"truncated from {source_region_name}")
 
         setattr(self, "truncated", region)
         print(f"\nTruncated model has been created and saved to attribute 'truncated' "+
