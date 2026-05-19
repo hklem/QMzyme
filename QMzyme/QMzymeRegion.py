@@ -32,8 +32,8 @@ class QMzymeRegion:
         self._universe = universe
         if not hasattr(self, "method"):
             self.method = None
-        self._selection_params = {}
-        self._creation_params = {}
+        self._selection_attr = {}
+        self._creation_attr = {}
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
@@ -162,22 +162,22 @@ class QMzymeRegion:
             return
     
     @property
-    def creation_params(self):
+    def creation_attr(self):
         """
-        Filters _selection_params into _creation_params.
+        Filters _selection_attr into _creation_attr.
         Ultimately, it creates a property to the region of how the region was created.
-        :rtype: List[:class:`~QMzyme.QMzymeRegion.creation_params`]
+        :rtype: List[:class:`~QMzyme.QMzymeRegion.creation_attr`]
         """
         # Clear previous state to avoid doubling up
-        self._creation_params = {}
+        self._creation_attr = {}
 
         # Creates selection_scheme first
-        if 'selection_scheme' in self._selection_params:
-            v = self._selection_params['selection_scheme']
-            self._creation_params['selection_scheme'] = v.__name__ if hasattr(v, '__name__') else str(v)
+        if 'selection_scheme' in self._selection_attr:
+            v = self._selection_attr['selection_scheme']
+            self._creation_attr['selection_scheme'] = v.__name__ if hasattr(v, '__name__') else str(v)
 
         # Loop through everything else
-        for k, v in self._selection_params.items():
+        for k, v in self._selection_attr.items():
 
             # Skip method since it is saved elsewhere
             if k == 'method' or k == 'selection_scheme':
@@ -185,32 +185,32 @@ class QMzymeRegion:
             
             # Append the list of other values within the attribute of set_region
             else:
-                self._creation_params[k] = v
+                self._creation_attr[k] = v
         
-        return self._creation_params
+        return self._creation_attr
     
-    def reset_creation_params(self):
+    def reset_creation_attr(self):
         """
         Resets the selection and creation parameters for the region.
         """
-        self._selection_params = {}
-        self._creation_params = {}
+        self._selection_attr = {}
+        self._creation_attr = {}
 
-    def set_creation_params(self, params=None, **kwargs):
+    def set_creation_attr(self, attr=None, **kwargs):
         """
         Manually sets or updates the selection parameters for the region. This is
         particularly useful for assigning parameters to internally generated regions
         that need to inherit the creation history of their parent selection scheme.
         """
         
-        if not hasattr(self, '_selection_params'):
-            self._selection_params = {}
+        if not hasattr(self, '_selection_attr'):
+            self._selection_attr = {}
             
-        if params is not None:
-            self._selection_params.update(params)
+        if attr is not None:
+            self._selection_attr.update(attr)
             
         if kwargs:
-            self._selection_params.update(kwargs)
+            self._selection_attr.update(kwargs)
 
     def get_atom(self, id):
         for i in self.atoms:
