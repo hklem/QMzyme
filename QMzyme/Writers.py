@@ -119,7 +119,7 @@ class QMQM2Writer(Writer):
             %QMMM QM2CUSTOMMETHOD "PBE D3BJ DEF2-SVP"
             QMATOMS {2:3} {6:13} END
 
-        The charge and mult above the coordinates section is assigned to the high region (QM atoms).
+        The charge and multiplicity above the coordinates section is assigned to the high region (QM atoms).
     """
     def __init__(self, filename, memory, nprocs, full_region=None, total_charge=None, total_mult=None, high_region=None, low_region=None):
         if high_region is None:

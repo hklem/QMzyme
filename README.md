@@ -1,7 +1,7 @@
 
 ![](logo.png)
 
-![GitHub Release](https://img.shields.io/github/v/release/hklem/QMzyme?label=Release)
+![GitHub Version](https://img.shields.io/github/v/tag/hklem/QMzyme?label=Version)
 ![Read the Docs](https://img.shields.io/readthedocs/qmzyme?label=Documentation)
 [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/circleci/LRUEotncYnASivTi54FASD/DM24Fo4B8Af3VgC59vNCCx/tree/main)
 ![Codecov](https://img.shields.io/codecov/c/github/hklem/QMzyme?label=Coverage)
@@ -19,8 +19,10 @@ Full documentation with installation instructions, technical details and example
 ## Contributing to QMzyme
 For suggestions and improvements of the code (greatly appreciated!), please reach out through the issues and pull requests options of Github. See documentation about [contributing guidelines](https://qmzyme.readthedocs.io/en/latest/Contributing/index.html).
 
-## Current Contributors
+## Code Contributors/Developers
 * Heidi Klem, LSU (main developer)
+* Young Woo Kim, LSU
+* Arkanil Roy, LSU
 * Demian Riccardi, NIST
 
 ## References
@@ -53,5 +55,5 @@ We greatly acknowledge HPC resources obtained through ACCESS:
 * This work used Expanse at SDSC through allocation BIO230144 from the Advanced Cyberinfrastructure Coordination Ecosystem: Services & Support (ACCESS) program, which is supported by National Science Foundation grants #2138259, #2138286, #2138307, #2137603, and #2138296.
 
 #### Copyright
-Copyright (c) 2026, Heidi Klem
+Copyright (c) 2024, Heidi Klem
 

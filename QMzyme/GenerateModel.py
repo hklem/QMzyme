@@ -1,15 +1,15 @@
 ###############################################################################
 # Code written by Heidi Klem.
-# e: heidiklem@yahoo.com or heidi.klem@nist.gov
+# e: heidiklem@lsu.edu
 ###############################################################################
 
 """
 **GenerateModel** is the primary user-facing module in QMzyme. :class:`~GenerateModel`
 is used to load a starting structure, define QMzyme regions, and write calculation input.
-To avoid unintended behavior, the initial stucture must be pre-processed. I.e., ensure
+To avoid unintended behavior, the initial structure must be pre-processed. I.e., ensure
 hydrogens have been added, and the structure is representative of the system you hope
 to study. If atomic charge information is not present in the input file(s), QMzyme
-will guess atomic charges by refering to the residue names. Any residue name corresponding
+will guess atomic charges by referring to the residue names. Any residue name corresponding
 to standard protein residue names, defined `here <https://userguide.mdanalysis.org/1.1.1/standard_selections.html>`_, 
 are able to be parsed for their total charge. This library can also be found in :py:mod:`~QMzyme.configuration` under
 the dictionary protein_residues. If you have a non-protein residue QMzyme will assume its charge is 0. This
@@ -52,7 +52,7 @@ class GenerateModel(QMzymeModel):
     :type select_atoms: str, default='all'
     :param frame: If trajectory was provided, specify a frame to extract coordinates from.
     :type frame: int, default=0
-    :param pickle_file: Provide name/path+file of previously pickled QMzymeModel object to inialize
+    :param pickle_file: Provide name/path+file of previously pickled QMzymeModel object to initialize
     :type pickle_file: str, default=None
 
     :Usage:
@@ -64,7 +64,7 @@ class GenerateModel(QMzymeModel):
             model = QMzyme.GenerateModel("filename.pdb")
 
         If "filename.pdb" contains any components you know you do not want included in your model, you can initialize the
-        GenerateModel instance from a subselection of atoms by using the select_atoms argument:
+        GenerateModel instance from a selection of atoms by using the select_atoms argument:
 
         .. code-block:: python
 
