@@ -221,7 +221,7 @@ class QMzymeModel:
             
             # If it does not have any creation_params, state that information is not avaialable!
             try:
-                params = region.creation_params
+                params = region.creation_attr
                 for key, value in params.items():
                     # Avoid duplicate printing of counts
                     if key not in ['total_atoms', 'total_residues']:
