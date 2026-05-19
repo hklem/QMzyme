@@ -144,78 +144,83 @@ class AlphaCarbon(TruncationScheme):
 
 class BetaCarbon(TruncationScheme):
     """
-    The Beta Carbon scheme will 1) select for atoms that are within 2Å from CB;
-    2) remove all non-backbone atoms that are outside of 2Å distance, and
-    3) remove non-hydrogen and non-backbone atoms and replace it with hydrogen
+    The Beta Carbon scheme will select for atoms that are within 2Å from CB,
+    remove all non-backbone atoms that are outside of 2Å distance, and
+    remove non-hydrogen and non-backbone atoms and replace it with hydrogen
     along the CB-X vector. In the case of Proline and Glycine, it skips and returns
     a warning message.
     """
-    def __init__(self, region, ala_atom_group, model, name):
-        self.ala_atom_group = ala_atom_group
+    def __init__(self, region, alanine_mutation, name):
         self.region = region
-        self.model = model
+        self.alanine_mutation = alanine_mutation
         super().__init__(region, name)
 
     def truncate(self):
         remove_atoms = []
         r = self.region
 
-        # Since the resid that is needed to be truncated is written in MDA, we need to digest it
-        residues_to_truncate = set(a.resid for a in self.ala_atom_group.residues)
+        if self.alanine_mutation is None:
+            UserWarning("No amino acid residues have been selected for alanine_mutation.")
+            return
+        else:
+            ala_atom_group = r.universe.select_atoms(self.alanine_mutation)
 
-        # Iterating over the whole residues
-        for res in r.residues:
-            # This is needed to select for specific residues that are in ala_atom_group
-            if res.resid not in residues_to_truncate:
-                continue
+            # Since the resid that is needed to be truncated is written in MDA, we need to digest it
+            residues_to_truncate = set(a.resid for a in ala_atom_group.residues)
 
-            # Raise warning if it contains Gly and Pro within alanine_mutation
-            if res.resname == "GLY" or res.resname == "PRO":
-                UserWarning("Pro and Gly exists within alanine_mutation. Please remove the residue.")
-                continue
-            
-            # Get residue selection string in the universe
-            sel_str = f"resid {res.resid}"
+            # Iterating over the whole residues
+            for res in r.residues:
+                # This is needed to select for specific residues that are in ala_atom_group
+                if res.resid not in residues_to_truncate:
+                    continue
 
-            # Make AtomGroups in the original MDAnalysis universe
-            res_atoms = self.model.universe.select_atoms(sel_str)
+                # Raise warning if it contains Gly and Pro within alanine_mutation
+                if res.resname == "GLY" or res.resname == "PRO":
+                    UserWarning("Pro and Gly exists within alanine_mutation. Please remove the residue.")
+                    continue
+                
+                # Get residue selection string in the universe
+                sel_str = f"resid {res.resid}"
 
-            # Define necessary backbone atoms and CB
-            CBatom = res.get_atom('CB')
+                # Make AtomGroups in the original MDAnalysis universe
+                res_atoms = self.region.universe.select_atoms(sel_str)
 
-            # MDAwrapper can only digest universe, so we convert it
-            CB_sel = self.region._universe.select_atoms(f"resid {CBatom.resid} and name {CBatom.name}")
+                # Define necessary backbone atoms and CB
+                CBatom = res.get_atom('CB')
 
-            # Getting the neighbor atoms
-            neighbors = MDAwrapper.get_neighbors(res_atoms,CB_sel, 2)
+                # MDAwrapper can only digest universe, so we convert it
+                CB_sel = self.region.universe.select_atoms(f"resid {CBatom.resid} and name {CBatom.name}")
 
-            # Selecting the non neighbors to remove all of them
-            non_neighbors = res_atoms.atoms - neighbors.atoms
+                # Getting the neighbor atoms
+                neighbors = MDAwrapper.get_neighbors(res_atoms,CB_sel, 2)
 
-            keep_names = set(backbone_atoms.values())
-            keep_names.update(["HB1", "HB2", "HB3", CBatom.name])
-            
-            # Remove all atoms that are not neighbors and are not backbone
-            for mda_atom in non_neighbors.atoms:
-                for qm_atom in res.atoms:
-                    # Since we are now going from MD universe to QMzyme region, we need to check
-                    if qm_atom.name != mda_atom.name or qm_atom.resid != mda_atom.resid:
-                        continue
-                    if qm_atom.name in keep_names:
-                        continue
-                    res.remove_atom(qm_atom)
+                # Selecting the non neighbors to remove all of them
+                non_neighbors = res_atoms.atoms - neighbors.atoms
 
-            # Adding H atoms and removing connected atoms
-            for mda_atom in neighbors.atoms:
-                for qm_atom in res.atoms:
-                    if qm_atom.name != mda_atom.name or qm_atom.resid != mda_atom.resid:
-                        continue
-                    if qm_atom.name in keep_names:
-                        continue
+                keep_names = set(backbone_atoms.values())
+                keep_names.update(["HB1", "HB2", "HB3", CBatom.name])
+                
+                # Remove all atoms that are not neighbors and are not backbone
+                for mda_atom in non_neighbors.atoms:
+                    for qm_atom in res.atoms:
+                        # Since we are now going from MD universe to QMzyme region, we need to check
+                        if qm_atom.name != mda_atom.name or qm_atom.resid != mda_atom.resid:
+                            continue
+                        if qm_atom.name in keep_names:
+                            continue
+                        res.remove_atom(qm_atom)
 
-                    # Replacing neighbor atoms with H
-                    cap_atom = cap_H(qm_atom,CBatom)
-                    r.remove_atom(qm_atom)
-                    r.add_atom(cap_atom)
+                # Adding H atoms and removing connected atoms
+                for mda_atom in neighbors.atoms:
+                    for qm_atom in res.atoms:
+                        if qm_atom.name != mda_atom.name or qm_atom.resid != mda_atom.resid:
+                            continue
+                        if qm_atom.name in keep_names:
+                            continue
 
-        self.truncated_region = r
+                        # Replacing neighbor atoms with H
+                        cap_atom = cap_H(qm_atom,CBatom)
+                        r.remove_atom(qm_atom)
+                        r.add_atom(cap_atom)
+
+            self.truncated_region = r
