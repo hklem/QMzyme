@@ -157,11 +157,13 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
     original_state = {}
     for res in model.region.residues:
         original_state[res.resid] = [atom.name for atom in res.atoms]
-    
-    ala_group = model.universe.select_atoms(truncation_selection)
-    
+    model.region.universe = model.universe
+
+    model.set_region(name='trunc_sele', selection=truncation_selection)
+    target_resids = [r.resid for r in model.trunc_sele.residues]
+
     # Run Truncation
-    truncator = BetaCarbon(region=model.region, ala_atom_group=ala_group, model=model, name='truncated_reg')
+    truncator = BetaCarbon(region=model.region, alanine_mutation=truncation_selection, name='truncated_reg')
     region_truncated = truncator.return_region()
 
     assert region_truncated is not None
@@ -173,8 +175,8 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
         orig_names = original_state[resid]
         trunc_names = [atom.name for atom in trunc_res.atoms]
 
-        # Skip Logic (PRO/GLY or not in ala_group)
-        if resname in ["GLY", "PRO"] or resid not in ala_group.resids:
+        # Skip Logic (PRO/GLY or not in alanine_mutation)
+        if resname in ["GLY", "PRO"] or resid not in target_resids:
             assert len(trunc_names) == len(orig_names)
             continue
 
