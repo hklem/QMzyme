@@ -522,10 +522,10 @@ class ChargeShiftAnalysis(SelectionScheme):
         cat_center_selection = RegionBuilder(name="cat_center", atom_group=self.cat_center_atoms).get_region()
         
         # Subtract catalytic center from holo region to create apo region
-        apo_sub_region = holo_region.subtract(cat_center_selection)
+        apo_atoms = holo_region.subtract(cat_center_selection)
         apo_builder = RegionBuilder(name="CSA_apo", universe=self.model.universe)
         
-        for atom in apo_sub_region.atoms:
+        for atom in apo_atoms.atoms:
             apo_builder.init_atom(atom)
             
         apo_region = apo_builder.get_region()
