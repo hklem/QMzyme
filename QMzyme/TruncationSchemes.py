@@ -144,24 +144,25 @@ class AlphaCarbon(TruncationScheme):
 
 class BetaCarbon(TruncationScheme):
     """
-    The Beta Carbon scheme will 1) select for atoms that are within 2Å from CB;
-    2) remove all non-backbone atoms that are outside of 2Å distance, and
-    3) remove non-hydrogen and non-backbone atoms and replace it with hydrogen
+    The Beta Carbon scheme will select for atoms that are within 2Å from CB,
+    remove all non-backbone atoms that are outside of 2Å distance, and
+    remove non-hydrogen and non-backbone atoms and replace it with hydrogen
     along the CB-X vector. In the case of Proline and Glycine, it skips and returns
     a warning message.
     """
-    def __init__(self, region, ala_atom_group, model, name):
-        self.ala_atom_group = ala_atom_group
+    def __init__(self, region, alanine_mutation, name):
         self.region = region
-        self.model = model
+        self.alanine_mutation = alanine_mutation
         super().__init__(region, name)
 
     def truncate(self):
         remove_atoms = []
         r = self.region
 
+        ala_atom_group = r.universe.select_atoms(self.alanine_mutation)
+
         # Since the resid that is needed to be truncated is written in MDA, we need to digest it
-        residues_to_truncate = set(a.resid for a in self.ala_atom_group.residues)
+        residues_to_truncate = set(a.resid for a in ala_atom_group.residues)
 
         # Iterating over the whole residues
         for res in r.residues:
@@ -178,13 +179,13 @@ class BetaCarbon(TruncationScheme):
             sel_str = f"resid {res.resid}"
 
             # Make AtomGroups in the original MDAnalysis universe
-            res_atoms = self.model.universe.select_atoms(sel_str)
+            res_atoms = self.region.universe.select_atoms(sel_str)
 
             # Define necessary backbone atoms and CB
             CBatom = res.get_atom('CB')
 
             # MDAwrapper can only digest universe, so we convert it
-            CB_sel = self.region._universe.select_atoms(f"resid {CBatom.resid} and name {CBatom.name}")
+            CB_sel = self.region.universe.select_atoms(f"resid {CBatom.resid} and name {CBatom.name}")
 
             # Getting the neighbor atoms
             neighbors = MDAwrapper.get_neighbors(res_atoms,CB_sel, 2)

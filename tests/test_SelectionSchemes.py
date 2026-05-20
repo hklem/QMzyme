@@ -139,14 +139,14 @@ def test_ChargeShiftAnalysis():
     model.set_catalytic_center('resid 263')
 
     # Parameters for D103A selection
-    model.set_region(selection=ChargeShiftAnalysis, name=None, min_atoms=950, max_atoms=1050, memory='64GB', nprocs=200, method=qm_method, alanine_mutation="resid 40")
+    model.set_region(selection=ChargeShiftAnalysis, name=None, min_atoms=950, max_atoms=1050, memory='64GB', nprocs=200, method=qm_method, alanine_mutation="resid 103")
     assert len(model.regions) == 6
     assert model.catalytic_center.n_residues == 1
     assert model.catalytic_center.n_atoms == 37
     assert model.CSA_holo_truncated.n_residues == 88
     assert model.CSA_holo_truncated.n_atoms == 982
     assert model.CSA_apo_truncated.n_residues == 87
-    assert model.CSA_apo_truncated.n_atoms == 943
+    assert model.CSA_apo_truncated.n_atoms == 942
 
     # Second part of the ChargeShiftAnalysis
     # With non-pickle file, error raised
@@ -176,7 +176,7 @@ def test_ChargeShiftAnalysis():
     assert model.CSA_cutoff_region.n_residues == 5
     assert model.CSA_cutoff_region.n_atoms == 77
 
-    print(model.CSA_cutoff_region.creation_params)
+    print(model.CSA_cutoff_region.creation_attr)
 
     # Truncation check
     model.truncate()

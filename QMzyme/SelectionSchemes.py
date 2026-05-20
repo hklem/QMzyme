@@ -352,13 +352,13 @@ class ChargeShiftAnalysis(SelectionScheme):
         self.charge_threshold = charge_threshold
 
         # Store the parameters that you want the regions to "remember"
-        self.holo_selection_params = {
+        self.holo_selection_attr = {
             'selection_scheme': self.__class__,
             'min_atoms': min_atoms,
             'max_atoms': max_atoms
         }
 
-        self.apo_selection_params = {
+        self.apo_selection_attr = {
             'selection_scheme': self.__class__,
             'min_atoms': min_atoms,
             'max_atoms': max_atoms,
@@ -405,7 +405,7 @@ class ChargeShiftAnalysis(SelectionScheme):
             self.reference()
             if self.reference is not None:
                 print(f"Use of this selection scheme requires citing the following reference(s): \n \t{self.reference}")
-            self.region.reset_creation_params()
+            self.region.reset_creation_attr()
 
     def select_cat_residues(self):
         """
@@ -495,7 +495,7 @@ class ChargeShiftAnalysis(SelectionScheme):
 
                     # Now, save region and creation_param for the pickle file
                     self.model.set_region(holo_region)
-                    holo_region.set_creation_params(self.holo_selection_params)
+                    holo_region.set_creation_attr(self.holo_selection_attr)
 
                     self.model.truncate()
 
@@ -523,16 +523,17 @@ class ChargeShiftAnalysis(SelectionScheme):
         
         # Subtract catalytic center from holo region to create apo region
         apo_atoms = holo_region.subtract(cat_center_selection)
-        apo_region = apo_atoms 
+        apo_builder = RegionBuilder(name="CSA_apo", universe=self.model.universe)
+        
+        for atom in apo_atoms.atoms:
+            apo_builder.init_atom(atom)
+            
+        apo_region = apo_builder.get_region()
+        apo_region.universe = self.model.universe
 
         # Examining if alanine mutation is requested by user
         if self.alanine_mutation is not None and len(self.alanine_mutation) > 0:
-            
-            #Select and create QMzymeRegion for alanine mutation residues
-            ala_atom_group = self.model.universe.select_atoms(self.alanine_mutation)
-
-            # Perform BetaCarbon truncation on alanine mutation residues
-            BetaCarbon(apo_region, ala_atom_group, model=self.model, name="apo_Ala_mutation")
+            BetaCarbon(apo_region, alanine_mutation=self.alanine_mutation, name="apo_Ala_mutation")
 
         # Set name of apo region and assign QM menthod
         apo_method = self.method.__class__.__new__(self.method.__class__)
@@ -542,7 +543,7 @@ class ChargeShiftAnalysis(SelectionScheme):
         del self.model.truncated
         apo_region.name = "CSA_apo"
         self.model.set_region(apo_region)
-        apo_region.set_creation_params(self.apo_selection_params)
+        apo_region.set_creation_attr(self.apo_selection_attr)
         self.model.truncate()
 
         # Method and truncation for apo region should be the same as holo region, so I think we can just write input
@@ -724,8 +725,3 @@ class ChargeShiftAnalysis(SelectionScheme):
         """
         """
         self.reference = "(1) Kulik, Heather J.; Zhang, Jianyu; Klinman, Judith P.; Martinez, Todd J.(2016) How Large Should the QM Region Be in QM/MM Calculations? The Case of Catechol O-Methyltransferase. Journal of Physical Chemistry B, 120(44). and (2) Karelina, M., & Kulik, H. J. (2017). Systematic quantum mechanical region determination in QM/MM simulation. Journal of chemical theory and computation, 13(2)."
-
-# This line is necessary because an earlier version used CSACutoff as the class name, and test files were pickled with that version, 
-# so the pytests fail if we don't make this equality.
-CSACutoff = ChargeShiftAnalysis
-
