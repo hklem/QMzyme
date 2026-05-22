@@ -182,8 +182,6 @@ class DistanceCutoff(SelectionScheme):
         
     """
     def __init__(self, model, name, cutoff, include_whole_residues=True):
-        """
-        """
         if name is None:
             name = f'cutoff_{cutoff}'
         self.cutoff = cutoff
@@ -192,6 +190,16 @@ class DistanceCutoff(SelectionScheme):
 
     def select_atoms(self):
         """
+        Executes the distance cutoff selection to identify neighbor atoms and residues 
+        surrounding the catalytic center.
+
+        This method queries the model's universe to find all atoms within the 
+        configured distance threshold of the 'catalytic_center' region.
+
+        :returns: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+        :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+        :raises UserWarning: If the model has no defined 'catalytic_center' region.
         """
         if not self.model.has_region('catalytic_center'):
             raise UserWarning("You must first define a catalytic_center. See method `set_catalytic_center()`.")
@@ -221,7 +229,8 @@ class DistanceCutoff(SelectionScheme):
 
     def reference(self):
         """
-        Writes out the reference for the selection scheme. This method is automatically called in the 
+        Writes out the reference for the selection scheme. This method is automatically called
+        in the ``super().__init__(model, name)`` line of your `__init__()` method.
         """
         self.reference = None
 
@@ -732,5 +741,7 @@ class ChargeShiftAnalysis(SelectionScheme):
         
     def reference(self):
         """
+        Writes out the reference for the selection scheme. This method is automatically called
+        in the ``super().__init__(model, name)`` line of your `__init__()` method.
         """
         self.reference = "(1) Kulik, Heather J.; Zhang, Jianyu; Klinman, Judith P.; Martinez, Todd J.(2016) How Large Should the QM Region Be in QM/MM Calculations? The Case of Catechol O-Methyltransferase. Journal of Physical Chemistry B, 120(44). and (2) Karelina, M., & Kulik, H. J. (2017). Systematic quantum mechanical region determination in QM/MM simulation. Journal of chemical theory and computation, 13(2)."
