@@ -584,14 +584,59 @@ class QMzymeRegion:
         aligned_positions = kabsch_transform(self.positions, t, r)
         mobile_aligned_positions = kabsch_transform(mobile.positions, t, r)
         rmsd_after_alignment = rmsd(mobile_aligned_positions, target.positions)
-        print(rf"RMSD before alignment: {rmsd_before_alignment} \u00C5")
-        print(rf"RMSD after alignment: {rmsd_after_alignment} \u00C5")
+        print(f"RMSD before alignment: {rmsd_before_alignment} \u00C5")
+        print(f"RMSD after alignment: {rmsd_after_alignment} \u00C5")
         if update_region is True:
             self._atom_group.positions = aligned_positions
             for i, atom in enumerate(self.atoms):
                 atom.position = aligned_positions[i]
         else:
             return aligned_positions
+        
+    def find_nearby_residues(self, other, dist):
+        """
+        Finds residues in 'other' region that have at least one atom within 'dist' 
+        Angstroms of any atom in 'self' region.
+        
+        :param other: The target region to search within for nearby residues.
+        :type other: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+        :param dist: The distance cutoff in Angstroms.
+        :type dist: float
+
+        :returns: List of unique residues from the other region within the cutoff distance.
+        :rtype: list of :class:`~QMzyme.QMzymeResidue.QMzymeResidue`
+        
+        Returns:
+        list of unique QMzymeResidue objects from the 'other' region.
+        """
+
+        nearby_residues = []
+
+        for self_res in self.residues:
+            for other_res in other.residues:
+                if self_res.resid == other_res.resid:
+                    continue
+                
+                contact_found = False
+
+                for self_atom in self_res.atoms:
+                    for other_atom in other_res.atoms:
+                        d = np.linalg.norm(self_atom.position - other_atom.position)
+
+                        if d <= dist:
+                            contact_found = True
+                    
+                    if contact_found:
+                        break
+                
+                if contact_found:
+                    print (f"{other_res} is within {dist} \N{ANGSTROM SIGN} of {self_res}")
+
+                    if other_res not in nearby_residues:
+                        nearby_residues.append(other_res)
+
+        return nearby_residues
 
     def store_calculation_results(self, calculation_file):
         """

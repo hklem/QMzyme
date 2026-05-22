@@ -119,7 +119,6 @@ def test_equal_regions():
     model.set_region(name='r2', selection='resid 263')
     assert model.r1 == model.r2
 
-
     setattr(model.r1.atoms[0], "name", "X")
     assert model.r1 != model.r2
 
@@ -177,3 +176,14 @@ def test_guess_charge():
     assert len(res.get_backbone_atoms()) >= 4 
     res.guess_charge(verbose=False)
     assert res.charge is not None
+
+def test_find_nearby_residues(capsys):
+    model = GenerateModel(PDB)
+    model.set_region(selection="all", name="full_region")
+    model.set_region(name='test_reg', selection='resid 1')
+    model.test_reg.find_nearby_residues(model.full_region, 1.5)
+
+    captured = capsys.readouterr()
+
+    assert "is within 1.5" in captured.out
+    assert "resid: 2" in captured.out

@@ -33,7 +33,7 @@ software, rather than MD-focused software, even though many MD software support 
 results will (ideally) be validatable through comparison to experiment, and (hopefully) provide new chemical or methodological insights. 
 
 If you have ideas or suggestions on how to improve QMzyme please do not hesitate to engage on the `QMzyme Ideas GitHub Project space <https://github.com/users/hklem/projects/11/views/1>`_, or contribute directly by `forking the repository and submitting a pull request <https://qmzyme.readthedocs.io/en/latest/Contributing/general.html>`_. Questions can be directed via email to 
-heidiklem{AT}lsu{dot}edu.
+heidiklem@lsu.edu.
 
 
 .. toctree::

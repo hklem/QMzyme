@@ -13,6 +13,9 @@ CSA_holo = (_data_ref / 'CSA_holo.log').as_posix()
 CSA_apo = (_data_ref / 'CSA_apo.log').as_posix()
 CSA_pkl = (_data_ref / 'CSA_holo_apo.pkl').as_posix()
 Cutoff_3 = (_data_ref / '1oh0_cutoff3.pdb').as_posix()
+LIG = (_data_ref / '19nt_ligand_from_5kp4.pdb').as_posix()
+OPT_C3 = (_data_ref / '19nt_xstal_distance_cutoff3_xtb_optimized.pdb').as_posix()
+PDB_xtal = (_data_ref / '1oh0_equ_crystal.pdb').as_posix()
 
 # protein_residues = QMzyme.configuration.protein_residues
 # residue_charges = QMzyme.configuration.residue_charges

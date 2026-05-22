@@ -2,25 +2,30 @@
 Example Workflows
 -------------------
 
+A collection of tutorials to help understand the main features of QMzyme.
+
 .. toctree::
    :maxdepth: 2
 
-   Getting_Started
+   Getting Started
    QM-only Calculation
    QMQM2 Calculation
    QMxTB Calculation
    Ligand Parameterization
    Working with Trajectories
-   Serialization
-
+   QMzyme  Serialization
+   Molecule Replacement Using QMzyme
+   Verifying Optimized Structures
 
 Cookbook
 -------------------
-
-*In progress. Please come back later to see what has been added.*
 
 A collection of "recipes" to perform specific tasks in QMzyme. 
 
 .. toctree::
    :maxdepth: 2
 
+   Inspecting Model Architecture
+   Manipulating QMzymeRegion
+   Pymol Visualization
+   Using Various SelectionScheme Classes
