@@ -12,6 +12,7 @@
 import os
 import sys
 import datetime
+import subprocess
 # Ensure that modules can be imported without installing aqme
 sys.path.insert(0, os.path.abspath('..')) 
 
@@ -21,12 +22,20 @@ sys.path.insert(0, os.path.abspath('..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 now = datetime.datetime.now()
-project = 'QMzyme-documentation'
+project = 'QMzyme Documentation'
 copyright = f'{now.year}, Heidi Klem'
 author = 'Heidi Klem'
 packageversion = __import__('QMzyme').__version__
+try:
+    packageversion = subprocess.check_output(
+        ["git", "tag", "--points-at", "HEAD"],
+        text=True
+    ).strip()
+    if not packageversion:
+        packageversion = __import__('QMzyme').__version__
+except Exception:
+    packageversion = "unknown"
 release = packageversion
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
