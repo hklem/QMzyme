@@ -15,6 +15,16 @@ import abc
 
 
 class TruncationScheme(abc.ABC):
+    """
+    Base class for defining QM region truncation methodologies.
+
+    A truncation scheme defines the specific rule for how protein
+    amino acid residues in the QMzymeModel is truncated to create
+    the desired QM region.
+
+    .. image:: ../../docs/Images/truncation_scheme.png
+        :width: 650
+    """
     def __init__(self, region, name):
         self.region = region
         self.truncated_region = None
@@ -51,10 +61,7 @@ class TerminalAlphaCarbon(TruncationScheme):
     backbone bond vector.
 
     .. image:: ../../docs/Images/terminal_alpha_carbon.png
-        :width: 250
-
-    Image modified from Klem, H., McCullagh, M. & Paton, R. S. Top Catal. 
-    65, 165-186 (2022). 
+        :width: 80%
     """
     def __init__(self, region, name):
         super().__init__(region, name)
@@ -101,11 +108,8 @@ class AlphaCarbon(TruncationScheme):
     Function to truncate a QMzymeRegion according to the AlphaCarbon scheme. 
     This method is still under development. 
 
-    .. image:: ../../docs/Images/all_alpha_carbon.png
-        :width: 250
-
-    Image modified from Klem, H., McCullagh, M. & Paton, R. S. Top Catal. 
-    65, 165–186 (2022). 
+    .. image:: ../../docs/Images/alpha_carbon.png
+        :width: 80%
     """
     def __init__(self, region, name):
         super().__init__(region, name)
@@ -149,6 +153,9 @@ class BetaCarbon(TruncationScheme):
     remove non-hydrogen and non-backbone atoms and replace it with hydrogen
     along the CB-X vector. In the case of Proline and Glycine, it skips and returns
     a warning message.
+
+    .. image:: ../../docs/Images/beta_carbon.png
+        :width: 80%
     """
     def __init__(self, region, alanine_mutation, name):
         self.region = region
