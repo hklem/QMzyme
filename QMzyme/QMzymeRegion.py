@@ -611,7 +611,7 @@ class QMzymeRegion:
         list of unique QMzymeResidue objects from the 'other' region.
         """
 
-        nearby_residues = {}
+        nearby_residues = []
 
         for self_res in self.residues:
             for other_res in other.residues:
