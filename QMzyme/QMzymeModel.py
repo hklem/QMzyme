@@ -8,6 +8,8 @@ import pickle
 from QMzyme.CalculateModel import CalculateModel
 import QMzyme.MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import protein_residues, residue_charges
+import MDAnalysis
+from QMzyme.RegionBuilder import RegionBuilder
 
 class QMzymeModel:
     """
@@ -81,6 +83,18 @@ class QMzymeModel:
         return len(self.regions)
     
     def add_region(self, region):
+        """
+        Add a QMzymeRegion to the model.
+
+        Registers the region as an attribute on the model instance and appends it 
+        to the tracked regions list.
+
+        :param region: The QMzymeRegion instance to add to the model.
+        :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+        :raises UserWarning: If the region contains zero atoms or if a region with 
+            the same name already exists in the model.
+        """
         if region.n_atoms == 0:
             raise UserWarning(f"Region contains no atoms and will not be created.")
         if hasattr(self, region.name):
@@ -90,9 +104,26 @@ class QMzymeModel:
         self.regions.append(region)
 
     def get_region_names(self):
+        """
+        Get the names of all regions currently registered to the model.
+
+        :returns: A list of region names.
+        :rtype: list of str
+        """
         return [r.name for r in self.regions]
     
     def get_region(self, region_name=None):
+        """
+        Retrieve a specific QMzymeRegion by its name.
+
+        :param region_name: The name of the region to fetch.
+        :type region_name: str, default=None
+
+        :returns: The requested QMzyme region object.
+        :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+
+        :raises UserWarning: If no region exists with the provided name.
+        """
         try:
             return getattr(self,region_name)
         except:
@@ -100,6 +131,15 @@ class QMzymeModel:
                               f"Existing regions are: {self.get_region_names()}")
         
     def has_region(self, region_name):
+        """
+        Check if a region name is already registered as an attribute on the model.
+
+        :param region_name: The name of the region to look for.
+        :type region_name: str
+
+        :returns: True if the model has an attribute matching region_name, False otherwise.
+        :rtype: bool
+        """
         # return region_name in self.get_region_names()
         return hasattr(self, region_name)
 
@@ -118,96 +158,156 @@ class QMzymeModel:
                 del self.regions[i]
                 break
     
-    def pymol_visualize(self, filename:str=None, model_surface:bool=True):
+    def import_region(self, region_file, name):
+        """
+        Loads a new structure file to the existing universe, shifts its
+        atom IDs to prevent overlapping with the current model's universe.
+
+        :param lig_file: Path to the structure file (e.g., PDB).
+        :type lig_file: str
+        :param name: Name of the returned region.
+        :type name: str
+        :returns: The built replacement ligand region.
+        :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+        """
+        if name is None:
+            raise UserWarning("Please specify name of the new region.")
+
+        # Load the replacement ligand into an MDAnalysis universe
+        add_universe = MDAnalysis.Universe(region_file)
+
+        # Shift atom IDs using this region's parent universe max ID to prevent conflict
+        if hasattr(self, '_universe') and self._universe is not None:
+            max_protein_id = self._universe.atoms.ids.max()
+            add_universe.atoms.ids += max_protein_id
+        elif hasattr(self, 'universe') and self.universe is not None:
+            max_protein_id = self.universe.atoms.ids.max()
+            add_universe.atoms.ids += max_protein_id
+
+        # Create the new QMzymeRegion using the RegionBuilder
+        region = RegionBuilder(
+            name=name, 
+            atom_group=add_universe.select_atoms("all")
+        ).get_region()
+
+        self.add_region(region)
+
+        return region
+
+    def pymol_visualize(self, filename:str=None, model_surface:bool=True, output_dir=None):
         """
         Creates a QMzymeModel_visualize.py script that you can load into PyMol.
 
         :param filename: Name of PyMol .py file. If not specified, the name 
             attribute of the QMzymeModel will be used.
         :type filename: str, optional
-        :model_surface: boolean, optional. Turning this into False will reduce the GPU load for PyMOL, sometimes preventing GL error.
         
+        :model_surface: Turning this into False will reduce the GPU load for PyMOL, sometimes preventing GL error.
+        :type model_surface: boolean, optional
+
+        :output_dir: Name of the output directory. If not specified. the python sript and pdb files generated from
+            pymol_visualize() will be placed at the base directory.
+        :type output_folder: str, optional
         """
-        lines = ''
-        lines += f"cmd.bg_color('white')\n"
-        starting_structure = self.name
-        self.universe.atoms.write(f"{self.name}_universe.pdb")
-        file = os.path.abspath(f'{self.name}_universe.pdb')
-        lines += f"cmd.load(r'{file}', '{self.name}')\n"
-        #lines += f"cmd.color('gray70', self.name)\n"
-        lines += f"cmd.set('surface_color', 'gray')\n"
-        lines += f"cmd.set('transparency', 0.75)\n"
-        lines += f"cmd.zoom('visible')\n"
-        lines += f"cmd.orient('visible')\n"
-        lines += f"cmd.scene('Starting Structure', 'store')\n"
-        lines += f"cmd.hide('everything', '{self.name}')\n"
+        
+        original_dir = None
 
-        for region in self.regions:
-            region.write(f'{region.name}.pdb')
-            file = os.path.abspath(f'{region.name}.pdb')
-            lines += f"cmd.load(r'{file}', '{region.name}')\n"
-            lines += f"cmd.hide('cartoon', '{region.name}')\n"
-            lines += f"cmd.show_as('sticks', '{region.name}')\n"
+        if output_dir is not None:
+            os.makedirs(output_dir, exist_ok=True)
+            original_dir = os.getcwd()
+            os.chdir(output_dir)
+        
+        try:
+            lines = ''
+            lines += f"cmd.bg_color('white')\n"
+            starting_structure = self.name
+            self.universe.atoms.write(f"{self.name}_universe.pdb")
+            file = os.path.abspath(f'{self.name}_universe.pdb')
+            lines += f"cmd.load(r'{file}', '{self.name}')\n"
+            #lines += f"cmd.color('gray70', self.name)\n"
+            lines += f"cmd.set('surface_color', 'gray')\n"
+            lines += f"cmd.set('transparency', 0.75)\n"
             lines += f"cmd.zoom('visible')\n"
             lines += f"cmd.orient('visible')\n"
-            lines += f"cmd.scene('{region.name}', 'store')\n"
-            lines += f"cmd.hide('everything', '{region.name}')\n"
+            lines += f"cmd.scene('Starting Structure', 'store')\n"
+            lines += f"cmd.hide('everything', '{self.name}')\n"
 
-        if CalculateModel.calc_type != None:
-            region = CalculateModel.calculation[CalculateModel.calc_type]
-            region.write(f'{region.name}.pdb')
-            file = os.path.abspath(f'{region.name}.pdb')
-            lines += f"cmd.load(r'{file}', '{region.name}')\n"
-            lines += f"cmd.hide('cartoon', '{region.name}')\n"
-            lines += f"cmd.color('gray85', '{region.name} and elem c')\n"
-            lines += f"cmd.color('oxygen','{region.name} and elem o')\n"
-            lines += f"cmd.color('slate', '{region.name} and elem n')\n"
-            lines += f"cmd.color('gray98', '{region.name} and elem h')\n"
-            lines += f"cmd.color('sulfur', '{region.name} and elem s')\n"
-            lines += f"cmd.show_as('sticks', '{region.name} and segid QM')\n"
-            lines += f"cmd.show_as('lines', '{region.name} and (not segid QM)')\n"
-            fixed = [str(i+1) for i, atom in enumerate(region.atoms) if atom.is_fixed]
-            fixed_sel = f"id {'+'.join(fixed)}"
-            if len(fixed) > 0:
-                lines += f"cmd.create('fixed_atoms', '{region.name} and {fixed_sel}')\n"
-                lines += f"cmd.hide('cartoon', 'fixed_atoms')\n"
-                lines += f"cmd.set('sphere_scale', 0.15, 'fixed_atoms')\n"
-                lines += f"cmd.set('sphere_color', 'black', 'fixed_atoms')\n"
-                #lines += f"cmd.set('sphere_transparency', 0.7, 'fixed_atoms')\n"
-                lines += f"cmd.show_as('spheres', 'fixed_atoms')\n"
-            #lines += f"cmd.select('residue_labels', '{region.name}')\n"
-            lines += f"cmd.create('residue_labels', '{region.name}')\n"
-            lines += f"cmd.hide('everything', 'residue_labels')\n"
-            lines += f"cmd.set('label_size', 14)\n"
-            lines += f"cmd.label('n. ha and residue_labels', 'resn+resi')\n"
-            lines += f"cmd.zoom('visible')\n"
-            if model_surface is True:
-                lines += f"cmd.create('model_surface', '{region.name}')\n"
-                lines += f"cmd.show_as('surface', 'model_surface')\n"
-            lines += f"cmd.orient('visible')\n"
-            lines += f"cmd.scene('{region.name}', 'store')\n"
-            lines += f"cmd.set('cartoon_transparency', 0.6)\n"
-            #lines += f"cmd.show('surface', '{region.name}')\n"
-            lines += f"cmd.show('cartoon', '{self.name}')\n"
-            lines += f"cmd.zoom('visible')\n"
-            lines += f"cmd.orient('visible')\n"
+            for region in self.regions:
+                region.write(f'{region.name}.pdb')
+                file = os.path.abspath(f'{region.name}.pdb')
+                lines += f"cmd.load(r'{file}', '{region.name}')\n"
+                lines += f"cmd.hide('cartoon', '{region.name}')\n"
+                lines += f"cmd.show_as('sticks', '{region.name}')\n"
+                lines += f"cmd.zoom('visible')\n"
+                lines += f"cmd.orient('visible')\n"
+                lines += f"cmd.scene('{region.name}', 'store')\n"
+                lines += f"cmd.hide('everything', '{region.name}')\n"
 
-        if filename == None:
-            filename = f'QMzymeModel_{self.name}_visualize.py'
-        elif not filename.endswith('.py'):
-            filename = filename+'.py'
-        with open (filename, 'w+') as f:
-            f.write(lines)
+            if CalculateModel.calc_type != None:
+                region = CalculateModel.calculation[CalculateModel.calc_type]
+                region.write(f'{region.name}.pdb')
+                file = os.path.abspath(f'{region.name}.pdb')
+                lines += f"cmd.load(r'{file}', '{region.name}')\n"
+                lines += f"cmd.hide('cartoon', '{region.name}')\n"
+                lines += f"cmd.color('gray85', '{region.name} and elem c')\n"
+                lines += f"cmd.color('oxygen','{region.name} and elem o')\n"
+                lines += f"cmd.color('slate', '{region.name} and elem n')\n"
+                lines += f"cmd.color('gray98', '{region.name} and elem h')\n"
+                lines += f"cmd.color('sulfur', '{region.name} and elem s')\n"
+                lines += f"cmd.show_as('sticks', '{region.name} and segid QM')\n"
+                lines += f"cmd.show_as('lines', '{region.name} and (not segid QM)')\n"
+                fixed = [str(i+1) for i, atom in enumerate(region.atoms) if atom.is_fixed]
+                fixed_sel = f"id {'+'.join(fixed)}"
+                if len(fixed) > 0:
+                    lines += f"cmd.create('fixed_atoms', '{region.name} and {fixed_sel}')\n"
+                    lines += f"cmd.hide('cartoon', 'fixed_atoms')\n"
+                    lines += f"cmd.set('sphere_scale', 0.15, 'fixed_atoms')\n"
+                    lines += f"cmd.set('sphere_color', 'black', 'fixed_atoms')\n"
+                    #lines += f"cmd.set('sphere_transparency', 0.7, 'fixed_atoms')\n"
+                    lines += f"cmd.show_as('spheres', 'fixed_atoms')\n"
+                #lines += f"cmd.select('residue_labels', '{region.name}')\n"
+                lines += f"cmd.create('residue_labels', '{region.name}')\n"
+                lines += f"cmd.hide('everything', 'residue_labels')\n"
+                lines += f"cmd.set('label_size', 14)\n"
+                lines += f"cmd.label('n. ha and residue_labels', 'resn+resi')\n"
+                lines += f"cmd.zoom('visible')\n"
+                if model_surface is True:
+                    lines += f"cmd.create('model_surface', '{region.name}')\n"
+                    lines += f"cmd.show_as('surface', 'model_surface')\n"
+                lines += f"cmd.orient('visible')\n"
+                lines += f"cmd.scene('{region.name}', 'store')\n"
+                lines += f"cmd.set('cartoon_transparency', 0.6)\n"
+                #lines += f"cmd.show('surface', '{region.name}')\n"
+                lines += f"cmd.show('cartoon', '{self.name}')\n"
+                lines += f"cmd.zoom('visible')\n"
+                lines += f"cmd.orient('visible')\n"
 
-    def print_summary(self):
+            if filename == None:
+                filename = f'QMzymeModel_{self.name}_visualize.py'
+            elif not filename.endswith('.py'):
+                filename = filename+'.py'
+            with open (filename, 'w+') as f:
+                f.write(lines)
+
+        finally:
+            if original_dir is not None:
+                os.chdir(original_dir)
+
+    def print_overview(self):
         """
-        Prints a formatted summary of the model and its regions, including 
+        Prints a formatted overview of the model and its regions, including 
         atom/residue counts, designated methods, and creation parameters.
         """
-        print(f"---- Model Summary: {self.name} ----")
-        print(f"Total Regions Found: {len(self.regions)}")
-        print("-" * 29) 
-        
+        print("-" * 29)
+        print(f"Model Overview: {self.name} ")
+        print("-" * 29)
+        print(f"  - total atoms: {self.universe.atoms.n_atoms}")
+        print(f"  - total residues: {self.universe.residues.n_residues}")
+        print(f"  - total regions: {len(self.regions)}")
+        print("-" * 29)
+        print("Region Overview") 
+        print("-" * 29)
+
         for region in self.regions:
             print(f"Region Name: {region.name}")
             
@@ -228,7 +328,7 @@ class QMzymeModel:
                         print(f"  - {key}: {value}")
             
             except AttributeError:
-                print("  - selection_scheme: information not available")
+                print("  - selection scheme: information not available")
 
             print("-" * 29)
 
