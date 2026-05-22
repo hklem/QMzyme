@@ -2,6 +2,8 @@
 Example Workflows
 -------------------
 
+A collection of tutorials to help understand the main features of QMzyme.
+
 .. toctree::
    :maxdepth: 2
 
@@ -17,8 +19,6 @@ Example Workflows
 
 Cookbook
 -------------------
-
-*In progress. Please come back later to see what has been added.*
 
 A collection of "recipes" to perform specific tasks in QMzyme. 
 
