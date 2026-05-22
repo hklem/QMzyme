@@ -584,8 +584,8 @@ class QMzymeRegion:
         aligned_positions = kabsch_transform(self.positions, t, r)
         mobile_aligned_positions = kabsch_transform(mobile.positions, t, r)
         rmsd_after_alignment = rmsd(mobile_aligned_positions, target.positions)
-        print(rf"RMSD before alignment: {rmsd_before_alignment} \AA")
-        print(rf"RMSD after alignment: {rmsd_after_alignment} \AA")
+        print(rf"RMSD before alignment: {rmsd_before_alignment} \u00C5")
+        print(rf"RMSD after alignment: {rmsd_after_alignment} \u00C5")
         if update_region is True:
             self._atom_group.positions = aligned_positions
             for i, atom in enumerate(self.atoms):
