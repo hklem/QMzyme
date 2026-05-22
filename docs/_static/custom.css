@@ -1,0 +1,10 @@
+.rst-content code.literal,
+.rst-content .notebook code,
+.rst-content .notebook span.pre {
+    font-size: 1.02em !important;
+}
+
+.nbinput .prompt,
+.nboutput .prompt {
+    display: none;
+}

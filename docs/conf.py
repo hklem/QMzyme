@@ -57,3 +57,11 @@ html_sidebars = {
         'searchbox.html',
     ]
 }
+
+rst_prolog = """
+.. role:: specialcode
+   :class: specialcode
+"""
+
+def setup(app):
+    app.add_css_file('custom.css')
