@@ -221,6 +221,7 @@ class DistanceCutoff(SelectionScheme):
 
     def reference(self):
         """
+        Writes out the reference for the selection scheme. This method is automatically called in the 
         """
         self.reference = None
 
@@ -288,11 +289,14 @@ class ChargeShiftAnalysis(SelectionScheme):
     :param charge_threshold: Partial charge threshold for CSA selection.
     :type charge_threshold: float, required.
 
+    :param charge_results_csv: Partial charge threshold for CSA selection.
+    :type charge_results_csv: bool, optional.
+
     :returns: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
     
     
     :Usage:
-        Users must first set a catalytic center and define a QM_Method:
+        Users must first set a catalytic center and define a QM_Method.
         
         .. code-block:: python
                 import QMzyme
@@ -300,14 +304,14 @@ class ChargeShiftAnalysis(SelectionScheme):
                 model.set_catalytic_center(kwargs)
                 qm_method = QMzyme.CalculateModel.QM_Method(kwargs)
                 
-        Then they can call the ChargeShiftAnalysis Selection Scheme:
+        Then they can call the ChargeShiftAnalysis Selection Scheme.
         
         .. code-block:: python
                 model.set_region(selection=QMzyme.SelectionSchemes.ChargeShiftAnalysis, method=qm_method, name={str})
             
         This will create the Holo and Apo input files. The user will then run these QM calculations. 
         Once the calculations have completed, the user can start back where they left off by loading in the saved .pkl file 
-        containing the QMzyme.GenerateModel object they instantiated in the previous step:
+        containing the QMzyme.GenerateModel object they instantiated in the previous step.
         
         .. code-block:: python
                 import QMzyme
@@ -335,7 +339,7 @@ class ChargeShiftAnalysis(SelectionScheme):
         
     """
 
-    def __init__(self, model, name, method: QM_Method, min_atoms=900, max_atoms=1000, include_whole_residues=True, alanine_mutation=[], memory=None, nprocs=None, holo_output_files=None, apo_output_files=None, pop="hirshfeld", charge_threshold=float):
+    def __init__(self, model, name, method: QM_Method, min_atoms=900, max_atoms=1000, include_whole_residues=True, alanine_mutation=[], memory=None, nprocs=None, holo_output_files=None, apo_output_files=None, pop="hirshfeld", charge_threshold=float, charge_output_csv:bool=False):
 
         self.min_atoms = min_atoms
         self.max_atoms = max_atoms
@@ -350,6 +354,7 @@ class ChargeShiftAnalysis(SelectionScheme):
         self.nprocs = nprocs
         self.pop = pop
         self.charge_threshold = charge_threshold
+        self.charge_output_csv = charge_output_csv
 
         # Store the parameters that you want the regions to "remember"
         self.holo_selection_attr = {
@@ -380,18 +385,18 @@ class ChargeShiftAnalysis(SelectionScheme):
         if method is None or not isinstance(method, QMzyme.QM_Method):
             raise UserWarning("You must set method as QM_Method for partial charge calculation.")
 
-        # Checking if there is any QM_output_files provided by the user
+        # ChargeShiftAnalysis second iteration (requires output files and charge threshold)
         if holo_output_files is not None and apo_output_files is not None:
-            if charge_threshold is not float:
+            if isinstance(charge_threshold, (float)):
                 print("Calculating partial charge differences from provided QM output files.")
                 name = "CSA_cutoff_region"
                 super().__init__(model, name)
                 QMzyme.CalculateModel._reset()
                 self.method.assign_to_region(self.region)
+            else:
+                raise UserWarning("You must set charge_threshold as float for partial charge calculation.")
 
-            elif charge_threshold is None or not isinstance(charge_threshold, (float)):
-                raise UserWarning("You must set charge_threshold as float or int for partial charge calculation.")
-
+        # ChargeShiftAnalysis first iteration
         else:
             print("Creating Holo and Apo input files for partial charge calculations.")
             self.create_apo_holo_regions()
@@ -409,9 +414,9 @@ class ChargeShiftAnalysis(SelectionScheme):
 
     def select_cat_residues(self):
         """
-        Docstring for select_cat_residues
+        Selects catalytic center for apo form generation.
         
-        :param self: Description
+        :param self: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`, required.
         """
         catalytic_center = self.model.get_region('catalytic_center')
         u = self.model.universe
@@ -428,6 +433,10 @@ class ChargeShiftAnalysis(SelectionScheme):
 
     def create_apo_holo_regions(self):
         """
+        Using attributes from ChargeShiftAnalysis class, creates
+        holo and apo region and QM input file for these regions.
+        
+        :param self: :class:`~QMzyme.QMzymeModel.QMzymeModel`, required.
         """
         # Counter to avoid infinite loops
         counter = 0
@@ -551,8 +560,7 @@ class ChargeShiftAnalysis(SelectionScheme):
 
         del self.model.truncated
 
-        with open("CSA_holo_apo.pkl", "wb") as file:
-            pickle.dump(self.model, file)
+        self.model.store_pickle(filename="CSA_holo_apo.pkl")
 
         self.region = CSA_initial_region
 
@@ -648,70 +656,71 @@ class ChargeShiftAnalysis(SelectionScheme):
 
         # Build an AtomGroup from the universe
         CSA_atom_group = self.model.universe.atoms[indices]
-        CSA_region = RegionBuilder(name="CSA_cutoff_region", atom_group=CSA_atom_group).get_region()
+        CSA_region = RegionBuilder(name="CSA_region", atom_group=CSA_atom_group).get_region()
         region = CSA_region.combine(self.model.catalytic_center)
 
-        # Making a csv file of atom, resid, and delta charge data
-        holo_atom_data = []
-        for i, atom in enumerate(CSA_holo.atoms):
-            resid = atom.resid
-            holo_atom_data.append({
-                "holo_atom_id": i + 1,
-                "holo_atom_charge": holo_atom_charges[i]
-            })
+        if self.charge_output_csv is True:   
+            # Making a csv file of atom, resid, and delta charge data
+            holo_atom_data = []
+            for i, atom in enumerate(CSA_holo.atoms):
+                resid = atom.resid
+                holo_atom_data.append({
+                    "holo_atom_id": i + 1,
+                    "holo_atom_charge": holo_atom_charges[i]
+                })
 
-        df_holo_atom = pd.DataFrame(holo_atom_data)
-        df_holo_atom.to_csv(f"holo_charges_{self.pop}.csv", index=False)
+            df_holo_atom = pd.DataFrame(holo_atom_data)
+            df_holo_atom.to_csv(f"holo_charges_{self.pop}.csv", index=False)
 
-        holo_resid_data = []
-        for i, atom in enumerate(CSA_holo.atoms):
-            resid = atom.resid
-            holo_resid_data.append({
-                "holo_residue_id": resid,
-                "holo_residue_name": atom.resname,
-                "holo_residue_charge": holo_resid_charges[resid]
-            })
+            holo_resid_data = []
+            for i, atom in enumerate(CSA_holo.atoms):
+                resid = atom.resid
+                holo_resid_data.append({
+                    "holo_residue_id": resid,
+                    "holo_residue_name": atom.resname,
+                    "holo_residue_charge": holo_resid_charges[resid]
+                })
 
-        df_holo_resid = pd.DataFrame(holo_resid_data)
-        df_holo_resid.to_csv(f"holo_residue_charges_{self.pop}.csv", index=False)
+            df_holo_resid = pd.DataFrame(holo_resid_data)
+            df_holo_resid.to_csv(f"holo_residue_charges_{self.pop}.csv", index=False)
 
-        apo_atom_data = []
-        for i, atom in enumerate(CSA_apo.atoms):
-            resid = atom.resid
-            apo_atom_data.append({
-                "apo_atom_id": i + 1,
-                "apo_atom_charge": apo_atom_charges[i]
-            })
+            apo_atom_data = []
+            for i, atom in enumerate(CSA_apo.atoms):
+                resid = atom.resid
+                apo_atom_data.append({
+                    "apo_atom_id": i + 1,
+                    "apo_atom_charge": apo_atom_charges[i]
+                })
 
-        df_apo_atom = pd.DataFrame(apo_atom_data)
-        df_apo_atom.to_csv(f"apo_charges_{self.pop}.csv", index=False)
+            df_apo_atom = pd.DataFrame(apo_atom_data)
+            df_apo_atom.to_csv(f"apo_charges_{self.pop}.csv", index=False)
 
-        apo_resid_data = []
-        for i, atom in enumerate(CSA_apo.atoms):
-            resid = atom.resid
-            apo_resid_data.append({
-                "apo_residue_id": resid,
-                "apo_residue_name": atom.resname,
-                "apo_residue_charge": apo_resid_charges[resid]
-            })
-        
-        df_apo_resid = pd.DataFrame(apo_resid_data)
-        df_apo_resid.to_csv(f"apo_residue_charges_{self.pop}.csv", index=False)
+            apo_resid_data = []
+            for i, atom in enumerate(CSA_apo.atoms):
+                resid = atom.resid
+                apo_resid_data.append({
+                    "apo_residue_id": resid,
+                    "apo_residue_name": atom.resname,
+                    "apo_residue_charge": apo_resid_charges[resid]
+                })
+            
+            df_apo_resid = pd.DataFrame(apo_resid_data)
+            df_apo_resid.to_csv(f"apo_residue_charges_{self.pop}.csv", index=False)
 
-        delta_data = []
-        for resid, delta in delta_resid_charges.items():
-            resname = next(
-                (atom.resname for atom in CSA_holo.atoms if atom.resid == resid),
-                next((atom.resname for atom in CSA_apo.atoms if atom.resid == resid), "UNK")
-            )
-            delta_data.append({
-                "delta_charge_id": resid,
-                "delta_residue_name": resname,
-                "delta_charge_difference": delta
-            })
+            delta_data = []
+            for resid, delta in delta_resid_charges.items():
+                resname = next(
+                    (atom.resname for atom in CSA_holo.atoms if atom.resid == resid),
+                    next((atom.resname for atom in CSA_apo.atoms if atom.resid == resid), "UNK")
+                )
+                delta_data.append({
+                    "delta_charge_id": resid,
+                    "delta_residue_name": resname,
+                    "delta_charge_difference": delta
+                })
 
-        df_delta = pd.DataFrame(delta_data)
-        df_delta.to_csv(f"delta_charges_{self.pop}.csv", index=False)
+            df_delta = pd.DataFrame(delta_data)
+            df_delta.to_csv(f"delta_charges_{self.pop}.csv", index=False)
 
         # Removing methods from the model
         self.model.CSA_holo_truncated.method = None
