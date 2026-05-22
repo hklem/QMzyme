@@ -91,9 +91,6 @@ class QMzymeModel:
 
         :param region: The QMzymeRegion instance to add to the model.
         :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
-
-        :raises UserWarning: If the region contains zero atoms or if a region with 
-            the same name already exists in the model.
         """
         if region.n_atoms == 0:
             raise UserWarning(f"Region contains no atoms and will not be created.")
@@ -121,8 +118,6 @@ class QMzymeModel:
 
         :returns: The requested QMzyme region object.
         :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
-
-        :raises UserWarning: If no region exists with the provided name.
         """
         try:
             return getattr(self,region_name)
