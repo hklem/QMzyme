@@ -8,10 +8,12 @@ Tests for the QMzymeModel.py code.
 import pytest
 import os
 import shutil
+import QMzyme
 from QMzyme.QMzymeModel import QMzymeModel
 from QMzyme.RegionBuilder import RegionBuilder
-from QMzyme.data import PDB
+from QMzyme.data import PDB, PDB_xtal, LIG
 from QMzyme.MDAnalysisWrapper import init_universe
+from QMzyme.SelectionSchemes import DistanceCutoff
 
 
 u = init_universe(PDB)
@@ -45,8 +47,8 @@ def test_QMzymeModel():
     assert model.has_region('test_region') 
     assert model.n_regions == 1
 
-    # do the summarize
-    model.print_summary()
+    # see the overview
+    model.print_overview()
 
     # check region related methods
     assert model.get_region_names() == ['test_region']
@@ -63,3 +65,17 @@ def test_QMzymeModel():
     restore_directory()
 
 
+def test_import_region():
+    model = QMzyme.GenerateModel(PDB_xtal)
+
+    QMzyme.data.residue_charges.update({'EQU': -1}) # EQU ligand
+
+    model.set_catalytic_center(selection='resname EQU and segid A')
+    model.set_region(selection=DistanceCutoff, cutoff=3)
+
+    region_19nt = model.import_region(LIG, name='region_19nt')
+    QMzyme.data.residue_charges.update({'6VW': 0})
+
+    assert len(model.regions) == 3
+    assert model.region_19nt.n_residues == 1
+    assert model.region_19nt.n_atoms == 46
