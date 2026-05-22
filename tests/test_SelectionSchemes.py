@@ -170,7 +170,7 @@ def test_ChargeShiftAnalysis():
         model.set_region(selection=ChargeShiftAnalysis, method=qm_method, holo_output_files=CSA_holo, apo_output_files=CSA_apo, pop="cm5")
 
     # Proper run of the second part
-    model.set_region(selection=ChargeShiftAnalysis, method=qm_method, holo_output_files=CSA_holo, apo_output_files=CSA_apo, pop="cm5", charge_threshold=0.05)
+    model.set_region(selection=ChargeShiftAnalysis, method=qm_method, holo_output_files=CSA_holo, apo_output_files=CSA_apo, pop="cm5", charge_threshold=0.05, charge_output_csv=True)
     assert model.catalytic_center.n_residues == 1
     assert model.catalytic_center.n_atoms == 37
     assert model.CSA_cutoff_region.n_residues == 5
