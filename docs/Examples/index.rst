@@ -13,7 +13,7 @@ A collection of tutorials to help understand the main features of QMzyme.
    QMxTB Calculation
    Ligand Parameterization
    Working with Trajectories
-   Serialization
+   QMzyme  Serialization
    Molecule Replacement Using QMzyme
    Verifying Optimized Structures
 
