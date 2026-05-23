@@ -42,7 +42,7 @@ class SelectionScheme(abc.ABC):
                 using the main :class:`~QMzyme.GenerateModel.GenerateModel` class, the QMzyme model is automatically 
                 passed as an argument to the selection scheme. It is recommended you use the Universe (universe attribute)
                 representing the starting structure to perform the selection on. 
-            :param name: (str, required) Name of the region generated.
+            :name: (str, required) Name of the region generated.
 
         The return should always be a QMzyme region.
 
