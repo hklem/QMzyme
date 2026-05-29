@@ -33,7 +33,7 @@ release = packageversion
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'nbsphinx']
+extensions = ['sphinx.ext.autodoc', 'nbsphinx', 'sphinx_copybutton']
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
@@ -45,7 +45,12 @@ smartquotes = False
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
+html_theme_options = {
+    'logo_only': True,
+    'display_version': True,
+}
 html_static_path = ['_static']
+html_logo = "_static/QMzyme_logo.png"
 autoclass_content = 'both'
 toc_object_entries = False
 autodoc_member_order = 'bysource'
@@ -68,3 +73,10 @@ rst_prolog = """
 
 def setup(app):
     app.add_css_file('custom.css')
+
+# Set the syntax highlighting style to the Pygments default (matches standard Jupyter)
+pygments_style = 'default'
+nbsphinx_codecell_lexer = 'python3'
+
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
