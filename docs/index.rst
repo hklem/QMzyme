@@ -1,22 +1,13 @@
-.. |logo| image:: Images/QMzyme_logo.png
+=============================================
+Introduction
+=============================================
+
+.. |logo| image:: _static/QMzyme_logo.png
    :width: 300
 
 |logo|
 
 :QMzyme version: |release|
-..
-   :Last updated: |today|
-
-.. note::
-   QMzyme is in a developmental stage. 
-   Please note the user interface may change! 
-   The first API version with guaranteed stability 
-   will be released as version 1.0.0 (QMzyme==1.0.0) on PyPi (pip).
-
-=============================================
-Introduction
-=============================================
-
 
 **QMzyme** is a Python toolkit to facilitate (quantum mechanical) QM-based enzyme 
 calculations. The :class:`~QMzyme.GenerateModel.GenerateModel` class guides the process of generating 
@@ -34,7 +25,6 @@ results will (ideally) be validatable through comparison to experiment, and (hop
 
 If you have ideas or suggestions on how to improve QMzyme please do not hesitate to engage on the `QMzyme Ideas GitHub Project space <https://github.com/users/hklem/projects/11/views/1>`_, or contribute directly by `forking the repository and submitting a pull request <https://qmzyme.readthedocs.io/en/latest/Contributing/general.html>`_. Questions can be directed via email to 
 heidiklem@lsu.edu.
-
 
 .. toctree::
    :maxdepth: 2

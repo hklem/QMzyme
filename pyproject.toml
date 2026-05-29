@@ -41,6 +41,8 @@ test = [
     "pytest-cov",
     "cclib", #needed for reading QM output files
 ]
+doc = ["sphinx-copybutton",
+]
 
 
 [tool.setuptools]

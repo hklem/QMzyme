@@ -7,12 +7,16 @@ Requirements
 
 *  Python >= 3.11 (older versions might work too, but testing is done with 3.11)
 *  NumPy
-*  `aqme <https://aqme.readthedocs.io/en/latest/>`_
 *  `MDAnalysis <https://www.mdanalysis.org>`_
+*  `pandas <https://pandas.pydata.org>`_
+*  `openbabel >= 3.2.0 <https://openbabel.org/index.html>`_
+*  `aqme <https://aqme.readthedocs.io/en/latest>`_
+*  `PyYAML <https://pypi.org/project/PyYAML>`_
+*  `rdkit <https://www.rdkit.org>`_
 
 Source Code (recommended)
 --------------------------
-The source code is available from https://github.com/hklem/QMzyme.
+The source code is available from https://github.com/Klem-Research-Group/QMzyme.
 
 .. code-block:: bash
     

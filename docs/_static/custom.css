@@ -1,3 +1,4 @@
+/* Sphinx Code & Jupyter Notebook Default Font Sizing */
 .rst-content code.literal,
 .rst-content .notebook code,
 .rst-content .notebook span.pre {
@@ -7,4 +8,69 @@
 .nbinput .prompt,
 .nboutput .prompt {
     display: none;
+}
+
+/* TOP-LEFT HEADER & CIRCLE LOGO */
+.wy-side-nav-search {
+    background-color: #461D7C !important;
+}
+
+.wy-side-nav-search > div.version {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Turns the logo card into a perfect circle */
+.wy-side-nav-search img.logo {
+    margin-bottom: 8px !important;
+    width: 100% !important; 
+    aspect-ratio: 1 / 1 !important; /* Forces a perfect square container */
+    background-color: #ffffff !important;
+    padding: 10px !important;
+    object-fit: contain !important; /* Prevents the image from stretching */
+    border-radius: 50% !important; /* Turns the square into a perfect circle */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* SIDEBAR CATEGORY HEADERS (LSU Gold) */
+.wy-menu-vertical p.caption,
+.wy-menu-vertical p.caption span.caption-text {
+    color: #FDD023 !important;
+    font-weight: bold !important;
+}
+
+/* MAIN CLASS BANNER (Targeting ONLY the class, leaving properties grey) */
+.rst-content dl.class > dt {
+    background: #F3EEFA !important; 
+    border-top: solid 3px #461D7C !important; 
+}
+
+.rst-content dl.class > dt .descname,
+.rst-content dl.class > dt .descclassname {
+    color: #461D7C !important;
+}
+
+/* INLINE CODE (Double backticks ``text``) */
+.rst-content code.literal,
+.rst-content tt.literal {
+    color: #461D7C !important;
+}
+
+/* BODY HYPERLINKS */
+.rst-content a,
+.rst-content a:visited {
+    color: #461D7C !important;
+}
+
+.rst-content a:hover {
+    color: #7D51A8 !important;
+    text-decoration: underline;
+}
+
+/* NOTE BOXES */
+.rst-content .admonition.note {
+    background: #F3EEFA !important;
+}
+
+.rst-content .admonition.note .admonition-title {
+    background: #7D51A8 !important;
 }
