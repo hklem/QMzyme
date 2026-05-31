@@ -213,24 +213,46 @@ class QMzymeRegion:
             self._selection_attr.update(kwargs)
 
     def get_atom(self, id):
+        """
+        Selects the atom with set atom ID.
+
+        :param id: The id of an atom you want to select.
+        :type id: float
+        """
         for i in self.atoms:
             if i.id == id:
                 return i
             
     def has_atom(self, id):
+        """
+        Examines if specific atom exists within the region.
+
+        :param id: The ID of an atom you want to check for existance in the region.
+        :type id: int
+        """
         if id in self.ids:
             return True
         return False
     
     def has_residue(self, resid):
+        """
+        Examines if specific residue exists within the region.
+
+        :param resid: The residue ID you want to check for existance in the region.
+        :type resid: int
+        """
         if resid in self.resids:
             return True
         return False
     
     def add_atom(self, atom: _QMzymeAtom, override_same_id=False):
         """
+        Adds additional QMzymeAtom to the QMzymeRegion.
+
         :param atom: The atom you want to add to the QMzymeRegion. 
         :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
+        :param overrisde_same_id: An argument to decide if the atoms with same IDs are replaced.
+        :type overrisde_same_id: bool, optional
 
         .. warning:: Ths will modify the QMzymeRegion directly.
         """
@@ -239,14 +261,31 @@ class QMzymeRegion:
 
     def remove_atom(self, atom: _QMzymeAtom):
         """
+        Removes QMzymeAtom from the QMzymeRegion.
+
         :param atom: The atom you want to remove from the QMzymeRegion. 
         :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
+        :param overrisde_same_id: An argument to decide if the atoms with same IDs are replaced.
+        :type overrisde_same_id: bool, optional
 
         .. warning:: Ths will modify the QMzymeRegion directly.
         """
         self.atoms.remove(atom)
 
     def sorted_atoms(self, override_same_id=False):
+        """
+        Returns a list of atoms sorted by their IDs, with optional duplicate handling.
+        This method checks the most recently added atom's ID against prexisting atoms' IDs.
+        If a duplicate ID is found and override_same_id=False, warning is raised.
+        If override_same_id=True, it will replace older atom and replace it with newer atom
+        with same ID.
+
+        :param overrisde_same_id: An argument to decide if the atoms with same IDs are replaced.
+        :type overrisde_same_id: bool, optional
+
+        :return: A list of QMzymeAtom objects sorted numerically by their atom IDs.
+        :rtype: list
+        """
         if self.atoms != [] and self.atoms[-1].id in self.ids[:-1]:
             if override_same_id == False: 
                 #self.remove_atom(self.atoms[-1])
@@ -259,11 +298,25 @@ class QMzymeRegion:
         return [x for _, x in sorted(zip(ids, atoms))]
     
     def get_residue(self, resid):
+        """
+        Retrieve a residue from the QMzymeRegion.
+
+        :param resid: The resid of the QMzymeResidue within QMzymeRegion.
+        :type resid: int
+        :return: The corresponding QMzymeResidue object if found, otherwise None.
+        :rtype: QMzymeResidue
+        """
         for res in self.residues:
             if res.resid == resid:
                 return res
             
     def rename(self, name):
+        """
+        Rename the region.
+
+        :param name: The new name for the QMzymeRegion.
+        :type name: str
+        """
         self.name = name
 
     def write(self, filename=None, format='pdb'):
@@ -374,6 +427,17 @@ class QMzymeRegion:
         return atoms
 
     def get_indices(self, attribute: str, value):
+        """
+        Get the indices of QMzymeAtoms that match a specific attribute value.
+
+        :param attribute: The name of the atom attribute to filter by (e.g., 'resname', 'Val').
+        :type attribute: str
+        :param value: The value the attribute must match.
+        :type value: str
+
+        :return: A list of integer indices representing QMzymeAtom IDs.
+        :rtype: list[int]
+        """
         ids = self.get_ids(attribute, value)
         return self.get_ix_array_from_ids(ids)
 
@@ -381,7 +445,6 @@ class QMzymeRegion:
         """
         :Example: 
         >>> ixs = get_ids(attribute='type', value='CA')
-        
         """
         ix_array = []
         for ix, atom in enumerate(self.atoms):
@@ -390,6 +453,16 @@ class QMzymeRegion:
         return ix_array
     
     def check_missing_attr(self, attr):
+        """
+        Verify that all atoms in the region possess a specific attribute.
+
+        Checks all QMzymeAToms within the QMzymeRegion for the presence of
+        specific attribute. If any QMzymeAtoms are missing the attribute, a warning is raised.
+
+        :param attr: The name of the attribute.
+        :type attr: str
+        :raises UserWarning: If one or more QMzymeAtoms lack the attribute or if the attribute is None.
+        """
         missing = []
         for atom in self.atoms:
             if not hasattr(atom, attr) or getattr(atom, attr) == None:
@@ -399,13 +472,22 @@ class QMzymeRegion:
         
     def set_method(self, method):
         """
-        Used by the :module:`~QMzyme.CalculateModel` module when the region is passed to a Calculation Method class.
+        This method designates a specific QM method to the QMzymeRegion. This is used by the
+        :module:`~QMzyme.CalculateModel` module when the region is passed to a Calculation Method class.
+
+        :param method: The method that is going to be applied to QMzymeRegion.
+        :type method: dict
         """
         if type(method) != dict:
             method = method.__dict__
         self.method = method
 
     def set_charge(self, charge):
+        """
+        Sets specific charge to QMzymeRegion
+        :param charge: The charge of the QMzymeRegion.
+        :type charge: int
+        """
         self.charge = charge
         try:
             self.method["charge"] = charge
@@ -413,6 +495,15 @@ class QMzymeRegion:
             pass
 
     def guess_charge(self, verbose=True):
+        """
+        Guesses charge based on the residue_charges information in QMzyme\configuration\__init__.py.
+        QMzyme contains charge information of standard AMBER amino acid residues.
+        If non-AMBER residues are present, it will raise an error. To update the charge of the
+        unknown residue, the user can use QMzyme.data.residue_charges.update({'unknown residue name': int})
+
+        :param verbose: Returns print statements including warning and estimated charge.
+        :type verbose: bool
+        """
         if hasattr(self.atoms[0], "charge"):
             self.read_charges(verbose)
             return
@@ -441,6 +532,12 @@ class QMzymeRegion:
 
 
     def read_charges(self, verbose=True):
+        """
+        Calculates total charge of QMzymeResidue by using tolopogy attribute 'charge'.
+
+        :param verbose: Returns print statements including warning and estimated charge.
+        :type verbose: bool
+        """
         txt=''
         txt+=f"\nCalculating total charge for QMzymeRegion {self.name} based on charges read from topology attribute 'charge'..."
         chrg = 0
@@ -540,6 +637,12 @@ class QMzymeRegion:
         return atoms
     
     def set_atom_segid(self, segid):
+        """
+        Sets segment id attribute to QMzymeAtom objects within QMzymeResidue.
+
+        :param segid: segment id of the QMzymeAtom
+        :type segid: int
+        """
         for atom in self.atoms:
             atom.segid = segid
     
@@ -550,6 +653,14 @@ class QMzymeRegion:
     #     pass
 
     def summarize(self, filename=None):
+        """
+        Creates a summary of QMzymeRegion, which includes resid, resname, charge, removed atoms, and fixed atoms
+        of QMzymeResidues within QMzymeRegion. If a file name is specified, the summary will be created as a .txt
+        file. Else, it will return a dictionary with summary information.
+
+        :param filename: Name of the output file for the summarized information.
+        :type filename: str
+        """
         summary = {
             "Resid": [],
             "Resname": [],
@@ -574,6 +685,23 @@ class QMzymeRegion:
             print(summary, file=f)
 
     def align_to(self, other, self_selection='all', other_selection='all', update_region=True):
+        """
+        This method aligns the selection of QMzymeAtom objects within self QMzymeRegion to the
+        specified selection of QMzymeAtom objects from a QMzymeRegion. The computed RMSD of pre-
+        and post-alignment is printed. It is important to align the smaller subset of QMzymeAtom
+        objects (self) to the QMzymeAtom objects of larger QMzymeRegion (other) to align the smaller
+        subset to the larger QMzymeRegion. This can be ensured by specifying the smaller model before
+        the “align_to” function. This will assign the smaller model to “self”.
+
+        :param other: QMzymeRegion of the other QMzymeAtoms for alignment.
+        :type other: QMzymeRegion
+        :param self_selection: Selection of QMzymeAtoms based on MDAnalysis selection nomenclatire.
+        :type self_selection: str
+        :param other_selection: Selection of QMzymeAtoms based on MDAnalysis selection nomenclatire.
+        :type other_selection: str
+        :parm update_region: Updates the aligned QMzymeAtom objects to the QMzymeRegion.
+        :type update_region: bool
+        """
         from QMzyme.utils import compute_translation_and_rotation, kabsch_transform, rmsd
         mobile = self.atom_group.select_atoms(self_selection)
         target = other.atom_group.select_atoms(other_selection)
@@ -656,7 +784,23 @@ class QMzymeRegion:
 
 class QMzymeResidue(QMzymeRegion):
     """
-    Subclass of QMzymeRegion.
+    QMzymeResidue is a subclass of QMzymeRegion representing a molecular unit of the system as defined in the
+    starting topology file. 
+
+    Required Parameters
+    --------------------
+    
+    :param resname: Three letter residue name: ex., 'VAL'
+    :type resname: str
+
+    :param resid: Integer residue number.
+    :type resid: int
+
+    :param atoms: Atom name: ex., 'C1'
+    :type name: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`
+
+    :param region:
+    :type name: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
     """
     
     def __init__(self, resname, resid, atoms, region, chain=None):
@@ -677,14 +821,35 @@ class QMzymeResidue(QMzymeRegion):
         return rep
 
     def get_atom(self, atom_name):
+        """
+        Selects QmzymeAtom with specific atom name within the region.
+
+        :param atom_name: The name of the atom (e.g. "CA")
+        :type atom: str
+        """
         for atom in self.atoms:
             if atom.name == atom_name:
                 return atom
 
     def set_chain(self, value: str):
+        """
+        Sets chain attribute to QMzymeAtom objects within QMzymeRgion.
+
+        :param segid: Chain name of the QMzymeAtom
+        :type segid: str
+        """
         self.chain = value
 
     def guess_charge(self, verbose=True):
+        """
+        Guesses charge based on the residue_charges information in QMzyme\configuration\__init__.py.
+        QMzyme contains charge information of standard AMBER amino acid residues.
+        If non-AMBER residues are present, it will raise an error. To update the charge of the
+        unknown residue, the user can use QMzyme.data.residue_charges.update({'unknown residue name': int})
+
+        :param verbose: Returns print statements including warning and estimated charge.
+        :type verbose: bool
+        """
         if hasattr(self.atoms[0], "charge"):
             self.read_charges(verbose)
             return
@@ -709,6 +874,12 @@ class QMzymeResidue(QMzymeRegion):
         #    print(txt.split('\n')[-1])
 
     def read_charges(self, verbose=True):
+        """
+        Calculates total charge of QMzymeResidue by using tolopogy attribute 'charge'.
+
+        :param verbose: Returns print statements including warning and estimated charge.
+        :type verbose: bool
+        """
         txt = ''
         txt+=f"\nCalculating total charge for QMzymeResidue {self.resname} based on charges read from topology attribute 'charge'..."
         chrg = 0
@@ -721,6 +892,12 @@ class QMzymeResidue(QMzymeRegion):
             print(txt)
 
     def get_backbone_atoms(self, backbone_atoms=backbone_atoms):
+        """
+        Selects group of QMzymeAtom objects within QMzymeResidue that contains atom name within backbone_atoms dictionary.
+
+        :param backbone_atoms: Sets of QMzymeAtom names that corresponds to the backbone atoms.
+        :type backbone_atoms: dict, default {'C': 'C', 'CA': 'CA', 'H': 'H', 'HA': 'HA', 'N': 'N', 'O': 'O'}.
+        """
         bb_atoms = []
         for atom_name, atom in backbone_atoms.items():
             if self.get_atom(atom) == None:
@@ -733,12 +910,23 @@ class QMzymeResidue(QMzymeRegion):
         return bb_atoms
 
     def remove_atom(self, atom):
+        """
+        :param atom: The atom you want to remove from the QMzymeResidue. 
+        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
+
+        .. warning:: Ths will modify the QMzymeResidue directly.
+        """
+
         if atom in self.atoms:
             self.atoms.remove(atom)
             self.region.remove_atom(atom)
 
     @property
     def removed_atoms(self):
+        """
+        List of atoms removed from the QMzymeResidue. Often, this is done with
+        remove_atom() method or truncate() method.
+        """
         removed_atoms=[]
         u = self.region._universe
         sel = f'resid {self.resid} and resname {self.resname}'
