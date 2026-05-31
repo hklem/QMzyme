@@ -36,10 +36,36 @@ class Writer(abc.ABC):
 
     @abc.abstractmethod
     def write(self):
+        """
+        This method writes the QM input files from the information specified from the user within QMzymeModel.
+        Refer to parameters for Writer subclasses for required and optional parameters.
+        """
         ...
     
     @abc.abstractmethod
     def reference(self):
+        """
+        This method needs to be included in your class. All it should do is create an
+        attribute called `reference` that provides a citable reference of the scheme, to 
+        give credit where credit is due. The reference will be automatically printed when
+        the class is instantiated. This is taken care of in the the ``super().__init__(model, name)`` 
+        line of your `__init__()` method.
+        
+        Example:
+
+        .. code:: python
+
+            self.reference = "1. Alegre‐Requena, J. V., Sowndarya S. V., S., Pérez‐Soto, R., Alturaifi, T. M. & Paton, R. S. AQME: Automated quantum mechanical environments for researchers and educators. WIREs Comput Mol Sci 13, e1663 (2023)."
+
+        In some cases, there might not be a direct reference, but there might be relevant work a user
+        might be interested in. Please only refer to the work of interest in the class doc string, not in the reference method. 
+        
+        If there are no references, please only include the line:
+
+        .. code:: python
+
+            self.reference = None
+        """
         ...
 
     # def aqme_acknowledgement():
