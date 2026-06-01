@@ -27,7 +27,23 @@ _Atom = TypeVar("_Atom", bound=Union["QMzymeAtom", "Atom"])
 remove_mda_atom_props = ['level', 'universe', 'bfactor', 'altLoc', 'ix_array', 'segment', 'segindex']
 
 class RegionBuilder:
+    """
+    **RegionBuilder** is a module for creating QMzymeRegion directly from MDAnalysis Universe. The region
+    created wtih RegionBuilder gets integrated to the QMzymeModel with same Universe. If there is no QMzymeModel
+    with same universe, it remains as a stand-alone QMzymeRegion. This class can be used to create QMzymeRegion
+    directly from separate MDAnalysis universe without needing to make QMzymeModel, with MDAnalysis selection
+    nomenclature (e.g. import_region).
 
+    :param name: Name of the region that will be created.
+    :type name: str, required
+    :param atom_group: Selection of atoms from MDAnalysis universe with MDAnalysis selection nomenclature.
+    :type atom_group: str, required
+    :param universe: MDAnalysis universe object to select and acquire the region from.
+    :type universe: MDAnalysis.Universe
+
+    :return: Resulting QMzymeRegion from the atom_group() selection.
+    :rtype: QMzymeRegion
+    """
     def __init__(self, name, atom_group = None, universe = None):
         self.name = name
         self.atoms = []
@@ -43,10 +59,18 @@ class RegionBuilder:
 
     @property
     def n_residues(self):
+        """
+        :return: Number of residues wtihin the region
+        :rtype: int
+        """
         return len(list(set(atom.resid for atom in self.atoms)))
     
     @property
     def n_atoms(self):
+        """
+        :return: Number of atoms wtihin the region
+        :rtype: int
+        """
         return len(self.atoms)
 
     def init_atom_group(self, atom_group):

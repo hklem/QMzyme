@@ -21,6 +21,10 @@ class TruncationScheme(abc.ABC):
     A truncation scheme defines the specific rule for how protein
     amino acid residues in the QMzymeModel is truncated to create
     the desired QM region.
+    
+    In order to avoid creating small alkane chains (e.g. methane and ethane),
+    TruncationScheme class will raise a warning when an organic group is created
+    as a result of TruncationScheme class.
 
     .. image:: ../../docs/Images/truncation_scheme.png
         :width: 650
@@ -31,6 +35,41 @@ class TruncationScheme(abc.ABC):
         if name == None:
             name = f'{self.region.name}_truncated'
         self.name = name
+        
+        region_resids = [res.resid for res in self.region.residues]
+        problematic_resids = []
+
+        for res in self.region.residues:
+            resname = res.resname.lower()
+            resid = res.resid
+            
+            if resname == 'gly' or resname == 'ala':
+                organic_group = "methane" if resname == 'gly' else "ethane"
+                is_isolated = False
+                
+                # Check isolation based on which scheme is running
+                if type(self).__name__ == "TerminalAlphaCarbon":
+                    if (resid - 1 not in region_resids) and (resid + 1 not in region_resids):
+                        is_isolated = True
+                        
+                elif type(self).__name__ == "AlphaCarbon":
+                    is_isolated = True
+
+                if is_isolated:
+                    problematic_resids.append((resname.upper(), resid, organic_group))
+
+        if problematic_resids:
+            for res_name, res_id, org_group in problematic_resids:
+                print(f"Truncation of Residue {res_name} {res_id} resulted in formation of {org_group}.")
+
+            print(
+                f"These organic group may not be an appropriate representation of the active site region.\n\n"
+                f"It is recommended that these residues are removed prior to QM region selection before truncating it.\n"
+                f"Alternatively, include the neighboring residues and apply the TerminalAlphaCarbon scheme.\n\n"
+                f"Information regarding addition or subtraction of region can be found at:"
+                f"https://qmzyme.readthedocs.io/en/latest/Examples/Manipulating%20QMzymeRegion.html"
+                )        
+
         self.truncate()
         if hasattr(self.region.atoms[0], "charge"):
             balance_charge(self.region, self.truncated_region)

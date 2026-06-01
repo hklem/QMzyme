@@ -10,6 +10,10 @@ from QMzyme.data import element_name_to_atomic_number
 
 class QMzymeAtom:
     """
+    QMzymeAtom represents a single atom in the molecular system and is the most
+    fundamental object within QMzyme. A QMzymeAtom instance inherits all its
+    attributes from its MDAnalysis Atom counterpart. 
+    
     Required Parameters
     --------------------
     

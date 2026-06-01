@@ -41,7 +41,7 @@ test = [
     "pytest-cov",
     "cclib", #needed for reading QM output files
 ]
-doc = ["sphinx-copybutton",
+doc = ["sphinx-copybutton", "ipython",
 ]
 
 
