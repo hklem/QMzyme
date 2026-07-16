@@ -7,7 +7,7 @@ from QMzyme.data import PDB
  
 @pytest.mark.parametrize(
     "Test, region_selection, replace_atom, fixed_atom",[
-        ('MET1, C_termina of protein', 'resid 1', 'resid 1 and name N', 'resid 1 and name CA'),
+        ('MET1, C-terminal of protein', 'resid 1', 'resid 1 and name N', 'resid 1 and name CA'),
         ('GLN262, N-terminal of protein', 'resid 262', 'resid 262 and name N', 'resid 262 and name CA'),
         ('ASN2', 'resid 2', 'resid 2 and name N', 'resid 2 and name CA'),
         ('LEU3, with PRO4 as C-termini', 'resid 3', 'resid 3 and name N', 'resid 3 and name CA'),
@@ -48,7 +48,7 @@ def test_cap_ACE(Test, region_selection, replace_atom, fixed_atom):
 
 @pytest.mark.parametrize(
     "Test, region_selection, replace_atom, fixed_atom",[
-        ('MET1, C_termina of protein', 'resid 1', 'resid 1 and name C', 'resid 1 and name CA'),
+        ('MET1, C-terminal of protein', 'resid 1', 'resid 1 and name C', 'resid 1 and name CA'),
         ('GLN262, N-terminal of protein', 'resid 262', 'resid 262 and name C', 'resid 262 and name CA'),
         ('ASN2', 'resid 2', 'resid 2 and name C', 'resid 2 and name CA'),
         ('LEU3, with PRO4 as C-termini', 'resid 3', 'resid 3 and name C', 'resid 3 and name CA'),
