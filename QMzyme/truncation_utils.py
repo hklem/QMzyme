@@ -169,7 +169,7 @@ def cap_ACE(replace_atom, universe):
     methyl_H_count = sum(1 for a in cap_atoms if a.name.startswith('HH3'))
     if methyl_H_count != 3:
         warnings.warn(
-            f"cap_ACE/NME built only {methyl_H_count}/3 methyl H atoms for resid "
+            f"cap_ACE built only {methyl_H_count}/3 methyl H atoms for resid "
             f"{replace_atom.resid}. Check preceding residue atom naming.",
             UserWarning,
         )
@@ -225,10 +225,10 @@ def cap_NME(replace_atom, universe):
         if resname == 'PRO':
             raise ValueError(
                 f"Cannot build NME cap: residue {following_resid} is Proline. "
-                "Proline's backbone N has no amide H — it is bonded to the ring "
-                "CD carbon instead — so its side chain constrains the backbone "
-                "geometry in a way an NME cap can't represent. Choose a different "
-                "cut point or handle this residue some other way."
+                "Proline's backbone N has no amide H due to it bonded to the ring "
+                "CD carbon instead. This results in the side chain constraining the"
+                "backbone geometry in a way an NME cap can't represent. Choose a"
+                "different cut point or handle this residue some other way."
             )
     
     if any(atom is None for atom in (nextN_raw, nextC_raw, nextCA_raw)):
@@ -290,7 +290,7 @@ def cap_NME(replace_atom, universe):
     methyl_H_count = sum(1 for a in cap_atoms if a.name.startswith('HH3'))
     if methyl_H_count != 3:
         warnings.warn(
-            f"cap_ACE/NME built only {methyl_H_count}/3 methyl H atoms for resid "
+            f"cap_NME built only {methyl_H_count}/3 methyl H atoms for resid "
             f"{replace_atom.resid}. Check preceding residue atom naming.",
             UserWarning,
         )
