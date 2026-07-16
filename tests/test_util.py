@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
-from QMzyme.utils import rmsd, compute_translation_and_rotation, kabsch_transform
+from types import SimpleNamespace
+from QMzyme.utils import rmsd, compute_translation_and_rotation, kabsch_transform, vector_comparison
 
 def test_kabsch_and_rmsd_logic():
     # Setup independent coordinate sets
@@ -53,3 +54,27 @@ def test_rmsd_manual_delta():
     # Mean of (sqrt(3)^2) is 3, sqrt(3) is ~1.732
     expected_rmsd = 1.73205081
     assert rmsd(xyz1, xyz2, align=False) == pytest.approx(expected_rmsd)
+
+@pytest.mark.parametrize(
+    "fixed_pos, pos1, pos2, tolerance, expected",
+    [
+        # same direction: True
+        ([0, 0, 0], [1, 0, 0], [2, 0, 0], 1e-4, True),
+        # opposite direction: False
+        ([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1e-4, False),
+        # perpendicular: False
+        ([0, 0, 0], [1, 0, 0], [0, 1, 0], 1e-4, False),
+        # atom1 coincides with fixed: raises ValueError
+        ([0, 0, 0], [0, 0, 0], [1, 0, 0], 1e-4, ValueError),
+    ],
+)
+def test_vector_comparison(fixed_pos, pos1, pos2, tolerance, expected):
+    fixed = SimpleNamespace(position=np.array(fixed_pos, dtype=float))
+    atom1 = SimpleNamespace(position=np.array(pos1, dtype=float))
+    atom2 = SimpleNamespace(position=np.array(pos2, dtype=float))
+ 
+    if expected is ValueError:
+        with pytest.raises(ValueError):
+            vector_comparison(fixed, atom1, atom2, tolerance=tolerance)
+    else:
+        assert vector_comparison(fixed, atom1, atom2, tolerance=tolerance) == expected
