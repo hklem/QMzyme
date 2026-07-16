@@ -110,8 +110,7 @@ def vector_comparison(fixed, atom1, atom2, tolerance=1e-4):
     :type atom1: `QMzyme.QMzymeAtom` or `MDAnalysis.Universe.Atom`
     :param atom2: The second target atom to check (Atom B).
     :type atom2: `QMzyme.QMzymeAtom` or `MDAnalysis.Universe.Atom`
-    :param tolerance: The absolute tolerance for comparing the dot product of the unit 
-        vectors to 1.0, accounting for floating-point precision.
+    :param tolerance: The absolute tolerance for comparing the dot product of the unit.
     :type tolerance: float, optional, default=1e-4
     :return: True if the vectors point in the same direction within the specified tolerance, False otherwise.
     :rtype: bool
