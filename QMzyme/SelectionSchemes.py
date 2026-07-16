@@ -462,11 +462,10 @@ class ChargeShiftAnalysis(SelectionScheme):
 
             # Assign method to region and truncate
             self.method.assign_to_region(holo_region)
-            self.model.truncate()
+            self.model.truncate(name="CSA_holo_truncated", extend_gly_ala_backbone=True)
 
         # If # atoms within the whole enzyme is more than max atoms, need to truncate
         else:
-
             # Repeat this loop until the correct truncation or region error
             while True:
                 # Safety counter to avoid infinite loops
@@ -515,7 +514,7 @@ class ChargeShiftAnalysis(SelectionScheme):
                     self.model.set_region(holo_region)
                     holo_region.set_creation_attr(self.holo_selection_attr)
 
-                    self.model.truncate()
+                    self.model.truncate(name="CSA_holo_truncated", extend_gly_ala_backbone=True)
 
                     break
 
@@ -551,23 +550,20 @@ class ChargeShiftAnalysis(SelectionScheme):
 
         # Examining if alanine mutation is requested by user
         if self.alanine_mutation is not None and len(self.alanine_mutation) > 0:
-            BetaCarbon(apo_region, alanine_mutation=self.alanine_mutation, name="apo_Ala_mutation")
+            apo_region.truncate(scheme=BetaCarbon, selection=self.alanine_mutation, remove_methane=False, remove_ethane=False, extend_gly_ala_backbone=True)
 
         # Set name of apo region and assign QM menthod
         apo_method = self.method.__class__.__new__(self.method.__class__)
         apo_method.__dict__.update(self.method.__dict__)
         apo_method.assign_to_region(apo_region)
 
-        del self.model.truncated
         apo_region.name = "CSA_apo"
         self.model.set_region(apo_region)
         apo_region.set_creation_attr(self.apo_selection_attr)
-        self.model.truncate()
+        self.model.truncate(name="CSA_apo_truncated", remove_methane=False, remove_ethane=False, extend_gly_ala_backbone=True, override_truncation=True)
 
         # Method and truncation for apo region should be the same as holo region, so I think we can just write input
         self.model.write_input(**kwargs)
-
-        del self.model.truncated
 
         self.model.store_pickle(filename="CSA_holo_apo.pkl")
 
