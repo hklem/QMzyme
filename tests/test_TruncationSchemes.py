@@ -275,12 +275,14 @@ def test_check_override_capping(Test, region_selection, override_capping):
         assert recapped.capping_scheme is not None
 
 def test_check_override_capping_partial(capsys):
-    """A residue capped with cap_H (not ACE+NME) hits the 'only one
+    """
+    A residue capped with cap_H (not ACE+NME) hits the 'only one
     terminus capped' branch of override_capping=False: it's left alone
     and NOT added to skip_resids, so its untouched side can still be
-    re-truncated on a subsequent pass."""
+    re-truncated on a subsequent pass.
+    """
     model = GenerateModel(PDB)
-    model.set_region(name='region', selection='resid 2')  # MET1 is a true N-terminus
+    model.set_region(name='region', selection='resid 2')
     qm_method = QMzyme.QM_Method(
         basis_set='6-31G*', functional='wB97X-D3', qm_input='OPT FREQ', program='orca'
     )
