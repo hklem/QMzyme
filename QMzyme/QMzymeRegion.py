@@ -433,6 +433,9 @@ class QMzymeRegion:
     
         # Grab the specific N atom object (needed to build the ACE cap and for segid lookup)
         N  = next(a for a in residue_atoms if a.name == backbone_atoms['N'])
+
+        CA = next((a for a in residue_atoms if a.name == backbone_atoms['CA']), None)
+        ca_fixed = CA is not None and getattr(CA, 'is_fixed', False)
     
         # The residue immediately preceding this one in sequence (N-terminal neighbor)
         neighbor_resid = resid - 1
@@ -483,6 +486,8 @@ class QMzymeRegion:
         # Add each newly created ACE cap atom into this region
         for atom in capped:
             self.add_atom(atom)
+            if ca_fixed and atom.name == 'CH3':
+                atom.is_fixed = True
     
         # Record that the ACE cap succeeded for this resid
         self._cap_flags.setdefault(resid, {})['ACE'] = True
@@ -535,6 +540,9 @@ class QMzymeRegion:
 
         # Grab the specific C atom object (needed to build the NME cap and for segid lookup)
         C  = next(a for a in residue_atoms if a.name == backbone_atoms['C'])
+
+        CA = next((a for a in residue_atoms if a.name == backbone_atoms['CA']), None)
+        ca_fixed = CA is not None and getattr(CA, 'is_fixed', False)
     
         # The residue immediately following this one in sequence (C-terminal neighbor)
         neighbor_resid = resid + 1
@@ -587,6 +595,8 @@ class QMzymeRegion:
         # Add each newly created NME cap atom into this region
         for atom in capped:
             self.add_atom(atom)
+            if ca_fixed and atom.name == 'CH3':
+                atom.is_fixed = True
     
         # Record that the NME cap succeeded for this resid
         self._cap_flags.setdefault(resid, {})['NME'] = True

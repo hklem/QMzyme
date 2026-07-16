@@ -298,11 +298,6 @@ class TruncationScheme(abc.ABC):
 
                         # Get the preexisting attribute from the original resiude
                         inherited_type = getattr(orig_res, 'method_type', None)
-                        resid_CA_fixed = any(
-                            getattr(atom, 'is_fixed', False)
-                            for atom in orig_res.atoms
-                            if atom.name == backbone_atoms['CA']
-                        ) if orig_res else False
 
                         # Track whether this resid actually gained caps/bridge
                         cap_success = False
@@ -326,13 +321,6 @@ class TruncationScheme(abc.ABC):
 
                             # Build lookup once (after caps were added)
                             res_lookup = {int(r.resid): r for r in self.region.residues}
-
-                            # Fix CH3 if CA was fixed
-                            if resid_CA_fixed:
-                                for nr in new_resids:
-                                    for atom in res_lookup.get(nr, []).atoms:
-                                        if atom.name == 'CH3':
-                                            atom.is_fixed = True
 
                             # Inherit method_type (if used)
                             if inherited_type:
