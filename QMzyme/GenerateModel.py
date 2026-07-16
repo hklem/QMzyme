@@ -26,12 +26,12 @@ calculation input files.
 """
 
 from QMzyme.QMzymeModel import QMzymeModel
+from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.utils import make_selection
 from QMzyme.TruncationSchemes import TerminalAlphaCarbon
 from QMzyme.CalculateModel import CalculateModel, CalculationFactory
 from QMzyme.Writers import WriterFactory
-from QMzyme.QMzymeRegion import QMzymeRegion
-
+from QMzyme.data import protein_residues
 
 class GenerateModel(QMzymeModel):
     """
@@ -133,28 +133,64 @@ class GenerateModel(QMzymeModel):
 
         # A short module that allows for storing the selection parameters used to make region selection
         region._selection_attr.update(kwargs)
-        region._selection_attr['selection_scheme'] = selection
+        if isinstance(selection, QMzymeRegion):
+            region._selection_attr.setdefault('selection_scheme', selection._selection_attr.get('selection_scheme'))
+        else:
+            region._selection_attr['selection_scheme'] = selection
         
         self.add_region(region)
     
 
-    def truncate(self, scheme=TerminalAlphaCarbon, name=None):
+    def truncate(self, scheme = TerminalAlphaCarbon, name = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         """
-        Method to truncate QMzymeModel. All QMzymeModel regions with assigned methods will be 
-        combined and truncated according to the specified scheme. The resulting region will
-        be saved as the QMzymeModel `truncated` attribute.
+        Method to truncate QMzymeModel. This method requires users to have methods assign to
+        the region prior to using GenerateModel.truncate. All QMzymeModel regions with assigned
+        methods will be combined and truncated according to the specified scheme. The resulting
+        region will be saved as '{CalculateModel.calc_type}_region' if name = None.
 
         :param scheme: Specifies the truncation scheme to use. Options can be found
             in :py:mod:`~QMzyme.TruncationSchemes`.
         :type scheme: :py:class:`~QMzyme.TruncationSchemes.TruncationScheme` concrete class, 
             default=:class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon`
-        :param name: Name to give the truncated model. If None, the original
-            region name will be the combination of calculation methods and the suffix '_combined_region_truncated'.
-        :type name: str, optional
+        :param name: Name to give the new truncated region. If None, the original
+            region will be truncated.
+        :type name: str, optional, default=None
+        :param remove_methane: Controls how isolated Gly residues (which would
+            otherwise be reduced to a methane upon truncation) are handled.
+            If True, isolated Gly residues are removed from the region. If False,
+            they are truncated and kept as a methane. If None and an isolated Gly is
+            present (and extend_gly_ala_backbone is False), a ValueError is raised
+            prompting the user to decide.
+        :type remove_methane: bool, optional, default=None
+        :param remove_ethane: Controls how isolated Ala residues (which would
+            otherwise be reduced to a ethane upon truncation) are handled. If True,
+            isolated Ala residues are removed from the region. If False, they are
+            are truncated and kept as a ethane. If None and an isolated Ala is
+            present (and extend_gly_ala_backbone is False), a ValueError is raised
+            prompting the user to decide.
+        :type remove_ethane: bool, optional, default=None
+        :param extend_gly_ala_backbone: If True, isolated Gly/Ala residues are
+            capped with ACE/NME groups instead of being removed or flagged,
+            extending the backbone rather than truncating it down to a small
+            organic group. Currently only supported with the
+            :class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon` scheme.
+        :type extend_gly_ala_backbone: bool, default=False
+        :param override_truncation: Controls behavior for residues in the
+            selection that have already been truncated. If None, a ValueError
+            is raised prompting the user to decide. If False, already-truncated
+            residues are skipped. If True, already-truncated residues are reverted
+            to their untruncated state and re-truncated.
+        :type override_truncation: bool, optional, default=None
+        :param override_capping: Controls behavior for residues in the
+            selection that have already been capped. If None, a ValueError
+            is raised prompting the user to decide. If False, fully-capped
+            residues are skipped; residues capped on only one terminus are
+            still processed so the remaining uncapped terminus can be truncated.
+            If True, already-capped residues are reverted to their uncapped
+            state and re-capped/re-truncated.
+        :type override_capping: bool, optional, default=None
         """
-        #combine regions
-        if hasattr(self, "truncated"):
-            raise UserWarning("Your model has already been truncated.")
+        # Combine regions
         if CalculateModel.calculation == {}:
             raise UserWarning("You must first assign calculation method(s) to the model region(s).")
         if len(CalculateModel.calculation) > 1:
@@ -162,26 +198,30 @@ class GenerateModel(QMzymeModel):
         calc_type = CalculateModel.calc_type
 
         # Remember the original region name prior to making truncated region
-        source_region_name = CalculateModel.calculation[calc_type].name
+        source_region = CalculateModel.calculation[calc_type]
 
-        # Selecting a region based on the truncation scheme
-        s = scheme(region=CalculateModel.calculation[calc_type], name=name)
-        region = s.return_region()
+        if name is None:
+            name = f"{calc_type}_region"
 
-        # Handle the naming of the newly formed region
-        if not region.name.endswith("_truncated"):
-            region.name = f"{region.name}_truncated"
+        s = scheme(
+            region=source_region, 
+            name=name, 
+            remove_methane=remove_methane, 
+            remove_ethane=remove_ethane, 
+            extend_gly_ala_backbone=extend_gly_ala_backbone,
+            override_truncation=override_truncation,
+            override_capping=override_capping
+        )
+        truncated_region = s.return_region()
 
+        CalculateModel.calculation[calc_type] = truncated_region
         if calc_type != 'QM':
-            CalculationFactory._make_calculation(calc_type)().assign_to_region(region=region)
-        CalculateModel.calculation[calc_type] = region
+            CalculationFactory._make_calculation(calc_type)().assign_to_region(region=truncated_region)
 
         # Creates the truncated region as a whole region
-        self.set_region(region)
-        region.set_creation_attr(selection_scheme=f"truncated from {source_region_name}")
+        self.set_region(truncated_region)
 
-        setattr(self, "truncated", region)
-        print(f"\nTruncated model has been created and saved to attribute 'truncated' "+
+        print(f"\nTruncated model has been created and saved as {name} "+
               "and stored in QMzyme.CalculateModel.calculation under key "+
               f"{calc_type}. This model will be used to write the calculation input.")
 
@@ -207,11 +247,31 @@ class GenerateModel(QMzymeModel):
             A :class:`~QMzyme.CalculateModel.QM_Method` must first be assigned
             to a region. 
         """
-        if not hasattr(self, "truncated"):
-            print("\nWARNING: model has not been truncated. Resulting model may "+
-                  "not be a chemically complete structure (i.e., incomplete atomic "+
-                  "valencies due to removed atoms).\n")
+        if CalculateModel.calculation == {}:
+            raise UserWarning("You must first assign calculation method(s) to the model region(s).")
+        if len(CalculateModel.calculation) > 1 and not CalculateModel.combined:
             CalculateModel.combine_regions_and_methods()
+            calc_type = CalculateModel.calc_type
+            combined_region = CalculateModel.calculation[calc_type]
+            combined_region.name = f"{calc_type}_region"
+            CalculateModel.calculation[calc_type] = combined_region
+            self.set_region(combined_region)
+
+        calc_type = CalculateModel.calc_type
+        region = CalculateModel.calculation.get(calc_type)
+        if region is None or not getattr(region, "truncated", False):
+            already_truncated = [res for res in region.residues if getattr(res, 'truncation_params', None) is not None]
+            if not already_truncated:
+                print("\nWARNING: model has not been truncated. Resulting model may "+
+                    "not be a chemically complete structure (i.e., incomplete atomic "+
+                    "valencies due to removed atoms).\n")
+            else:
+                protein_resid = [res for res in region.residues if res.resname in protein_residues]
+                not_truncated = not_truncated = [res for res in protein_resid if getattr(res, 'truncation_params', None) is None]
+                print("\nWARNING: model is only partially truncated. Resulting model may "+
+                    "not be a chemically complete structure (i.e., incomplete atomic "+
+                    "valencies due to removed atoms).\n"
+                    f"Please truncate {not_truncated} using GenerateModel.truncate() or QMzymeRegion.truncate().")
         
         writer_type = CalculateModel.calc_type
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
