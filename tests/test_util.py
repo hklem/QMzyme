@@ -3,7 +3,7 @@ import numpy as np
 from types import SimpleNamespace
 from QMzyme.utils import rmsd, compute_translation_and_rotation, kabsch_transform, vector_comparison
 
-def test_kabsch_and_rmsd_logic():
+def test_kabsch_transform():
     # Setup independent coordinate sets
     target = np.array([
         [0.0, 0.0, 0.0],
@@ -42,11 +42,11 @@ def test_kabsch_and_rmsd_logic():
     aligned_rmsd = rmsd(mobile, target, align=True)
     assert aligned_rmsd == pytest.approx(0.0, abs=1e-6)
 
-def test_rmsd_identity():
+def test_rmsd_self():
     coords = np.random.rand(5, 3)
     assert rmsd(coords, coords) == pytest.approx(0.0)
 
-def test_rmsd_manual_delta():
+def test_rmsd():
     xyz1 = np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]])
     xyz2 = np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]])
     
