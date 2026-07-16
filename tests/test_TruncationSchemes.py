@@ -5,11 +5,298 @@ Tests for the QMzyme truncation_schemes.py and truncation_utils.py codes.
 # Import package, test suite, and other packages as needed
 # Name each function as test_* to be automatically included in test workflow
 
+import QMzyme
 from QMzyme.GenerateModel import GenerateModel
 from QMzyme.TruncationSchemes import *
 import pytest
 from QMzyme.data import PDB
 
+@pytest.mark.parametrize(
+    "Test, region_selection, trunc_scheme, isolated_gly_ala",[
+        ('MET1 ASN2', 'resid 1 or resid 2', TerminalAlphaCarbon, False),
+        ('MET1 LEU3', 'resid 1 or resid 3', TerminalAlphaCarbon, False),
+        ('THR5 ALA6', 'resid 5 or resid 6', TerminalAlphaCarbon, False),
+        ('PRO4 ALA6', 'resid 4 or resid 6', TerminalAlphaCarbon, True),
+        ('GLN10 GLY11', 'resid 10 or resid 11', TerminalAlphaCarbon, False),
+        ('VAL9 GLY11', 'resid 9 or resid 11', TerminalAlphaCarbon, True),
+        ('MET1 ASN2', 'resid 1 or resid 2', AlphaCarbon, False),
+        ('MET1 LEU3', 'resid 1 or resid 3', AlphaCarbon, False),
+        ('THR5 ALA6', 'resid 5 or resid 6', AlphaCarbon, True),
+        ('PRO4 ALA6', 'resid 4 or resid 6', AlphaCarbon, True),
+        ('GLN10 GLY11', 'resid 10 or resid 11', AlphaCarbon, True),
+        ('VAL9 GLY11', 'resid 9 or resid 11', AlphaCarbon, True),
+    ]
+)
+def test_check_gly_ala(Test, region_selection, trunc_scheme, isolated_gly_ala):
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection=region_selection)
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*', 
+        functional='wB97X-D3', 
+        qm_input='OPT FREQ', 
+        program='orca'
+    )
+
+    qm_method.assign_to_region(region=model.region)
+    if isolated_gly_ala == True:
+        with pytest.raises(ValueError):
+            model.truncate(scheme=trunc_scheme)
+    if isolated_gly_ala == False:
+        model.truncate(scheme=trunc_scheme)
+
+@pytest.mark.parametrize(
+    "Test, region_selection, trunc_scheme, remove_flag_name, remove_flag_value",[
+        ('PRO4 ALA6, remove_ethane=True removes isolated ALA', 'resid 4 or resid 6', TerminalAlphaCarbon, 'remove_ethane', True),
+        ('PRO4 ALA6, remove_ethane=False keeps isolated ALA + warns', 'resid 4 or resid 6', TerminalAlphaCarbon, 'remove_ethane', False),
+        ('VAL9 GLY11, remove_methane=True removes isolated GLY', 'resid 9 or resid 11', TerminalAlphaCarbon, 'remove_methane', True),
+        ('VAL9 GLY11, remove_methane=False keeps isolated GLY + warns', 'resid 9 or resid 11', TerminalAlphaCarbon, 'remove_methane', False),
+        ('THR5 ALA6, remove_ethane=True removes isolated ALA (AlphaCarbon)', 'resid 5 or resid 6', AlphaCarbon, 'remove_ethane', True),
+        ('THR5 ALA6, remove_ethane=False keeps isolated ALA + warns (AlphaCarbon)', 'resid 5 or resid 6', AlphaCarbon, 'remove_ethane', False),
+    ]
+)
+def test_check_gly_ala_remove_flags(Test, region_selection, trunc_scheme, remove_flag_name, remove_flag_value, capsys):
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection=region_selection)
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*',
+        functional='wB97X-D3',
+        qm_input='OPT FREQ',
+        program='orca'
+    )
+    qm_method.assign_to_region(region=model.region)
+
+    isolated_resname = 'ALA' if remove_flag_name == 'remove_ethane' else 'GLY'
+    kwargs = {remove_flag_name: remove_flag_value}
+    model.truncate(scheme=trunc_scheme, **kwargs)
+
+    isolated_present = any(res.resname == isolated_resname for res in model.QM_region.residues)
+
+    if remove_flag_value is True:
+        # remove_residue() actually pulled the isolated residue out of the region
+        assert not isolated_present
+
+    else:
+        assert isolated_present
+        captured = capsys.readouterr()
+        organic_group = 'ethane' if remove_flag_name == 'remove_ethane' else 'methane'
+        assert organic_group in captured.out
+        assert "may not be an appropriate representation" in captured.out
+
+@pytest.mark.parametrize(
+    "Test, region_selection, trunc_scheme, isolated_gly_ala, extend_gly_ala_backbone",[
+        ('THR5 ALA6', 'resid 5 or resid 6', TerminalAlphaCarbon, False, True),
+        ('PRO4 ALA6', 'resid 4 or resid 6', TerminalAlphaCarbon, True, True),
+        ('GLN10 GLY11', 'resid 10 or resid 11', TerminalAlphaCarbon, False, True),
+        ('VAL9 GLY11', 'resid 9 or resid 11', TerminalAlphaCarbon, True, True),
+        ('THR5 ALA6', 'resid 5 or resid 6', TerminalAlphaCarbon, False, False),
+        ('PRO4 ALA6', 'resid 4 or resid 6', TerminalAlphaCarbon, True, False),
+        ('GLN10 GLY11', 'resid 10 or resid 11', TerminalAlphaCarbon, False, False),
+        ('VAL9 GLY11', 'resid 9 or resid 11', TerminalAlphaCarbon, True, False),
+        ('THR5 ALA6', 'resid 5 or resid 6', AlphaCarbon, True, True),
+        ('PRO4 ALA6', 'resid 4 or resid 6', AlphaCarbon, True, True),
+        ('GLN10 GLY11', 'resid 10 or resid 11', AlphaCarbon, True, True),
+        ('VAL9 GLY11', 'resid 9 or resid 11', AlphaCarbon, True, True),
+        ('THR5 ALA6', 'resid 5 or resid 6', AlphaCarbon, True, False),
+        ('PRO4 ALA6', 'resid 4 or resid 6', AlphaCarbon, True, False),
+        ('GLN10 GLY11', 'resid 10 or resid 11', AlphaCarbon, True, False),
+        ('VAL9 GLY11', 'resid 9 or resid 11', AlphaCarbon, True, False),
+    ]
+)
+def test_extend_gly_ala_backbone(Test, region_selection, trunc_scheme, isolated_gly_ala, extend_gly_ala_backbone):
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection=region_selection)
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*',
+        functional='wB97X-D3',
+        qm_input='OPT FREQ',
+        program='orca'
+    )
+    qm_method.assign_to_region(region=model.region)
+
+    if isolated_gly_ala == True and trunc_scheme == TerminalAlphaCarbon and extend_gly_ala_backbone == True:
+        model.truncate(scheme=trunc_scheme, extend_gly_ala_backbone=extend_gly_ala_backbone)
+        for res in model.QM_region.residues:
+            resname_by_resid = {res.resid: res.resname for res in model.QM_region.residues}
+            atom_names = [atom.name for atom in res.atoms]
+
+            if res.resname in ('GLY', 'ALA'):
+                # the isolated residue flagged by _check_gly_ala: with
+                # extend_gly_ala_backbone=True it gets bridged with ACE/NME
+                # caps and is skipped by the main truncate() loop
+                assert resname_by_resid.get(res.resid - 1) == 'ACE'
+                assert resname_by_resid.get(res.resid + 1) == 'NME'
+
+                # untouched by truncate(), so native backbone atoms remain
+                assert 'N' in atom_names
+                assert 'H' in atom_names
+                assert 'C' in atom_names
+                assert 'O' in atom_names
+                assert 'HN' not in atom_names
+                assert 'HC' not in atom_names
+
+            elif res.resname == 'ACE':
+                # cap_ACE: C/O from preceding residue's backbone, CH3 (was CA), and exactly 3 methyl H's named HH3n
+                assert 'C' in atom_names
+                assert 'O' in atom_names
+                assert 'CH3' in atom_names
+                methyl_hs = [n for n in atom_names if n.startswith('HH3')]
+                assert len(methyl_hs) == 3
+                assert all(atom.resname == 'ACE' for atom in res.atoms)
+                assert all(atom.charge == 0 for atom in res.atoms)
+
+            elif res.resname == 'NME':
+                # cap_NME: N + CH3 (was CA) always present; amide H present unless the capped residue is Proline; exactly 3 methyl H's
+                assert 'N' in atom_names
+                assert 'CH3' in atom_names
+                methyl_hs = [n for n in atom_names if n.startswith('HH3')]
+                assert len(methyl_hs) == 3
+                assert all(atom.resname == 'NME' for atom in res.atoms)
+                assert all(atom.charge == 0 for atom in res.atoms)
+
+            else:
+                # every other protein residue truncated normally by the scheme
+                if res.resid == 1:
+                    assert 'N' in atom_names
+                elif res.resname != 'PRO':
+                    assert 'N' not in atom_names
+                    assert 'HN' in atom_names
+                else:
+                    assert 'N' in atom_names
+                    assert 'HN' in atom_names
+
+                assert 'C' not in atom_names
+                assert 'O' not in atom_names
+                assert 'HC' in atom_names
+
+        assert model.QM_region.truncated is True
+
+    if isolated_gly_ala == True and trunc_scheme == AlphaCarbon:
+        with pytest.raises(ValueError):
+            model.truncate(scheme=trunc_scheme, extend_gly_ala_backbone=extend_gly_ala_backbone)
+
+    if isolated_gly_ala == False:
+        model.truncate(scheme=trunc_scheme, extend_gly_ala_backbone=extend_gly_ala_backbone)
+
+@pytest.mark.parametrize(
+    "Test, region_selection, override_truncation",[
+        ('Undecided (None): halts with ValueError', 'resid 1 or resid 2', None),
+        ('override_truncation=False: skips already-truncated residues', 'resid 1 or resid 2', False),
+        ('override_truncation=True: re-truncates already-truncated residues', 'resid 1 or resid 2', True),
+    ]
+)
+def test_check_override_truncation(Test, region_selection, override_truncation):
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection=region_selection)
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*',
+        functional='wB97X-D3',
+        qm_input='OPT FREQ',
+        program='orca'
+    )
+    qm_method.assign_to_region(region=model.region)
+
+    model.truncate(scheme=TerminalAlphaCarbon)
+    truncation_params_before = {
+        res.resid: res.truncation_params for res in model.QM_region.residues
+    }
+
+    if override_truncation is None:
+        with pytest.raises(ValueError):
+            model.truncate(scheme=TerminalAlphaCarbon, override_truncation=override_truncation)
+
+    if override_truncation is False:
+        model.remove_region('QM_region')
+        model.truncate(
+            scheme=TerminalAlphaCarbon,
+            override_truncation=override_truncation,
+            override_capping=False,
+        )
+        for res in model.QM_region.residues:
+            assert res.truncation_params == truncation_params_before[res.resid]
+
+    if override_truncation is True:
+        model.remove_region('QM_region')
+        model.truncate(scheme=TerminalAlphaCarbon, override_truncation=override_truncation)
+        for res in model.QM_region.residues:
+            assert res.truncation_params is not None
+
+
+@pytest.mark.parametrize(
+    "Test, region_selection, override_capping",[
+        ('Undecided (None): halts with ValueError', 'resid 4 or resid 6', None),
+        ('override_capping=False: skips already-capped residue', 'resid 4 or resid 6', False),
+        ('override_capping=True: removes existing caps and re-caps fresh', 'resid 4 or resid 6', True),
+    ]
+)
+def test_check_override_capping(Test, region_selection, override_capping):
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection=region_selection)
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*',
+        functional='wB97X-D3',
+        qm_input='OPT FREQ',
+        program='orca'
+    )
+    qm_method.assign_to_region(region=model.region)
+
+    model.truncate(scheme=TerminalAlphaCarbon, extend_gly_ala_backbone=True)
+    capped_res = next(res for res in model.QM_region.residues if res.resname == 'ALA')
+    assert capped_res.capping_scheme is not None
+
+    if override_capping is None:
+        with pytest.raises(ValueError):
+            model.truncate(
+                scheme=TerminalAlphaCarbon,
+                extend_gly_ala_backbone=True,
+                override_truncation=True,
+                override_capping=override_capping,
+            )
+
+    if override_capping is False:
+        model.remove_region('QM_region')
+        model.truncate(
+            scheme=TerminalAlphaCarbon,
+            extend_gly_ala_backbone=True,
+            override_truncation=True,
+            override_capping=override_capping,
+        )
+        still_capped = next(res for res in model.QM_region.residues if res.resname == 'ALA')
+        assert still_capped.capping_scheme is not None
+
+    if override_capping is True:
+        model.remove_region('QM_region')
+        model.truncate(
+            scheme=TerminalAlphaCarbon,
+            extend_gly_ala_backbone=True,
+            override_truncation=True,
+            override_capping=override_capping,
+        )
+        recapped = next(res for res in model.QM_region.residues if res.resname == 'ALA')
+        assert recapped.capping_scheme is not None
+
+def test_check_override_capping_partial(capsys):
+    """A residue capped with cap_H (not ACE+NME) hits the 'only one
+    terminus capped' branch of override_capping=False: it's left alone
+    and NOT added to skip_resids, so its untouched side can still be
+    re-truncated on a subsequent pass."""
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection='resid 2')  # MET1 is a true N-terminus
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*', functional='wB97X-D3', qm_input='OPT FREQ', program='orca'
+    )
+    qm_method.assign_to_region(region=model.region)
+
+    model.region.add_N_terminus_ACE(2)
+    model.truncate(
+        scheme=TerminalAlphaCarbon,
+        override_truncation=True,
+        override_capping=False,
+    )
+    captured = capsys.readouterr()
+    assert "only one terminus capped" in captured.out
+
+    still_present = next(r for r in model.QM_region.residues if r.resid == 2)
+    assert still_present.capping_scheme is not None
 
 @pytest.mark.parametrize(
     "Test, init_file, region_selection",[
@@ -26,7 +313,7 @@ from QMzyme.data import PDB
 def test_AlphaCarbon(Test, init_file, region_selection, truncation_scheme=AlphaCarbon):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
-    region_truncated = truncation_scheme(model.region, name=None).return_region()
+    region_truncated = truncation_scheme(model.region, name="region_truncated", remove_ethane=False).return_region()
     assert region_truncated != model.region
 
     for i, res in enumerate(model.region.residues):
@@ -72,7 +359,7 @@ def test_AlphaCarbon(Test, init_file, region_selection, truncation_scheme=AlphaC
 def test_TerminalAlphaCarbon(Test, init_file, region_selection, truncation_scheme=TerminalAlphaCarbon):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
-    region_truncated = truncation_scheme(model.region, name=None).return_region()
+    region_truncated = truncation_scheme(model.region, name="region_truncated").return_region()
     #model.truncate()
     #region_truncated = model.truncated
     assert region_truncated != model.region
@@ -163,8 +450,8 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
     target_resids = [r.resid for r in model.trunc_sele.residues]
 
     # Run Truncation
-    truncator = BetaCarbon(region=model.region, alanine_mutation=truncation_selection, name='truncated_reg')
-    region_truncated = truncator.return_region()
+    truncated = BetaCarbon(region=model.region, selection=truncation_selection, name='truncated_reg')
+    region_truncated = truncated.return_region()
 
     assert region_truncated is not None
     
