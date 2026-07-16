@@ -305,7 +305,7 @@ class TruncationScheme(abc.ABC):
                         ) if orig_res else False
 
                         # Track whether this resid actually gained caps/bridge
-                        resid_success = False
+                        cap_success = False
 
                         # Apply ACE and NME caps (attempt both)
                         for cap_call in (self.region.add_N_terminus_ACE, self.region.add_C_terminus_NME):
@@ -313,7 +313,7 @@ class TruncationScheme(abc.ABC):
                             try:
                                 cap_call(resid)
                             except Exception as e:
-                                # If there is an exception, return the error message.
+                                # If there is an exception, return the error message
                                 print(f"     {cap_call.__name__}({resid}): skipped/failed: {e}")
                                 continue
                             
@@ -322,7 +322,7 @@ class TruncationScheme(abc.ABC):
 
                             # If any new residues were added (ACE/NME/bridge), consider that progress
                             if new_resids:
-                                resid_success = True
+                                cap_success = True
 
                             # Build lookup once (after caps were added)
                             res_lookup = {int(r.resid): r for r in self.region.residues}
@@ -353,15 +353,15 @@ class TruncationScheme(abc.ABC):
                         has_ace_before = any(a.resname == 'ACE' for a in self.region.atoms if a.resid == resid - 1)
                         has_nme_after = any(a.resname == 'NME' for a in self.region.atoms if a.resid == resid + 1)
                         if has_ace_before and has_nme_after:
-                            resid_success = True
+                            cap_success = True
 
-                        # If a bridge (real residue) was inserted, treat as success
+                        # If the backbone of the inbetween residue was inserted, treat as success
                         real_res_present = any(a.resname not in ('ACE', 'NME') for a in self.region.atoms if a.resid == resid)
                         if real_res_present:
-                            resid_success = True
+                            cap_success = True
 
                         # Only record resid as capped if we actually made progress
-                        if resid_success:
+                        if cap_success:
                             self._capped_gly_ala.add(resid)
 
                 finally:
@@ -439,7 +439,7 @@ class TruncationScheme(abc.ABC):
 
         # If override_truncation is True, undo the prior truncation
         if self.override_truncation is True:
-            # Only touch the residues already identified as truncated, rather than looping over every residue in the selection.
+            # Only reset the residues that are already_truncated
             for res in already_truncated:
                 remove_added_atoms(res)
                 add_removed_atoms(res)
@@ -480,7 +480,7 @@ class TruncationScheme(abc.ABC):
         if not already_capped:
             return
 
-        # If user hasn't decided, keep the original halting behavior
+        # If user hasn't decided, return ValueError
         if self.override_capping is None:
             for res in already_capped:
                 print(f"Residue {res} has been capped with {res.capping_scheme}")
@@ -495,7 +495,7 @@ class TruncationScheme(abc.ABC):
                 "Please set override_capping=True to re-cap, or False to skip."
             )
 
-        # If override_capping is False: skip only the residues we flagged above
+        # If override_capping is False, skip only the residues we flagged above
         if self.override_capping is False:
             for res in already_capped:
                 has_ace_before = any(a.resname == 'ACE' and a.resid == res.resid - 1 for a in self.region.atoms)
@@ -508,7 +508,7 @@ class TruncationScheme(abc.ABC):
                 else:
                     print(f"Residue {res}: only one terminus capped ({res.capping_scheme}). Leaving that side alone; remaining uncapped terminus (if any) will still be truncated.")
 
-        # If override_capping is True: undo the caps and remove ACE/NME cap residues
+        # If override_capping is True, undo the caps and remove ACE/NME cap residues
         if self.override_capping is True:
             cap_resids = set()
             for res in already_capped:
