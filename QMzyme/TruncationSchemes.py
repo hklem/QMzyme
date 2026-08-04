@@ -101,7 +101,7 @@ class TruncationScheme(abc.ABC):
                 continue
             if res.resid in self.skip_resids:
                 continue
-            if res.resname not in protein_residues:
+            elif res.resname not in protein_residues:
                 continue
 
             self.truncate(res)
