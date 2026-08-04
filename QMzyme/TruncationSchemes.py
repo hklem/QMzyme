@@ -418,7 +418,7 @@ class TruncationScheme(abc.ABC):
             )
 
         # If override_truncation is False, raise warning print statement
-        if self.override_truncation is False:
+        elif self.override_truncation is False:
             for res in already_truncated:
                 print(f"Skipping residue {res}: it has already been truncated with {res.truncation_params}.")
                 self.skip_resids.add(res.resid)
