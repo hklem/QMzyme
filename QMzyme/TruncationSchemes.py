@@ -438,7 +438,7 @@ class TruncationScheme(abc.ABC):
         Identify residues in the selection that have already been capped
         and resolve them according to the override_capping argument.
 
-        If override_capping is None, raise ValueError with resolution protocol.
+        If self.override_capping is None, raise ValueError with resolution protocol.
 
         If self.override_capping is False, previously capped residues will be retained and ignored during current truncation scheme implementation.
 
