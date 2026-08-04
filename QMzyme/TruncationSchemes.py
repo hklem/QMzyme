@@ -37,7 +37,7 @@ class TruncationScheme(abc.ABC):
     
     Each check either raises a ValueError containing a resolution protocol.
 
-    TruncationSchemes subclasses are responsible for determining how the
+    TruncationScheme subclasses are responsible for determining how the
     residues are truncated (e.g. TerminalAlphaCarbon).
 
     .. image:: ../../docs/Images/truncation_scheme.png
