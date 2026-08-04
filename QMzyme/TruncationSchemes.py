@@ -20,7 +20,7 @@ class TruncationScheme(abc.ABC):
     Base class for defining QM region truncation methodologies.
  
     A truncation scheme defines the specific rule for how protein
-    amino acid residues in the QMzymeModel is truncated to create
+    amino acid residues in the QMzymeModel are truncated to create
     the desired QM region.
     
     Before any residue is truncated, three checks are run against the
