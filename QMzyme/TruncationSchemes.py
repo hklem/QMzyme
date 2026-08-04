@@ -443,7 +443,6 @@ class TruncationScheme(abc.ABC):
         If override_capping is None, raise ValueError with resolution protocol.
 
         If override_truncation is False, the pre-capped residues will be added
-        to skip_resids.
 
         If self.override_capping is True, previously truncated residues will be
         reverted back to their original state and then the current truncation scheme will be applied.
