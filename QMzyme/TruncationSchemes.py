@@ -374,7 +374,7 @@ class TruncationScheme(abc.ABC):
     def _check_override_truncation(self):
         """
         Identify residues in the selection that have already been truncated
-        (i.e. have a non-None `truncation_params`) and resolve them according
+        (i.e. `QMzymeResidue.trucation_params` is not None and resolve them according
         to the override_truncation argument.
  
         If override_truncation is None, raise ValueError with resolution protocol.
