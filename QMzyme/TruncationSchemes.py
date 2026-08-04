@@ -26,7 +26,7 @@ class TruncationScheme(abc.ABC):
     Before any residue is truncated, three checks are run as methods called during initiation of the TruncationScheme:
 
     1. `_check_gly_ala`: identifies Gly/Ala residues that would become small organic groups (methane or ethane) once truncated, and
-       resolves them using the remove_methane, remove_ethane, and
+       resolves them using the remove_methane, remove_ethane, or
        extend_gly_ala_backbone arguments.
     2. `_check_override_truncation`: identifies residues that have already
        been truncated by a prior TruncationScheme, and resolves them using
