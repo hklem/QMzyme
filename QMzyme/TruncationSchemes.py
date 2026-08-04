@@ -124,8 +124,7 @@ class TruncationScheme(abc.ABC):
     def _check_gly_ala(self):
         """
         Identify Gly/Ala residues whose truncation would create a small organic group,
-        methane (Gly) or ethane (Ala) fragment, and resolve them using remove_methane,
-        remove_ethane, and extend_gly_ala_backbone arguments.
+        methane (Gly) or ethane (Ala) fragment, and resolve them according to the kwargs remove_methane, remove_ethane, and extend_gly_ala_backbone arguments.
  
         If a group is present and its corresponding flag (remove_methane for Gly,
         remove_ethane for Ala) is None and extend_gly_ala_backbone is False,
