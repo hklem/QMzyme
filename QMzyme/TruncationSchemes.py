@@ -423,7 +423,7 @@ class TruncationScheme(abc.ABC):
                 self.skip_resids.add(res.resid)
 
         # If override_truncation is True, undo the prior truncation
-        if self.override_truncation is True:
+        elif self.override_truncation is True:
             # Only reset the residues that are already_truncated
             for res in already_truncated:
                 remove_added_atoms(res)
