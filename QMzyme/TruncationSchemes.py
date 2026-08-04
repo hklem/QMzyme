@@ -130,7 +130,7 @@ class TruncationScheme(abc.ABC):
         remove_ethane for Ala) is None and extend_gly_ala_backbone is False,
         the workflow returns a ValueError, containing resolution protocols.
         
-        If remove_methane/remove_ethane is True, the corresponding residues are removed from the region.
+        If self.remove_methane and/or self.remove_ethane are True, the corresponding Gly and/or Ala residues, respectively, are removed from the region if the self.scheme TruncationScheme class would result in them becoming free methane and/or ethane groups.
 
         If remove_methane/remove_ethane is False, the corresponding residues are kept, and warning
         message is raised.
