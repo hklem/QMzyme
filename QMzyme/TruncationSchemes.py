@@ -377,7 +377,7 @@ class TruncationScheme(abc.ABC):
         (i.e. `QMzymeResidue.trucation_params` is not None and resolve them according
         to the override_truncation argument.
  
-        If override_truncation is None, raise ValueError with resolution protocol.
+        If override_truncation is None and all or part of the region has previously been truncated, raise ValueError with resolution protocol.
         
         If override_truncation is False, the pre-truncated residues will be added
         to skip_resids and will not be truncated in the current truncation.
