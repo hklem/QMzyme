@@ -382,8 +382,8 @@ class TruncationScheme(abc.ABC):
         If override_truncation is False, the previously truncated residues will be added
         to self.skip_resids and will not be truncated in the current truncation call.
 
-        If override_truncation is True, the pre-truncated residues will be
-        reverted into its untruncated state.
+        If override_truncation is True, any previously truncated residues will be
+        reverted back to their original state and then the current truncation scheme will be applied.
 
         Does nothing if no residues were previously truncated.
         """
