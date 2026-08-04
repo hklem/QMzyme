@@ -165,7 +165,7 @@ class TruncationScheme(abc.ABC):
                 continue
             
             # If the resname is not Gly or Ala, skip
-            if resname not in ("gly", "ala"):
+            elif resname not in ("gly", "ala"):
                 continue
             
             # Assign appropriate ethane or methane label
