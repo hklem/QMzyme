@@ -23,8 +23,7 @@ class TruncationScheme(abc.ABC):
     amino acid residues in the QMzymeModel are truncated to create
     the desired QM region.
     
-    Before any residue is truncated, three checks are run against the
-    residues in the selection:
+    Before any residue is truncated, three checks are run as methods called during initiation of the TruncationScheme:
 
     1. `_check_gly_ala`: identifies Gly/Ala residues that would be isolated
        as a small organic group (methane or ethane) once truncated, and
