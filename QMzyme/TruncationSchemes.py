@@ -385,8 +385,7 @@ class TruncationScheme(abc.ABC):
         If override_truncation is True, the pre-truncated residues will be
         reverted into its untruncated state.
 
-        Does nothing if no residues in the selection have already been
-        pre-truncated.
+        Does nothing if no residues were previously truncated.
         """
  
         # Check for residues that are already truncated
