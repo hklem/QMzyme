@@ -380,7 +380,7 @@ class TruncationScheme(abc.ABC):
         If override_truncation is None and all or part of the region has previously been truncated, raise ValueError with resolution protocol.
         
         If override_truncation is False, the previously truncated residues will be added
-        to skip_resids and will not be truncated in the current truncation.
+        to self.skip_resids and will not be truncated in the current truncation call.
 
         If override_truncation is True, the pre-truncated residues will be
         reverted into its untruncated state.
