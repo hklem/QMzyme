@@ -29,7 +29,7 @@ class TruncationScheme(abc.ABC):
        resolves them using the remove_methane, remove_ethane, or
        extend_gly_ala_backbone arguments.
     2. `_check_override_truncation`: identifies residues that have already
-       been truncated by a prior TruncationScheme, and resolves them using
+       been truncated by a prior TruncationScheme call, and resolves them according to
        the override_truncation argument.
     3. `_check_override_capping`: identifies residues that have already been
        capped (e.g. cap_H, cap_ACE, cap_NME), and resolves them using the
