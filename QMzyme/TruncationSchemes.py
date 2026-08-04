@@ -445,8 +445,8 @@ class TruncationScheme(abc.ABC):
         If override_truncation is False, the pre-capped residues will be added
         to skip_resids.
 
-        If override_truncation is True, the pre-capped residues will be
-        reverted into its uncapped state.
+        If self.override_capping is True, previously truncated residues will be
+        reverted back to their original state and then the current truncation scheme will be applied.
 
         Does nothing if no residues in the selection have already been
         capped (excluding any residues already handled by extend_gly_ala_backbone).
