@@ -5,15 +5,12 @@ Tests for the QMzyme RegionBuilder.py ands QMzymeRegion.py code.
 # Import package, test suite, and other packages as needed
 # Name each function as test_* to be automatically included in test workflow
 
-
-import numpy as np
 import pytest
 import QMzyme
 from QMzyme.RegionBuilder import RegionBuilder
 import MDAnalysis as mda
 from QMzyme.data import PDB
 from QMzyme import GenerateModel
-import copy
 
 u = mda.Universe(PDB)
 atom_group = u.select_atoms('resid 2-5')
@@ -191,34 +188,60 @@ def test_find_nearby_residues(capsys):
 
 def test_removed_atoms():
     model = GenerateModel(PDB)
-    model.set_region(name='test', selection='resid 1')
-    region = model.test
-    residue = region.residues[0]
- 
-    atom_to_remove = residue.atoms[-1]
-    removed_name = atom_to_remove.name
-    region.remove_atom(atom_to_remove)
- 
-    residue = region.residues[0]
+    model.set_region(name='test', selection='resid 3')
+
+    residue = model.test.residues[0]
     removed_names = [a.name for a in residue.removed_atoms]
-    assert removed_name in removed_names
- 
+    assert removed_names == []
+
+    for res in model.test.residues:
+        assert res.removed_atoms == []
+
+    model.test.truncate(scheme=QMzyme.TruncationSchemes.TerminalAlphaCarbon, selection="all")
+
+    residue = model.test.residues[0]
+    removed_names = [a.name for a in residue.removed_atoms]
+    assert removed_names == ['N', 'H', 'C', 'O']
+
+    for res in model.test.residues:
+        removed = res.removed_atoms
+        assert len(removed) == 4
+        assert [a.name for a in removed] == ['N', 'H', 'C', 'O']
+        assert all(a.resname == 'LEU' and a.resid == 3 for a in removed)
+    
  
 def test_added_atoms():
     model = GenerateModel(PDB)
     model.set_region(name='test', selection='resid 3')
+
+    residue = model.test.residues[0]
+    added_names = [a.name for a in residue.added_atoms]
+    assert added_names == []
+
+    for res in model.test.residues:
+        assert res.added_atoms == []
 
     model.test.truncate(scheme=QMzyme.TruncationSchemes.TerminalAlphaCarbon, selection="all")
 
     residue = model.test.residues[0]
     added_names = [a.name for a in residue.added_atoms]
     assert added_names == ['HN', 'HC']
+
+    for res in model.test.residues:
+        added = res.added_atoms
+        assert len(added) == 2
+        assert [a.name for a in added] == ['HN', 'HC']
+        assert all(a.resid == 3 for a in added)
  
 def test_set_residue_method():
+    # This test was made to chcek if the change in the attribute assignment for the method
+    # from segid to method_type.
     model = GenerateModel(PDB)
     model.set_region(name='test', selection='resid 1-3')
     region = model.test
     original_segids = {atom.segid for atom in region.atoms}
+    for residue in region.residues:
+        assert residue.method_type != 'XTB'
  
     region.set_residue_method('XTB')
  
@@ -227,8 +250,8 @@ def test_set_residue_method():
     assert {atom.segid for atom in region.atoms} == original_segids
 
 def test_truncate():
-    from QMzyme.TruncationSchemes import TerminalAlphaCarbon
- 
+    from QMzyme.TruncationSchemes import TerminalAlphaCarbon, AlphaCarbon, BetaCarbon
+
     model = GenerateModel(PDB)
     model.set_region(name='test', selection='resid 1-5')
     region = model.test
@@ -243,6 +266,56 @@ def test_truncate():
     assert all(val == 'TerminalAlphaCarbon' for val in model.test._residue_truncation_params.values())
     assert model.test._residue_capping_scheme[5] == 'cap_H'
     assert all(val == 'QM' for val in model.test._residue_method.values())
+
+    model = GenerateModel(PDB)
+    model.set_region(name='test', selection='resid 1-20')
+
+    model.test.truncate(scheme=TerminalAlphaCarbon, selection='resid 1-5')
+    model.test.truncate(scheme=AlphaCarbon, selection='resid 6-10', remove_ethane=False)
+    model.test.truncate(scheme=BetaCarbon, selection='resid 11-15')
+
+    region = model.test
+
+    # TerminalAlphaCarbon: resid 1-5
+    for resid in range(1, 6):
+        res = region.get_residue(resid)
+        assert res.removed_atoms == []
+        assert res.truncation_params == 'TerminalAlphaCarbon'
+
+    # AlphaCarbon: resid 6-10
+    for resid in range(6, 11):
+        res = region.get_residue(resid)
+        assert res.truncation_params == 'AlphaCarbon'
+        assert res.capping_scheme == 'cap_H'
+        assert res.removed_atoms != []
+
+    # BetaCarbon: resid 11-15
+    res_11 = region.get_residue(11)
+    assert res_11.truncation_params == 'BetaCarbon'
+    assert res_11.removed_atoms == []
+    assert res_11.added_atoms == []
+    assert res_11.capping_scheme is None
+
+    for resid in [12, 13, 14, 15]:
+        res = region.get_residue(resid)
+        assert res.truncation_params == 'BetaCarbon'
+
+    for resid in [12, 13, 15]:
+        res = region.get_residue(resid)
+        assert res.removed_atoms != []
+        assert res.capping_scheme == 'cap_H'
+
+    res_14 = region.get_residue(14)
+    assert res_14.removed_atoms == []
+    assert res_14.capping_scheme is None
+
+    # Untouched: resid 16-20
+    for resid in range(16, 21):
+        res = region.get_residue(resid)
+        assert res.truncation_params is None
+        assert res.removed_atoms == []
+        assert res.added_atoms == []
+        assert res.capping_scheme is None
 
 def test_add_C_terminus_NME(capsys):
     model = GenerateModel(PDB)
