@@ -1026,6 +1026,7 @@ class QMzymeRegion:
         )
         truncated_region = s.return_region()
 
+        # Transferring the attribute information to the truncated_region
         self.atoms = truncated_region.atoms
         self._selection_attr = truncated_region._selection_attr
         self._residue_truncation_params = truncated_region._residue_truncation_params
