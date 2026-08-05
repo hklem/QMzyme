@@ -250,7 +250,7 @@ class QMzymeRegion:
         if resid in self.resids:
             return True
         return False
-    
+
     def add_atom(self, atom: _QMzymeAtom, override_same_id=False):
         """
         Adds additional QMzymeAtom to the QMzymeRegion.
@@ -264,6 +264,8 @@ class QMzymeRegion:
         """
         self.atoms.append(atom)
         self.atoms = self.sorted_atoms(override_same_id=override_same_id)
+        if hasattr(self, 'region'):
+            self.region.add_atom(atom, override_same_id=override_same_id)
 
     def remove_atom(self, atom: _QMzymeAtom):
         """
@@ -271,10 +273,14 @@ class QMzymeRegion:
 
         :param atom: The atom you want to remove from the QMzymeRegion. 
         :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
+        :param overrisde_same_id: An argument to decide if the atoms with same IDs are replaced.
+        :type overrisde_same_id: bool, optional
 
         .. warning:: Ths will modify the QMzymeRegion directly.
         """
         self.atoms.remove(atom)
+        if hasattr(self, 'region'):
+            self.region.remove_atom(atom)
 
     def add_residue(self, selection, override_same_id: bool = False):
         """
@@ -469,7 +475,7 @@ class QMzymeRegion:
     
         # Case 3: neighbor exists in the universe but not in the region. Attempt to build the ACE cap
         try:
-            capped = cap_ACE(N, self._universe)
+            capped = cap_ACE(N)
         except ValueError as e:
             self._cap_flags.setdefault(resid, {})['ACE'] = False
             # Check whether an NME attempt (success or failure) has also already happened for this resid
@@ -576,7 +582,7 @@ class QMzymeRegion:
     
         # Case 3: neighbor exists in the universe but not in the region -> attempt to build the NME cap
         try:
-            capped = cap_NME(C, self._universe)
+            capped = cap_NME(C)
         except ValueError as e:
             # Building the cap failed (e.g. missing atoms, Proline) — record this as a failed attempt
             self._cap_flags.setdefault(resid, {})['NME'] = False
@@ -1447,27 +1453,3 @@ class QMzymeResidue(QMzymeRegion):
             else:
                 bb_atoms.append(self.get_atom(atom))
         return bb_atoms
-
-    def remove_atom(self, atom):
-        """
-        :param atom: The atom you want to remove from the QMzymeResidue. 
-        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
-
-        .. warning:: Ths will modify the QMzymeResidue directly.
-        """
-
-        if atom in self.atoms:
-            self.atoms.remove(atom)
-            self.region.remove_atom(atom)
-    
-    def add_atom(self, atom):
-        """
-        :param atom: The atom you want to add to the QMzymeResidue. 
-        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
-
-        .. warning:: Ths will modify the QMzymeResidue directly.
-        """
-
-        self.atoms.append(atom)
-        self.region.add_atom(atom)  
-        
