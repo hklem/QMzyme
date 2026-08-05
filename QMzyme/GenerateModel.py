@@ -143,8 +143,9 @@ class GenerateModel(QMzymeModel):
 
     def truncate(self, scheme = TerminalAlphaCarbon, name = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         """
-        Method to truncate QMzymeModel. This method requires users to have methods assign to
-        the region prior to using GenerateModel.truncate. All QMzymeModel regions with assigned
+        Method to truncate QMzymeModel. This method requires users to have a CalculateModel
+        method class instance, such as QMzyme.CalculateModel.QM_Method, assigned to the
+        region prior to using GenerateModel.truncate. All QMzymeModel regions with assigned
         methods will be combined and truncated according to the specified scheme. The resulting
         region will be saved as '{CalculateModel.calc_type}_region' if name = None.
 
