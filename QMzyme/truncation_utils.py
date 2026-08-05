@@ -299,8 +299,8 @@ def cap_NME(replace_atom, universe):
 
 def add_removed_atoms(residue):
     """
-    Revives all atoms currently tracked in `removed_atoms` by instantiating 
-    new QMzymeAtom objects using metadata from the MDAnalysis universe,
+    Revives all atoms currently tracked in `QMzymeResidue.removed_atoms` attribute by
+    instantiating new QMzymeAtom objects using metadata from the MDAnalysis universe,
     then appends them back to both this residue and the parent region's master list.
 
     :return: A list of the revived QMzymeAtom objects.
