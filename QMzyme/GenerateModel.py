@@ -143,18 +143,29 @@ class GenerateModel(QMzymeModel):
 
     def truncate(self, scheme = TerminalAlphaCarbon, name = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         """
-        Method to truncate QMzymeModel. This method requires users to have a CalculateModel
-        method class instance, such as QMzyme.CalculateModel.QM_Method, assigned to the
-        region prior to using GenerateModel.truncate. All QMzymeModel regions with assigned
-        methods will be combined and truncated according to the specified scheme. The resulting
-        region will be saved as '{CalculateModel.calc_type}_region' if name = None.
+        Method to truncate QMzymeModel. The truncate() method will first search for any regions
+        of the QMzymeModel that have been assigned a CalculateModel method such as
+        QMzyme.CalculateModel.QM_Method. If multiple regions have calculation methods assigned,
+        they will be combined for the truncation protocol, and the resulting region will be saved as
+        '{CalculateModel.calc_type}_region' if name = None.
+        
+        Note that there has not been any comprehensive evaluation of the influence various truncation
+        schemes may have on resulting models. Some experts (Ref 1) point out that a truncation scheme
+        that results in free methane and ethane groups (i.e., after methyl-capping the alpha Carbon of
+        Glycine or Alanine residues) likely deviate substantially from typical behavior of those
+        residues, and might introduce artifacts in the model. Then something like see "remove_ethane"
+        and "remove_methane" parameters.
 
         :param scheme: Specifies the truncation scheme to use. Options can be found
             in :py:mod:`~QMzyme.TruncationSchemes`.
         :type scheme: :py:class:`~QMzyme.TruncationSchemes.TruncationScheme` concrete class, 
             default=:class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon`
-        :param name: Name to give the new truncated region. If None, the original
-            region will be truncated.
+        :param name: Name to give to the new truncated region. If not specified, defaults
+            to '{CalculateModel.calc_type}_region', where calc_type reflects the calculation
+            method(s) assigned to the region(s) being truncated (e.g. 'QM_region',
+            'QMXTB_region'). If multiple regions have assigned calculation methods,
+            they are first combined into a single region before truncation, and the
+            resulting name reflects the combined calculation type (e.g. 'QMQM2_region').
         :type name: str, optional, default=None
         :param remove_methane: Controls how isolated Gly residues (which would
             otherwise be reduced to a methane upon truncation) are handled.
@@ -190,6 +201,12 @@ class GenerateModel(QMzymeModel):
             If True, already-capped residues are reverted to their uncapped
             state and re-capped/re-truncated.
         :type override_capping: bool, optional, default=None
+
+        References:
+        1. D. A. Wappett, Q. Cheng, T. J. Summers, et al., “ RINRUS: A Toolkit for the
+            Construction of Reproducible and Reliable QM-Cluster Models of Enzyme Active
+            Sites,” Wiley Interdisciplinary Reviews: Computational Molecular Science 16,
+            no. 3-4 (2026): e70078, https://doi.org/10.1002/wcms.70078.
         """
         # Combine regions
         if CalculateModel.calculation == {}:
