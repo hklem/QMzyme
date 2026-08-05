@@ -44,22 +44,16 @@ def cap_H(replace_atom, fixed_atom, name=None, bond_length=1.09, base_atom=None,
     :rtype: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`
     """
     new_position = set_bond_length(replace_atom.position, fixed_atom.position, bond_length)
-    if name is not None:
-        new_atom_dict = {
-                'element': 'H',
-                'type': 'H',  
-                'name': f'{name}',
-                'position': new_position, 
-                'mass': 1.00794,
-            }
-    else:
-        new_atom_dict = {
-                'element': 'H',
-                'type': 'H',  
-                'name': f'H{replace_atom.element}',
-                'position': new_position, 
-                'mass': 1.00794,
-            }
+    if name is None:
+        name = f'H{replace_atom.element}'
+    new_atom_dict = {
+                    'element': 'H',
+                    'type': 'H',  
+                    'name': f'{name}',
+                    'position': new_position, 
+                    'mass': 1.00794,
+                }
+    
     if base_atom is None:
         base_atom = replace_atom
         if fixed_atom.resname == 'PRO' and fixed_atom.name == backbone_atoms['N']:
@@ -73,7 +67,7 @@ def cap_H(replace_atom, fixed_atom, name=None, bond_length=1.09, base_atom=None,
     return new_atom
 
 
-def cap_ACE(replace_atom, universe):
+def cap_ACE(replace_atom):
     """
     Builds the atoms of an ACE (acetyl) capping group from the residue
     preceding `replace_atom`, capping the N-terminal cut point of
@@ -101,25 +95,25 @@ def cap_ACE(replace_atom, universe):
         atom naming in the preceding residue), a `UserWarning` is issued
         rather than an exception being raised.
     """
+    universe = getattr(replace_atom, 'universe', None)
+    if universe is None:
+        raise AttributeError(f"Cannot build ACE cap for resid {replace_atom.resid}. replace_atom has no 'universe' attribute.")
+
     preceding_resid = replace_atom.resid - 1
     prev_atoms = universe.select_atoms(f"segid {replace_atom.segid} and resid {preceding_resid}")
 
     # Examines if preceding residue contains any atoms, and raises ValueError if there are no atoms in preceding residue
     if len(prev_atoms) == 0:
-        raise ValueError(
-            f"Cannot build ACE cap: no preceding residue found at resid {preceding_resid}."
-        )
+        raise ValueError(f"Cannot build ACE cap: no preceding residue found matching segid {replace_atom.segid} and resid {preceding_resid}.")
 
     # Checks for the presence of backbone atoms in the previous residue
     prevN_raw  = find(prev_atoms, backbone_atoms['N'])
     prevC_raw  = find(prev_atoms, backbone_atoms['C'])
     prevO_raw  = find(prev_atoms, backbone_atoms['O'])
     prevCA_raw = find(prev_atoms, backbone_atoms['CA'])
-    if any(atom is None for atom in (prevN_raw, prevC_raw, prevO_raw, prevCA_raw)):
-        raise ValueError(
-            f"Cannot build ACE cap: preceding residue {preceding_resid} is missing "
-            "backbone N, C, O, or CA."
-        )
+    missing_backbone = [name for name, atom in (('N', prevN_raw), ('C', prevC_raw), ('O', prevO_raw), ('CA', prevCA_raw)) if atom is None]
+    if missing_backbone:
+        raise ValueError(f"Cannot build ACE cap: preceding residue {preceding_resid} is missing backbone atom(s): {', '.join(missing_backbone)}.")
     
     # Checks for the presence of CB. It will return None for glycine
     prevCB_raw   = find(prev_atoms, 'CB')
@@ -176,7 +170,7 @@ def cap_ACE(replace_atom, universe):
     
     return cap_atoms
 
-def cap_NME(replace_atom, universe):
+def cap_NME(replace_atom):
     """
     Builds the atoms of an NME (N-methylamine) capping group from the residue
     following `replace_atom`, capping the C-terminal cut point of
@@ -205,15 +199,18 @@ def cap_NME(replace_atom, universe):
         atom naming in the following residue), a `UserWarning` is issued
         rather than an exception being raised.
     """
+
+    universe = getattr(replace_atom, 'universe', None)
+    if universe is None:
+        raise AttributeError(f"Cannot build NME cap for resid {replace_atom.resid}. replace_atom has no 'universe' attribute.")
+    
     following_resid = replace_atom.resid + 1
     next_atoms = universe.select_atoms(f"segid {replace_atom.segid} and resid {following_resid}")
 
     # Examines if following residue contains any atoms, and raises ValueError if there are no atoms in following residue
     if len(next_atoms) == 0:
-        raise ValueError(
-            f"Cannot build NME cap: no following residue found at resid {following_resid}."
-        )
-
+        raise ValueError(f"Cannot build NME cap: no following residue found matching segid {replace_atom.segid} and resid {following_resid}.")
+    
     # Checks for the presence of backbone atoms in the following residue
     nextN_raw  = find(next_atoms, backbone_atoms['N'])
     nextH_raw  = find(next_atoms, backbone_atoms['H'])  # None for Proline
@@ -231,11 +228,9 @@ def cap_NME(replace_atom, universe):
                 "different cut point or handle this residue some other way."
             )
     
-    if any(atom is None for atom in (nextN_raw, nextC_raw, nextCA_raw)):
-        raise ValueError(
-            f"Cannot build NME cap: following residue {following_resid} is missing "
-            "backbone N, C, or CA."
-        )
+    missing_backbone = [name for name, atom in (('N', nextN_raw), ('C', nextC_raw), ('CA', nextCA_raw)) if atom is None]
+    if missing_backbone:
+        raise ValueError(f"Cannot build NME cap: following residue {following_resid} is missing backbone atom(s): {', '.join(missing_backbone)}.")
     
     # Checks for the presence of CB. It will return None for glycine
     nextCB_raw   = find(next_atoms, 'CB')
@@ -303,8 +298,13 @@ def add_removed_atoms(residue):
     instantiating new QMzymeAtom objects using metadata from the MDAnalysis universe,
     then appends them back to both this residue and the parent region's master list.
 
+    :param residue: The residue whose removed atoms should be revived.
+    :type residue: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
+
     :return: A list of the revived QMzymeAtom objects.
     :rtype: list
+    
+    .. warning:: This will modify the QMzymeResidue and parent QMzymeRegion objects directly.
     """
     removed = list(residue.removed_atoms)
     for atom in removed:
@@ -317,8 +317,13 @@ def remove_added_atoms(residue):
     Permanently removes the 'added_atoms' from both this residue's 
     active atoms list and the parent region's master atom list.
 
+    :param residue: The residue whose added atoms should be removed.
+    :type residue: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
+    
     :return: A list of the QMzymeAtom objects that were purged.
     :rtype: list
+
+    .. warning:: This will modify the QMzymeResidue and parent QMzymeRegion objects directly.
     """
     added = list(residue.added_atoms)
     added_ids = {atom.id for atom in added}
