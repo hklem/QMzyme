@@ -102,7 +102,9 @@ def vector_comparison(fixed, atom1, atom2, tolerance=1e-4):
     """
     Method to determine if two atoms share the same vector direction from a fixed atom.
     All atom selections are evaluated based on their Cartesian coordinate positions 
-    to compute and compare normalized direction vectors.
+    to compute and compare normalized direction vectors. This function can be utilized
+    to examine the universe atom object that shares same vector with the capped atoms,
+    allowing for the trace of original atom prior to capping.
 
     :param fixed: The central reference atom (Atom C) from which the vectors originate.
     :type fixed: `QMzyme.QMzymeAtom` or `MDAnalysis.Universe.Atom`
