@@ -961,7 +961,7 @@ class QMzymeRegion:
         region.set_creation_attr(selection_scheme=f"{self.name} - {other.name}")
         return region
     
-    def truncate(self, scheme, selection, name = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
+    def truncate(self, scheme, selection, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         """
         Truncates the residues in `selection` according to `scheme`, modifying
         this QMzymeRegion's atoms and truncation/capping metadata in place.
@@ -1015,8 +1015,8 @@ class QMzymeRegion:
 
         # Selecting a region based on the truncation scheme
         s = scheme(
-            region=self, 
-            name=name, 
+            region=self,
+            name=None,
             selection=selection,
             remove_methane=remove_methane, 
             remove_ethane=remove_ethane, 
@@ -1026,7 +1026,6 @@ class QMzymeRegion:
         )
         truncated_region = s.return_region()
 
-        # Transferring the attribute information to the truncated_region
         self.atoms = truncated_region.atoms
         self._selection_attr = truncated_region._selection_attr
         self._residue_truncation_params = truncated_region._residue_truncation_params
