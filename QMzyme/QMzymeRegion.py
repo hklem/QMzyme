@@ -1093,7 +1093,8 @@ class QMzymeRegion:
             "Fixed atoms": [],
             "Truncation scheme": [],
             "Capping scheme": [],
-            "Method": [],  
+            "Calculation method": [],
+            "Segids": [],
         }
         for res in self.residues:
             summary["Resid"].append(res.resid)
@@ -1106,8 +1107,9 @@ class QMzymeRegion:
             summary["Fixed atoms"].append([a.name for a in res.get_atoms('is_fixed', True)])
             summary["Truncation scheme"].append(getattr(self, '_residue_truncation_params', {}).get(res.resid, "None") or "None")
             summary["Capping scheme"].append(res.capping_scheme or "None")
-            summary["Method"].append(res.method_type or "None") 
-        summary["Segids"] = [res.atoms[0].segid for res in self.residues]
+            summary["Calculation method"].append(res.method_type or "None") 
+            summary["Segids"].append(res.atoms[0].segid)
+
         if filename == None:
             return summary
         if not filename.endswith('.txt'):
