@@ -28,10 +28,10 @@ def test_cap_ACE(Test, region_selection, replace_atom, fixed_atom):
 
     if resid == 1:
         with pytest.raises(ValueError, match="no preceding residue found"):
-            cap_ACE(replace_atom, universe)
+            cap_ACE(replace_atom)
         return
 
-    cap_atoms = cap_ACE(replace_atom, universe)
+    cap_atoms = cap_ACE(replace_atom)
     cap_atom_names = [atom.name for atom in cap_atoms]
 
     assert 'C' in cap_atom_names
@@ -69,15 +69,15 @@ def test_cap_NME(Test, region_selection, replace_atom, fixed_atom):
 
     if resid == 3:
         with pytest.raises(ValueError, match="Proline"):
-            cap_NME(replace_atom, universe)
+            cap_NME(replace_atom)
         return
 
     if resid == 262:
         with pytest.raises(ValueError, match="no following residue found"):
-            cap_NME(replace_atom, universe)
+            cap_NME(replace_atom)
         return
 
-    cap_atoms = cap_NME(replace_atom, universe)
+    cap_atoms = cap_NME(replace_atom)
     cap_atom_names = [atom.name for atom in cap_atoms]
 
     assert 'N' in cap_atom_names
