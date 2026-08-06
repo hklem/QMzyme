@@ -301,6 +301,41 @@ def test_check_override_capping_partial(capsys):
     assert still_present.capping_scheme is not None
 
 @pytest.mark.parametrize(
+    "Test, region_selection, setup, override_truncation, override_capping, expected_skip_resids",[
+        ('Fresh region: nothing to skip', 'resid 1 or resid 2', 'none', None, None, set()),
+        ('override_truncation=False: already-truncated resids are skipped', 'resid 1 or resid 2', 'pretruncate', False, None, {1, 2}),
+        ('override_truncation=True: already-truncated resids are reset and reprocessed, not skipped', 'resid 1 or resid 2', 'pretruncate', True, None, set()),
+        ('override_capping=False, only N-term capped (ACE): partial cap is not skipped', 'resid 2', 'partial_cap', True, False, set()),
+        ('override_capping=False, both termini capped (ACE+NME): fully-capped resid is skipped', 'resid 2', 'full_cap', True, False, {2}),
+    ]
+)
+def test_skip_resids(Test, region_selection, setup, override_truncation, override_capping, expected_skip_resids):
+
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection=region_selection)
+    qm_method = QMzyme.QM_Method(
+        basis_set='6-31G*', functional='wB97X-D3', qm_input='OPT FREQ', program='orca'
+    )
+    qm_method.assign_to_region(region=model.region)
+
+    region = model.region
+    if setup == 'pretruncate':
+        region = TerminalAlphaCarbon(region, name='first_pass').return_region()
+    elif setup == 'partial_cap':
+        region.add_N_terminus_ACE(2)
+    elif setup == 'full_cap':
+        region.add_N_terminus_ACE(2)
+        region.add_C_terminus_NME(2)
+
+    scheme = TerminalAlphaCarbon(
+        region, name='second_pass',
+        override_truncation=override_truncation,
+        override_capping=override_capping,
+    )
+
+    assert scheme.skip_resids == expected_skip_resids
+
+@pytest.mark.parametrize(
     "Test, init_file, region_selection",[
         ('First and last residue in protein: MET1 GLN262', PDB, 'resid 1 or resid 262'),
         ('MET1 ASN2', PDB, 'resid 1 or resid 2'),
@@ -312,6 +347,7 @@ def test_check_override_capping_partial(capsys):
         ('With Non protein residue: WAT265', PDB, 'resid 3 or resid 265'),
     ]
 )
+
 def test_AlphaCarbon(Test, init_file, region_selection, truncation_scheme=AlphaCarbon):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
