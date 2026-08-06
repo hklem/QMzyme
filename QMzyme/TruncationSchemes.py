@@ -11,7 +11,6 @@ from QMzyme.data import protein_residues, backbone_atoms
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.truncation_utils import *
 from QMzyme.CalculateModel import CalculateModel
-import QMzyme.MDAnalysisWrapper as MDAwrapper
 import abc
 
 
@@ -35,19 +34,35 @@ class TruncationScheme(abc.ABC):
        capped (e.g. cap_H, cap_ACE, cap_NME), and resolves them using the
        override_capping argument.
     
-    Each check either raises a ValueError containing a resolution protocol.
+    Each check either raises a ValueError describing how to resolve the issue, appends the relevant residues to skip_resids so
+    they are excluded from truncation, or passes silently if no action is needed.
 
     TruncationScheme subclasses are responsible for determining how the
-    residues are truncated (e.g. TerminalAlphaCarbon).
+    residues are truncated (e.g. :class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon`,
+    :class:`~QMzyme.TruncationSchemes.AlphaCarbon`, and
+    :class:`~QMzyme.TruncationSchemes.BetaCarbon`).
 
     .. image:: ../../docs/Images/truncation_scheme.png
         :width: 650
     """
-    # Subclasses override this to control Gly/Ala isolation check behavior.
-    # "terminal" = only isolated (no neighbors in region) residues are flagged
-    # "all"      = all Gly/Ala occurrences are flagged (e.g. AlphaCarbon)
-    # None       = no Gly/Ala check performed
+
     _gly_ala_check = None
+
+    """
+    Class attribute that controls how `_check_gly_ala` identifies isolated
+    Gly/Ala residues for a given TruncationScheme subclass.
+
+    If `_gly_ala_check` is "terminal", only Gly/Ala residues with no neighboring
+    residue (resid +/- 1) present in the region are flagged as isolated
+    (e.g. TerminalAlphaCarbon).
+
+    If `_gly_ala_check` is "all", every Gly/Ala residue within the selection is
+    flagged as isolated, regardless of whether neighboring residues are present
+    (e.g. AlphaCarbon).
+
+    If `_gly_ala_check` is None, no Gly/Ala isolation check is performed for the
+    subclass (e.g. BetaCarbon).
+    """
  
     def __init__(self, region, name, selection = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
  
@@ -82,17 +97,6 @@ class TruncationScheme(abc.ABC):
         self._check_override_truncation()
         self._check_override_capping()
  
-        # Keep atoms for skip_resids and dedupe the rest by (resid, name)
-        skip = [a for a in self.region.atoms if a.resid in self.skip_resids]
-        others = [a for a in self.region.atoms if a.resid not in self.skip_resids]
-
-        # Preserve first occurrence of each (resid, name)
-        unique = {}
-        for a in others:
-            key = (a.resid, a.name)
-            unique.setdefault(key, a)
-        self.region.atoms = skip + list(unique.values())
-
         # Part for actual truncation! Residues that are no part of residues_to_truncate, skip_resids, and protein_residues are skipped
         for res in list(self.region.residues):
             if res.resid not in self.residues_to_truncate:
@@ -220,9 +224,10 @@ class TruncationScheme(abc.ABC):
             if needs_decision_ala:
                 pending.extend(isolated_ala)
 
+            msg = ""
             for res, org_group in pending:
-                print(f"Truncation of Residue {res} would result in a(n) {org_group}")
-            print(
+                msg += f"Truncation of Residue {res} would result in a(n) {org_group}\n"
+            msg += (
                 "Representation of the native residue may not be an appropriate chemical substitute.\n\n"
                 "RESOLUTION PROTOCOL\n"
                 "To resolve this, either:\n"
@@ -232,13 +237,12 @@ class TruncationScheme(abc.ABC):
                 "3) Alternatively, you can also include the neighboring residues using\n"
                 "      QMzymeRegion.add_residue(resid=)\n"
                 "      and apply the TerminalAlphaCarbon scheme.\n"
-                "4) Or set extend_gly_ala_backbone=True to add ACE and NME capping to isolated Gly/Ala residue(s)."
-            )
-
-            raise ValueError(
+                "4) Or set extend_gly_ala_backbone=True to add ACE and NME capping to isolated Gly/Ala residue(s).\n\n"
                 "Please set remove_methane and/or remove_ethane to True or False,\n"
                 "add neighboring residues, or set extend_gly_ala_backbone to True."
             )
+
+            raise ValueError(msg)
 
         # If remove_methane is True, remove the isolated Gly
         if self.remove_methane is True:
@@ -402,18 +406,18 @@ class TruncationScheme(abc.ABC):
     
         # If there is already_truncated residue, and override_truncation is None, raise ValueError
         if self.override_truncation is None:
+            msg = ""
             for res in already_truncated:
-                print(f"Residue {res} has already been truncated with {res.truncation_params}")
-            print(
+                msg += f"Residue {res} has already been truncated with {res.truncation_params}\n"
+            msg += (
                 "These residues will not be re-truncated by default.\n\n"
                 "RESOLUTION PROTOCOL\n"
                 "To override and re-truncate them, run with:\n"
                 "  ... .truncate(scheme=..., override_truncation=True)\n"
-                "or set override_truncation=False to silence this warning and skip them."
-            )
-            raise ValueError(
+                "or set override_truncation=False to silence this warning and skip them.\n\n"
                 "Please set override_truncation=True to re-truncate, or False to skip."
             )
+            raise ValueError(msg)
 
         # If override_truncation is False, raise warning print statement
         elif self.override_truncation is False:
@@ -465,18 +469,18 @@ class TruncationScheme(abc.ABC):
 
         # If user hasn't decided, return ValueError
         if self.override_capping is None:
+            msg = ""
             for res in already_capped:
-                print(f"Residue {res} has been capped with {res.capping_scheme}")
-            print(
+                msg += f"Residue {res} has been capped with {res.capping_scheme}\n"
+            msg += (
                 "These residues will not be re-truncated by default.\n\n"
                 "RESOLUTION PROTOCOL\n"
                 "To override capping, run with:\n"
                 "  ... .truncate(scheme=..., override_capping=True)\n"
-                "or set override_capping=False to silence this warning and skip them."
-            )
-            raise ValueError(
+                "or set override_capping=False to silence this warning and skip them.\n\n"
                 "Please set override_capping=True to re-cap, or False to skip."
             )
+            raise ValueError(msg)
 
         # If override_capping is False, skip only the residues we flagged above
         if self.override_capping is False:
@@ -630,15 +634,26 @@ class AlphaCarbon(TruncationScheme):
             
 class BetaCarbon(TruncationScheme):
     """
-    The Beta Carbon scheme will select for atoms that are within 2Å from CB,
-    remove all non-backbone atoms that are outside of 2Å distance, and
-    remove non-hydrogen and non-backbone atoms and replace it with hydrogen
-    along the CB-X vector. In the case of Proline and Glycine, it skips and returns
-    a warning message.
+    The Beta Carbon scheme will keep atoms up to CB, remove all other
+    sidechain atoms, and cap the heavy atom(s) directly bonded to CB with
+    hydrogen along the CB-X vector. In the case of Proline and Glycine, it
+    skips and returns a warning message.
 
     .. image:: ../../docs/Images/beta_carbon.png
         :width: 80%
     """
+
+    _gly_ala_check = None
+
+    # List of all 
+    _CB_neighbors = {
+        'SER': ['OG'],
+        'CYS': ['SG'],
+        'THR': ['OG1', 'CG2'],
+        'VAL': ['CG1', 'CG2'],
+        'ILE': ['CG1', 'CG2'],
+    }
+
     def __init__(self, region, name, selection=None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool=None, override_capping:bool = None):
         super().__init__(region, name, selection, remove_methane, remove_ethane, extend_gly_ala_backbone=extend_gly_ala_backbone, override_truncation=override_truncation, override_capping=override_capping)
 
@@ -646,65 +661,50 @@ class BetaCarbon(TruncationScheme):
         resname = res.resname
         if resname not in protein_residues:
             return
- 
-        if resname == "GLY" or resname == "PRO":
-            warnings.warn("Pro and Gly exists within selection. Please remove the residue.")
+
+        if resname in ("GLY", "PRO"):
+            print(f"{res} will be skipped from the BetaCarbon truncation scheme, due to the residue being {resname}.")
             return
- 
-        res_atoms = self.region._universe.select_atoms(f"resid {res.resid}")
+
+        if resname == "ALA":
+            # Already exactly the target fragment: backbone + CB + HB1/HB2/HB3.
+            return
+
         CBatom = res.get_atom('CB')
-        CB_sel = self.region._universe.select_atoms(f"resid {CBatom.resid} and name {CBatom.name}")
- 
-        neighbors = MDAwrapper.get_neighbors(res_atoms, CB_sel, 2)
-        non_neighbors = res_atoms.atoms - neighbors.atoms
- 
-        # Identify sidechain heavy atoms directly bonded to CB to determine naming scheme.
-        # Standard residues: 1 neighbor (CG etc.) → keep HB2/HB3, cap HB1
-        # Val/Thr:           2 neighbors (CG1+CG2 or OG1+CG2) → keep HB, rename→HB1, cap HB2+HB3
-        backbone_name_set = set(backbone_atoms.values())
-        sidechain_heavy_neighbors = [
-            a for a in neighbors.atoms
-            if a.name not in backbone_name_set and a.name != CBatom.name and a.element != 'H'
-        ]
- 
+        heavy_neighbors = self._CB_neighbors.get(resname, ['CG'])
+        branched = len(heavy_neighbors) == 2
+
         keep_names = set(backbone_atoms.values())
         keep_names.add(CBatom.name)
-        if len(sidechain_heavy_neighbors) == 2: 
-            keep_names.add("HB")           # Val/Thr: only one H on CB, named HB
-        else:
-            keep_names.update(["HB2", "HB3"])  # standard: two H's already on CB
- 
-        # Remove all atoms that are not neighbors and are not backbone
-        for mda_atom in non_neighbors.atoms:
-            for qm_atom in list(res.atoms):
-                if qm_atom.name != mda_atom.name or qm_atom.resid != mda_atom.resid:
-                    continue
-                if qm_atom.name in keep_names:
-                    continue
-                res.remove_atom(qm_atom)
- 
+        keep_names.add("HB" if branched else "HB2")
+        if not branched:
+            keep_names.add("HB3")
+
+        # Remove every sidechain atom except CB, its heavy neighbor(s), and CB's hydrogens
+        for atom in list(res.atoms):
+            if atom.name in keep_names or atom.name in heavy_neighbors:
+                continue
+            res.remove_atom(atom)
+
         # Val/Thr: rename the surviving HB → HB1 before capping
-        if len(sidechain_heavy_neighbors) == 2:
-            for qm_atom in res.atoms:
-                if qm_atom.name == "HB":
-                    qm_atom.name = "HB1"
-                    break
- 
-        # Cap each sidechain heavy neighbor with HB1/HB2/HB3 as appropriate
-        cap_index = 2 if len(sidechain_heavy_neighbors) == 2 else 1
-        for mda_atom in sidechain_heavy_neighbors:
-            for qm_atom in list(res.atoms):
-                if qm_atom.name != mda_atom.name or qm_atom.resid != mda_atom.resid:
-                    continue
-                if qm_atom.name in keep_names:
-                    continue
-                cap_atom = cap_H(qm_atom, CBatom, name=f"HB{cap_index}", residue=res)
-                res.remove_atom(qm_atom)
-                self.region.add_atom(cap_atom)
-                cap_index += 1
- 
+        if branched:
+            HBatom = res.get_atom("HB")
+            if HBatom is not None:
+                HBatom.name = "HB1"
+
+        # Cap each heavy neighbor with HB1/HB2/HB3 as appropriate
+        cap_index = 2 if branched else 1
+        for name in heavy_neighbors:
+            atom = res.get_atom(name)
+            if atom is None:
+                continue
+            cap_atom = cap_H(atom, CBatom, name=f"HB{cap_index}", residue=res)
+            res.remove_atom(atom)
+            self.region.add_atom(cap_atom)
+            cap_index += 1
+
         # The truncated residue now has exactly an alanine's heavy-atom/H
         # complement (backbone + CB + HB1/HB2/HB3), so relabel it as ALA.
         res.resname = "ALA"
-        for qm_atom in res.atoms:
-            qm_atom.resname = "ALA"
+        for atom in res.atoms:
+            atom.resname = "ALA"
