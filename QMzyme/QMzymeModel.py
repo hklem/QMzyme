@@ -328,7 +328,7 @@ class QMzymeModel:
 
             # Derive truncation_scheme from residue-level truncation_params
             residue_schemes = []
-            for scheme in region._residue_truncation_params.values():
+            for scheme in region._residue_truncation_attr.values():
                 if scheme is not None and scheme not in residue_schemes:
                     residue_schemes.append(scheme)
             if residue_schemes:
