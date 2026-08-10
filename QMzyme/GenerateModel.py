@@ -226,16 +226,16 @@ class GenerateModel(QMzymeModel):
         if name is None:
             name = f"{calc_type}_region"
 
-        s = scheme(
-            region=source_region, 
-            name=name, 
-            remove_methane=remove_methane, 
-            remove_ethane=remove_ethane, 
+        truncated_region = source_region.truncate(
+            scheme=scheme,
+            selection='all',
+            name=name,
+            remove_methane=remove_methane,
+            remove_ethane=remove_ethane,
             extend_gly_ala_backbone=extend_gly_ala_backbone,
             override_truncation=override_truncation,
-            override_capping=override_capping
+            override_capping=override_capping,
         )
-        truncated_region = s.return_region()
 
         CalculateModel.calculation[calc_type] = truncated_region
         if calc_type != 'QM':
