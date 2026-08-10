@@ -170,9 +170,43 @@ def test_extend_gly_ala_backbone(Test, region_selection, trunc_scheme, isolated_
 
         assert model.QM_region.truncated is True
 
-    if isolated_gly_ala == True and trunc_scheme == AlphaCarbon:
-        with pytest.raises(ValueError):
+    if isolated_gly_ala == True and extend_gly_ala_backbone == True and trunc_scheme == AlphaCarbon \
+                and region_selection in ('resid 4 or resid 6', 'resid 9 or resid 11'):
             model.truncate(scheme=trunc_scheme, extend_gly_ala_backbone=extend_gly_ala_backbone)
+            for res in model.QM_region.residues:
+                resname_by_resid = {r.resid: r.resname for r in model.QM_region.residues}
+                atom_names = [atom.name for atom in res.atoms]
+
+                if res.resname in ('GLY', 'ALA'):
+                    assert resname_by_resid.get(res.resid - 1) == 'ACE'
+                    assert resname_by_resid.get(res.resid + 1) == 'NME'
+                    assert 'N' in atom_names
+                    assert 'H' in atom_names
+                    assert 'C' in atom_names
+                    assert 'O' in atom_names
+
+                elif res.resname == 'ACE':
+                    assert 'CH3' in atom_names
+                    assert len([n for n in atom_names if n.startswith('HH3')]) == 3
+
+                elif res.resname == 'NME':
+                    assert 'CH3' in atom_names
+                    assert len([n for n in atom_names if n.startswith('HH3')]) == 3
+
+                else:
+                    # normal residue, AlphaCarbon truncates both sides
+                    if res.resid == 1:
+                        assert 'N' in atom_names
+                    elif res.resname != 'PRO':
+                        assert 'N' not in atom_names
+                        assert 'HN' in atom_names
+                    else:
+                        assert 'N' in atom_names
+                        assert 'HN' in atom_names
+                    assert 'C' not in atom_names
+                    assert 'HC' in atom_names
+
+            assert model.QM_region.truncated is True
 
     if isolated_gly_ala == False:
         model.truncate(scheme=trunc_scheme, extend_gly_ala_backbone=extend_gly_ala_backbone)
