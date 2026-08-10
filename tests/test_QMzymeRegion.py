@@ -265,7 +265,7 @@ def test_truncate():
     assert model.test.n_atoms == 79
     assert all(val == 'TerminalAlphaCarbon' for val in model.test._residue_truncation_attr.values())
     assert model.test._residue_capping_attr[5] == 'cap_H'
-    assert all(val == 'QM' for val in model.test._residue_method.values())
+    assert all(val == 'QM' for val in model.test._residue_method_attr.values())
 
     model = GenerateModel(PDB)
     model.set_region(name='test', selection='resid 1-20')
