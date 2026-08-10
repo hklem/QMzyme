@@ -12,8 +12,6 @@ import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import residue_charges, backbone_atoms
 from QMzyme.converters import *
-from QMzyme.MDAnalysisWrapper import select_atoms
-
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
@@ -38,7 +36,7 @@ class QMzymeRegion:
         self._creation_attr = {}
         self._residue_truncation_attr = {}
         self._residue_capping_attr = {}
-        self._residue_method = {} 
+        self._residue_method_attr = {} 
         self._cap_flags = {}
 
     def __repr__(self):
@@ -282,60 +280,40 @@ class QMzymeRegion:
         if hasattr(self, 'region'):
             self.region.remove_atom(atom)
 
-    def add_residue(self, selection, override_same_id: bool = False):
+    def add_residue(self, residue: "QMzymeResidue", override_same_id: bool = False):
         """
         Adds all atoms of a QMzymeResidue to the QMzymeRegion.
 
-        :param selection: The residue that you want to add to the region.
-        :type selection: MDAnalysis selection string.
+        :param residue: The residue to add to the region.
+        :type residue: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
         :param override_same_id: An argument to decide if the atoms with same IDs are replaced.
         :type override_same_id: bool, optional
 
-        .. warning:: Ths will modify the QMzymeRegion directly.
+        .. warning:: This will modify the QMzymeRegion directly.
         """
-        from QMzyme.RegionBuilder import RegionBuilder
+        for atom in residue.atoms:
+            self.add_atom(atom, override_same_id=override_same_id)
 
-        # Finds the selection in the _universe
-        atom_group = self._universe.select_atoms(selection)
-        if len(atom_group) == 0:
-            raise ValueError(f"Selection '{selection}' returns no atoms.")
-        builder = RegionBuilder(atom_group=atom_group, name="temp")
-        temp_region = builder.get_region()
-
-        # Add the atoms within the residue to the region
-        for residue in temp_region.residues:
-            for atom in residue.atoms:
-                self.add_atom(atom, override_same_id=override_same_id)
-        
         # Set selection attribute
         current = self._selection_attr.get('selection_scheme', self.name)
-        self.set_creation_attr(selection_scheme=f"{current} + {selection}")
+        self.set_creation_attr(selection_scheme=f"{current} + resid {residue.resid}")
 
-    def remove_residue(self, selection):
+
+    def remove_residue(self, residue: "QMzymeResidue"):
         """
         Removes all atoms of a QMzymeResidue from the QMzymeRegion.
 
-        :param selection: The residue that you want to add to the region.
-        :type selection: MDAnalysis selection string.
+        :param residue: The residue to remove from the region.
+        :type residue: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
 
-        .. warning:: Ths will modify the QMzymeRegion directly.
+        .. warning:: This will modify the QMzymeRegion directly.
         """
-        # Finds the selection in the _universe.
-        from QMzyme.RegionBuilder import RegionBuilder
-        atom_group = self._universe.select_atoms(selection)
-        if len(atom_group) == 0:
-            raise ValueError(f"Selection '{selection}' returns no atoms.")
-        builder = RegionBuilder(atom_group=atom_group, name="temp")
-        temp_region = builder.get_region()
-
-        # Subtract the atoms within the residue from the region
-        for residue in temp_region.residues:
-            for atom in residue.atoms:
-                self.remove_atom(atom)  
+        for atom in residue.atoms:
+            self.remove_atom(atom)
 
         # Set selection attribute
         current = self._selection_attr.get('selection_scheme', self.name)
-        self.set_creation_attr(selection_scheme=f"{current} - {selection}")
+        self.set_creation_attr(selection_scheme=f"{current} - resid {residue.resid}")
 
     def _insert_bridge_residue(self, bridge_resid: int):
         """
@@ -366,7 +344,7 @@ class QMzymeRegion:
                 return
 
         # Fetch the full residue's atoms from the universe
-        bridge_atoms = select_atoms(self._universe, f"resid {bridge_resid}")
+        bridge_atoms = MDAwrapper.select_atoms(self._universe, f"resid {bridge_resid}")
         if len(bridge_atoms) == 0:
             return
 
@@ -459,7 +437,7 @@ class QMzymeRegion:
             return
     
         # Case 2: neighbor isn't in the region
-        neighbor_exists = len(select_atoms(
+        neighbor_exists = len(MDAwrapper.select_atoms(
             self._universe,
             f"segid {N.segid} and resid {neighbor_resid}"
         )) > 0
@@ -566,7 +544,7 @@ class QMzymeRegion:
             return
     
         # Case 2: neighbor isn't in the region — check whether it exists anywhere in the full universe
-        neighbor_exists = len(select_atoms(
+        neighbor_exists = len(MDAwrapper.select_atoms(
             self._universe,
             f"segid {C.segid} and resid {neighbor_resid}"
         )) > 0
@@ -839,7 +817,7 @@ class QMzymeRegion:
 
     def guess_charge(self, verbose=True):
         """
-        Guesses charge based on the residue_charges information in QMzyme\configuration\__init__.py.
+        Guesses charge based on the residue_charges information in QMzyme/configuration/__init__.py.
         QMzyme contains charge information of standard AMBER amino acid residues.
         If non-AMBER residues are present, it will raise an error. To update the charge of the
         unknown residue, the user can use QMzyme.data.residue_charges.update({'unknown residue name': int})
@@ -1037,7 +1015,7 @@ class QMzymeRegion:
         self._selection_attr = truncated_region._selection_attr
         self._residue_truncation_attr = truncated_region._residue_truncation_attr
         self._residue_capping_attr = truncated_region._residue_capping_attr
-        self._residue_method = truncated_region._residue_method
+        self._residue_method_attr = truncated_region._residue_method_attr
 
     def get_overlapping_atoms(self, other):
         """
@@ -1358,11 +1336,11 @@ class QMzymeResidue(QMzymeRegion):
         assigned to this residue. Tracked independently of segid so that
         segid retains its original topology role.
         """
-        return self.region._residue_method.get(self.resid, None)
+        return self.region._residue_method_attr.get(self.resid, None)
 
     @method_type.setter
     def method_type(self, value: str):
-        self.region._residue_method[self.resid] = value
+        self.region._residue_method_attr[self.resid] = value
 
 
     def get_atom(self, atom_name):
@@ -1387,7 +1365,7 @@ class QMzymeResidue(QMzymeRegion):
 
     def guess_charge(self, verbose=True):
         """
-        Guesses charge based on the residue_charges information in QMzyme\configuration\__init__.py.
+        Guesses charge based on the residue_charges information in QMzyme/configuration/__init__.py.
         QMzyme contains charge information of standard AMBER amino acid residues.
         If non-AMBER residues are present, it will raise an error. To update the charge of the
         unknown residue, the user can use QMzyme.data.residue_charges.update({'unknown residue name': int})
