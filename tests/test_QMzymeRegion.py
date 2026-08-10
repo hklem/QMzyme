@@ -317,7 +317,7 @@ def test_truncate():
         assert res.added_atoms == []
         assert res.capping_scheme is None
 
-def test_add_C_terminus_NME(capsys):
+def test_add_C_terminus_NME():
     model = GenerateModel(PDB)
     model.set_region(name='test', selection='resid 16')
     region = model.test
@@ -345,17 +345,17 @@ def test_add_C_terminus_NME(capsys):
     assert 263 not in {a.resid for a in region_cterm.atoms}
     assert 262 not in getattr(region_cterm, '_cap_flags', {})
 
-    # Proline case. cap_NME prints out warning statement and nothing gets added
+    # Proline case. cap_NME raises a warning and nothing gets added
     model_pro = GenerateModel(PDB)
     model_pro.set_region(name='test', selection='resid 3')
     region_pro = model_pro.test
     n_before_pro = region_pro.n_atoms
 
-    region_pro.add_C_terminus_NME(3)
-    captured = capsys.readouterr()
-    assert "WARNING: NME cap skipped for resid 3" in captured.out
-    assert "Proline" in captured.out
-
+    with pytest.warns(UserWarning) as record:
+        region_pro.add_C_terminus_NME(3)
+    messages = [str(w.message) for w in record]
+    assert any("NME cap skipped for resid 3" in m for m in messages)
+    assert any("Proline" in m for m in messages)
     assert region_pro.n_atoms == n_before_pro
     assert region_pro._cap_flags[3]['NME'] is False
 
@@ -371,7 +371,7 @@ def test_add_C_terminus_NME(capsys):
     assert 10 not in getattr(region_existing, '_cap_flags', {})
 
 
-def test_add_N_terminus_ACE(capsys):
+def test_add_N_terminus_ACE():
     model = GenerateModel(PDB)
     model.set_region(name='test', selection='resid 40')
     region = model.test
