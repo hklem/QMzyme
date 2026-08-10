@@ -469,8 +469,14 @@ class QMzymeRegion:
                 try:
                     self._insert_bridge_residue(resid)
                 except Exception as ex:
-                    print(f"WARNING: Bridge insertion skipped for resid {resid}: {ex}")
-            print(f"WARNING: ACE cap skipped for resid {resid}: {e}")
+                    warnings.warn(
+                        f"Bridge insertion skipped for resid {resid}: {ex}",
+                        UserWarning, stacklevel=2,
+                    )
+            warnings.warn(
+                f"ACE cap skipped for resid {resid}: {e}",
+                UserWarning, stacklevel=2,
+            )
             return
     
         # Add each newly created ACE cap atom into this region
@@ -486,10 +492,12 @@ class QMzymeRegion:
         flags = self._cap_flags.get(resid, {})
         if 'ACE' in flags and 'NME' in flags:
             try:
-                self._insert_bridge_residue(resid)
+                self._insert_bridge_residue(neighbor_resid)
             except Exception as be:
-                print(f"WARNING: Bridge insertion skipped for resid {resid}: {be}")
-    
+                warnings.warn(
+                    f"Bridge insertion skipped for resid {resid}: {be}",
+                    UserWarning, stacklevel=2,
+                )
     
     def add_C_terminus_NME(self, resid: int):
         """
@@ -574,12 +582,19 @@ class QMzymeRegion:
             # Check whether an ACE attempt (success or failure) has also already happened for this resid
             flags = self._cap_flags.get(resid, {})
             if 'ACE' in flags:
-                # Both caps have been attempted — try to bridge the residue instead of capping
+                # Both caps have been attempted — try to bridge the residue that's actually
+                # causing the failure (the neighbor, e.g. Proline) instead of capping
                 try:
-                    self._insert_bridge_residue(resid)
+                    self._insert_bridge_residue(neighbor_resid)
                 except Exception as ex:
-                    print(f"WARNING: Bridge insertion skipped for resid {resid}: {ex}")
-            print(f"WARNING: NME cap skipped for resid {resid}: {e}")
+                    warnings.warn(
+                        f"Bridge insertion skipped for resid {resid}: {ex}",
+                        UserWarning, stacklevel=2,
+                    )
+            warnings.warn(
+                f"NME cap skipped for resid {resid}: {e}",
+                UserWarning, stacklevel=2,
+            )
             return
     
         # Add each newly created NME cap atom into this region
@@ -597,7 +612,10 @@ class QMzymeRegion:
             try:
                 self._insert_bridge_residue(resid)
             except Exception as be:
-                print(f"WARNING: Bridge insertion skipped for resid {resid}: {be}")
+                warnings.warn(
+                    f"Bridge insertion skipped for resid {resid}: {be}",
+                    UserWarning, stacklevel=2,
+                )
                     
     def sorted_atoms(self, override_same_id=False):
         """
