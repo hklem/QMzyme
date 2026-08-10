@@ -168,16 +168,18 @@ class GenerateModel(QMzymeModel):
             resulting name reflects the combined calculation type (e.g. 'QMQM2_region').
         :type name: str, optional, default=None
         :param remove_methane: Controls how isolated Gly residues (which would
-            otherwise be reduced to a methane upon truncation) are handled.
-            If True, isolated Gly residues are removed from the region. If False,
+            otherwise be truncated to a methane) are handled. If True, any Gly 
+            residues that would become methane after truncation are
+            removed completely from the region instead. If False,
             they are truncated and kept as a methane. If None and an isolated Gly is
             present (and extend_gly_ala_backbone is False), a ValueError is raised
             prompting the user to decide.
         :type remove_methane: bool, optional, default=None
         :param remove_ethane: Controls how isolated Ala residues (which would
-            otherwise be reduced to a ethane upon truncation) are handled. If True,
-            isolated Ala residues are removed from the region. If False, they are
-            are truncated and kept as a ethane. If None and an isolated Ala is
+            otherwise be truncated to an ethane) are handled. If True, any Ala
+            residues that would become ethane after truncation are
+            removed completely from the region instead. If False, they are
+            are truncated and kept as an ethane. If None and an isolated Ala is
             present (and extend_gly_ala_backbone is False), a ValueError is raised
             prompting the user to decide.
         :type remove_ethane: bool, optional, default=None
@@ -185,16 +187,19 @@ class GenerateModel(QMzymeModel):
             capped with ACE/NME groups instead of being removed or flagged,
             extending the backbone rather than truncating it down to a small
             organic group. Currently only supported with the
-            :class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon` scheme.
+            :class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon` and
+            :class:`~QMzyme.TruncationSchemes.AlphaCarbon` schemes.
         :type extend_gly_ala_backbone: bool, default=False
         :param override_truncation: Controls behavior for residues in the
-            selection that have already been truncated. If None, a ValueError
-            is raised prompting the user to decide. If False, already-truncated
-            residues are skipped. If True, already-truncated residues are reverted
-            to their untruncated state and re-truncated.
+            CalculateModel instance that have already been truncated. If a
+            region has already been truncated and override_truncation is None,
+            a ValueError is raised prompting the user to decide. If False,
+            skipped, maintaining their previous truncation treatment. If True,
+            already-truncated residues are reverted to their untruncated state
+            and then truncated according to the current method parameters.
         :type override_truncation: bool, optional, default=None
         :param override_capping: Controls behavior for residues in the
-            selection that have already been capped. If None, a ValueError
+            CalculateModel instance that have already been capped. If None, a ValueError
             is raised prompting the user to decide. If False, fully-capped
             residues are skipped; residues capped on only one terminus are
             still processed so the remaining uncapped terminus can be truncated.
@@ -239,9 +244,8 @@ class GenerateModel(QMzymeModel):
         # Creates the truncated region as a whole region
         self.set_region(truncated_region)
 
-        print(f"\nTruncated model has been created and saved as {name} "+
-              "and stored in QMzyme.CalculateModel.calculation under key "+
-              f"{calc_type}. This model will be used to write the calculation input.")
+        print(f"\nTruncated region, {truncated_region} has been created. It is also stored in"
+              f"QMzyme.CalculateModel.calculation under key {calc_type}. This model will be used to write the calculation input.")
 
     def write_input(self, filename=None, memory='24GB', nprocs=12, reset_calculation=False):
         """
