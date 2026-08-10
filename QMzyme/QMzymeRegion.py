@@ -36,8 +36,8 @@ class QMzymeRegion:
             self.method = None
         self._selection_attr = {}
         self._creation_attr = {}
-        self._residue_truncation_params = {}
-        self._residue_capping_scheme = {}
+        self._residue_truncation_attr = {}
+        self._residue_capping_attr = {}
         self._residue_method = {} 
         self._cap_flags = {}
 
@@ -1035,8 +1035,8 @@ class QMzymeRegion:
         # Transferring the attribute information to the truncated_region
         self.atoms = truncated_region.atoms
         self._selection_attr = truncated_region._selection_attr
-        self._residue_truncation_params = truncated_region._residue_truncation_params
-        self._residue_capping_scheme = truncated_region._residue_capping_scheme
+        self._residue_truncation_attr = truncated_region._residue_truncation_attr
+        self._residue_capping_attr = truncated_region._residue_capping_attr
         self._residue_method = truncated_region._residue_method
 
     def get_overlapping_atoms(self, other):
@@ -1111,7 +1111,7 @@ class QMzymeRegion:
             summary["Removed atoms"].append([a.name for a in res.removed_atoms])
             summary["Added atoms"].append([a.name for a in res.added_atoms])
             summary["Fixed atoms"].append([a.name for a in res.get_atoms('is_fixed', True)])
-            summary["Truncation scheme"].append(getattr(self, '_residue_truncation_params', {}).get(res.resid, "None") or "None")
+            summary["Truncation scheme"].append(getattr(self, '_residue_truncation_attr', {}).get(res.resid, "None") or "None")
             summary["Capping scheme"].append(res.capping_scheme or "None")
             summary["Calculation method"].append(res.method_type or "None") 
             summary["Segids"].append(res.atoms[0].segid)
@@ -1311,11 +1311,11 @@ class QMzymeResidue(QMzymeRegion):
         """
         The truncation scheme applied to this residue (e.g. 'CA_terminal').
         """
-        return self.region._residue_truncation_params.get(self.resid, None)
+        return self.region._residue_truncation_attr.get(self.resid, None)
 
     @truncation_params.setter
     def truncation_params(self, scheme: str):
-        self.region._residue_truncation_params[self.resid] = scheme
+        self.region._residue_truncation_attr[self.resid] = scheme
 
     @property
     def capping_scheme(self):
@@ -1341,7 +1341,7 @@ class QMzymeResidue(QMzymeRegion):
             scheme_parts.append('cap_NME')
 
         # cap_H must be stored explicitly — fall back to the dict for this only.
-        stored = self.region._residue_capping_scheme.get(self.resid, None)
+        stored = self.region._residue_capping_attr.get(self.resid, None)
         if stored and 'cap_H' in stored:
             scheme_parts.append('cap_H')
 
@@ -1349,7 +1349,7 @@ class QMzymeResidue(QMzymeRegion):
 
     @capping_scheme.setter
     def capping_scheme(self, scheme: str):
-        self.region._residue_capping_scheme[self.resid] = scheme
+        self.region._residue_capping_attr[self.resid] = scheme
 
     @property
     def method_type(self):
