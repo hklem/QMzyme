@@ -38,7 +38,7 @@ def cap_H(replace_atom, fixed_atom, name=None, bond_length=1.09, base_atom=None,
         in which case `base_atom` defaults to `fixed_atom` instead.
     :type base_atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, optional, default=None
     :param residue: If provided, records that this residue was capped via the
-        'cap_H' scheme by setting `residue.region._residue_capping_scheme[residue.resid] = 'cap_H'`.
+        'cap_H' scheme by setting `residue.region._residue_capping_attr[residue.resid] = 'cap_H'`.
     :type residue: QMzymeResidue, optional, default=None
     :return: The newly created hydrogen atom.
     :rtype: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`
@@ -63,7 +63,7 @@ def cap_H(replace_atom, fixed_atom, name=None, bond_length=1.09, base_atom=None,
     new_atom = create_new_atom(base_atom, new_atom_dict) # used fixed atom because sometimes replaced atom comes from a different residue
     
     if residue is not None:
-        residue.region._residue_capping_scheme[residue.resid] = 'cap_H'
+        residue.region._residue_capping_attr[residue.resid] = 'cap_H'
     return new_atom
 
 
