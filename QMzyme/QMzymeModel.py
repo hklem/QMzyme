@@ -292,6 +292,8 @@ class QMzymeModel:
         """
         Prints a formatted overview of the model and its regions, including 
         atom/residue counts, designated methods, and creation parameters.
+        To view more information about a specific region see the
+        QMzymeRegion.QMzymeRegion.summarize() method.
         """
         print("-" * 29)
         print(f"Model Overview: {self.name} ")
