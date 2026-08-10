@@ -283,6 +283,17 @@ class TruncationScheme(abc.ABC):
                 if not to_cap:
                     return
 
+                if isinstance(self, (AlphaCarbon)):
+                    both_neighbors_present = [self.region.get_residue(resid) for resid in to_cap if (resid - 1) in region_resids and (resid + 1) in region_resids]
+                    if both_neighbors_present:
+                        raise UserWarning(
+                            f"extend_gly_ala_backbone=True requested for residue(s) {both_neighbors_present},"
+                            "but both neighboring residues are already present in the region. Please remove these"
+                            "residue(s) using QMzymeRegion.remove_residue() method or manually extend backbone"
+                            "using QMzymeRegion.add_N_terminus_ACE() and QMzymeRegion.add_C_terminus_NME() methods"
+                            )
+
+                
                 # Acquires method from the original region
                 composite_types = {'QMQM2', 'QMXTB', 'QMChargeField'}
                 calc_type = CalculateModel.calc_type
