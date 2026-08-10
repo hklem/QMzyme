@@ -142,8 +142,10 @@ class TruncationScheme(abc.ABC):
         respecitve, are kept within the region, and a warning message is raised.
         
         If extend_gly_ala_backbone is True, all isolated Gly/Ala residues are capped with
-        acetyl (ACE) and N-methyl amide (NME) groups, using add_N_terminus_ACE and
-        add_C_terminus_NME methods from QMzymeRegion.py.
+        acetyl (ACE) and N-methyl amide (NME) groups, using these methods:
+
+        :meth:QMzyme.QMzymeRegion.add_N_terminus_ACE
+        :meth:QMzyme.QMzymeRegion.add_C_terminus_NME
  
         No exception is raised and no action is taken if no Gly/Ala residues
         in the selection would be isolated by truncation.
@@ -431,7 +433,7 @@ class TruncationScheme(abc.ABC):
             )
             raise ValueError(msg)
 
-        # If override_truncation is False, raise warning print statement
+        # If override_truncation is False, print residues that are being skipped.
         elif self.override_truncation is False:
             for res in already_truncated:
                 print(f"Skipping residue {res}: it has already been truncated with {res.truncation_params}.")
