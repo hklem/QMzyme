@@ -92,7 +92,7 @@ def find(atom_group, name):
  
     :param atom_group: MDAnalysis AtomGroup to search.
     :param name: Atom name to search for.
-    :returns: The matching atom, or None if not found.
+    :returns: MDAnalysisAtom object.
     """
     sel = atom_group.select_atoms(f"name {name}")
     return sel[0] if len(sel) else None
