@@ -71,7 +71,7 @@ class TruncationScheme(abc.ABC):
  
             self.region._residue_truncation_attr = dict(region._residue_truncation_attr)
             self.region._residue_capping_attr = dict(region._residue_capping_attr)
-            self.region._residue_method = dict(getattr(region, '_residue_method', {}))
+            self.region._residue_method_attr = dict(getattr(region, '_residue_method_attr', {}))
             if hasattr(region, 'method') and region.method is not None:
                 self.region.method = region.method
             if hasattr(region, 'charge'):
@@ -235,7 +235,7 @@ class TruncationScheme(abc.ABC):
                 "      GenerateModel.truncate(remove_methane=True, remove_ethane=True)\n"
                 "2) Set either flag to False to keep the small organic group.\n"
                 "3) Alternatively, you can also include the neighboring residues using\n"
-                "      QMzymeRegion.add_residue(resid=)\n"
+                "      QMzymeRegion.add_residue(QMzymeResidue)\n"
                 "      and apply the TerminalAlphaCarbon scheme.\n"
                 "4) Or set extend_gly_ala_backbone=True to add ACE and NME capping to isolated Gly/Ala residue(s).\n\n"
                 "Please set remove_methane and/or remove_ethane to True or False,\n"
@@ -247,12 +247,12 @@ class TruncationScheme(abc.ABC):
         # If remove_methane is True, remove the isolated Gly
         if self.remove_methane is True:
             for res in gly_methane_region:
-                self.region.remove_residue(f"resid {res.resid}")
+                self.region.remove_residue(res)
  
         # If remove_ethane is True, remove the isolated Ala
         if self.remove_ethane is True:
             for res in ala_ethane_region:
-                self.region.remove_residue(f"resid {res.resid}")
+                self.region.remove_residue(res)
         
         # If remove_methane is False, return a warning message
         if self.remove_methane is False and isolated_gly:
@@ -510,7 +510,7 @@ class TruncationScheme(abc.ABC):
                 for res in list(self.region.residues):
                     if res.resid in cap_resids:
                         try:
-                            self.region.remove_residue(f"resid {res.resid}")
+                            self.region.remove_residue(res)
                         except Exception:
                             self.region.atoms = [a for a in self.region.atoms if a.resid not in cap_resids]
  
