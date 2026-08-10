@@ -968,11 +968,15 @@ class QMzymeRegion:
         region = QMzymeRegion(name=name, atoms=atoms, universe=self._universe)
         region.set_creation_attr(selection_scheme=f"{self.name} - {other.name}")
         return region
-    
-    def truncate(self, scheme, selection, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
+
+    def truncate(self, scheme, selection: str, name: str = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         """
-        Truncates the residues in `selection` according to `scheme`, modifying
-        this QMzymeRegion's atoms and truncation/capping metadata in place.
+        Truncates the residues in `selection` according to `scheme`.
+
+        If `name` is None (default), this modifies this QMzymeRegion's atoms
+        and truncation/capping metadata in place and returns self. If `name`
+        is given, a new QMzymeRegion with that name is created and returned
+        instead, leaving this QMzymeRegion untouched.
 
         :param scheme: Specifies the truncation scheme to use. Options can be found
             in :py:mod:`~QMzyme.TruncationSchemes`.
@@ -982,8 +986,8 @@ class QMzymeRegion:
             in the region should be truncated by this call. Residues outside
             this selection are left untouched.
         :type selection: str
-        :param name: Name to give the new truncated region. If None, the original
-            region will be truncated.
+        :param name: Name to give to the new truncated region. If None, the
+            region is truncated in place and self is returned.
         :type name: str, optional, default=None
         :param remove_methane: Controls how isolated Gly residues (which would
             otherwise be reduced to a methane upon truncation) are handled.
@@ -1019,12 +1023,15 @@ class QMzymeRegion:
             If True, already-capped residues are reverted to their uncapped
             state and re-capped/re-truncated.
         :type override_capping: bool, optional, default=None
+
+        :returns: self if name is None, otherwise the new truncated QMzymeRegion.
+        :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
         """
 
         # Selecting a region based on the truncation scheme
         s = scheme(
             region=self,
-            name=None,
+            name=name,
             selection=selection,
             remove_methane=remove_methane, 
             remove_ethane=remove_ethane, 
@@ -1034,12 +1041,10 @@ class QMzymeRegion:
         )
         truncated_region = s.return_region()
 
-        # Transferring the attribute information to the truncated_region
-        self.atoms = truncated_region.atoms
-        self._selection_attr = truncated_region._selection_attr
-        self._residue_truncation_attr = truncated_region._residue_truncation_attr
-        self._residue_capping_attr = truncated_region._residue_capping_attr
-        self._residue_method_attr = truncated_region._residue_method_attr
+        if name is None:
+            return
+        else:
+            return truncated_region
 
     def get_overlapping_atoms(self, other):
         """
