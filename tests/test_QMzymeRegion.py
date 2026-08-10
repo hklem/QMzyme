@@ -263,8 +263,8 @@ def test_truncate():
     # Truncation should not add atoms beyond what the original selection had
     assert model.test.n_atoms < n_atoms_before
     assert model.test.n_atoms == 79
-    assert all(val == 'TerminalAlphaCarbon' for val in model.test._residue_truncation_params.values())
-    assert model.test._residue_capping_scheme[5] == 'cap_H'
+    assert all(val == 'TerminalAlphaCarbon' for val in model.test._residue_truncation_attr.values())
+    assert model.test._residue_capping_attr[5] == 'cap_H'
     assert all(val == 'QM' for val in model.test._residue_method.values())
 
     model = GenerateModel(PDB)
