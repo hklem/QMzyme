@@ -264,6 +264,9 @@ class QMzymeRegion:
         self.atoms = self.sorted_atoms(override_same_id=override_same_id)
         if hasattr(self, 'region'):
             self.region.add_atom(atom, override_same_id=override_same_id)
+        else:
+            current = self._selection_attr.get('selection_scheme', self.name)
+            self.set_creation_attr(selection_scheme=f"{current} + atom {atom.id}")
 
     def remove_atom(self, atom: _QMzymeAtom):
         """
@@ -279,6 +282,9 @@ class QMzymeRegion:
         self.atoms.remove(atom)
         if hasattr(self, 'region'):
             self.region.remove_atom(atom)
+        else:
+            current = self._selection_attr.get('selection_scheme', self.name)
+            self.set_creation_attr(selection_scheme=f"{current} - atom {atom.id}")
 
     def add_residue(self, residue: "QMzymeResidue", override_same_id: bool = False):
         """
