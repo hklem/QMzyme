@@ -271,16 +271,16 @@ class GenerateModel(QMzymeModel):
         """
         if CalculateModel.calculation == {}:
             raise UserWarning("You must first assign calculation method(s) to the model region(s).")
+        
         if len(CalculateModel.calculation) > 1 and not CalculateModel.combined:
             CalculateModel.combine_regions_and_methods()
-            calc_type = CalculateModel.calc_type
-            combined_region = CalculateModel.calculation[calc_type]
-            combined_region.name = f"{calc_type}_region"
-            CalculateModel.calculation[calc_type] = combined_region
+            combined_region = CalculateModel.calculation[CalculateModel.calc_type]
+            combined_region.name = f"{CalculateModel.calc_type}_region"
+            CalculateModel.calculation[CalculateModel.calc_type] = combined_region
             self.set_region(combined_region)
 
-        calc_type = CalculateModel.calc_type
-        region = CalculateModel.calculation.get(calc_type)
+        region = CalculateModel.calculation[CalculateModel.calc_type]
+
         if region is None or not getattr(region, "truncated", False):
             already_truncated = [res for res in region.residues if getattr(res, 'truncation_params', None) is not None]
             if not already_truncated:
@@ -290,7 +290,7 @@ class GenerateModel(QMzymeModel):
             else:
                 protein_resid = [res for res in region.residues if res.resname in protein_residues]
                 not_truncated = not_truncated = [res for res in protein_resid if getattr(res, 'truncation_params', None) is None]
-                print("\nWARNING: model is only partially truncated. Resulting model may "+
+                raise UserWarning("\nWARNING: model is only partially truncated. Resulting model may "+
                     "not be a chemically complete structure (i.e., incomplete atomic "+
                     "valencies due to removed atoms).\n"
                     f"Please truncate {not_truncated} using GenerateModel.truncate() or QMzymeRegion.truncate().")
