@@ -69,8 +69,8 @@ class TruncationScheme(abc.ABC):
         if name is not None:
             self.region = QMzymeRegion(name=name, atoms=list(region.atoms), universe=region._universe)
  
-            self.region._residue_truncation_params = dict(region._residue_truncation_params)
-            self.region._residue_capping_scheme = dict(region._residue_capping_scheme)
+            self.region._residue_truncation_attr = dict(region._residue_truncation_attr)
+            self.region._residue_capping_attr = dict(region._residue_capping_attr)
             self.region._residue_method = dict(getattr(region, '_residue_method', {}))
             if hasattr(region, 'method') and region.method is not None:
                 self.region.method = region.method
@@ -269,9 +269,9 @@ class TruncationScheme(abc.ABC):
         # If extend_gly_ala_backbone is True and there is isolated Gly or Ala, go through the protocol
         if self.extend_gly_ala_backbone is True and (isolated_gly or isolated_ala):
 
-            # If it is not TerminalAlphaCarbon, raise ValueError
-            if not isinstance(self, TerminalAlphaCarbon):
-                raise ValueError("Currently, QMzyme only supports extend_gly_ala_backbone with TerminalAlphaCarbon TruncationScheme subclass.")
+            # If it is not TerminalAlphaCarbon or AlphaCarbon, raise ValueError
+            if not isinstance(self, (TerminalAlphaCarbon, AlphaCarbon)):
+                raise ValueError("Currently, QMzyme only supports extend_gly_ala_backbone with TerminalAlphaCarbon and AlphaCarbon TruncationScheme subclasses.")
             
             else:
                 # Create a list of capped gly ala to be skipped during override_capping
