@@ -681,7 +681,6 @@ class BetaCarbon(TruncationScheme):
             return
 
         if resname == "ALA":
-            # Already exactly the target fragment: backbone + CB + HB1/HB2/HB3.
             return
 
         CBatom = res.get_atom('CB')
@@ -700,7 +699,7 @@ class BetaCarbon(TruncationScheme):
                 continue
             res.remove_atom(atom)
 
-        # Val/Thr: rename the surviving HB → HB1 before capping
+        # Val/Thr: rename HB as HB1 before capping
         if branched:
             HBatom = res.get_atom("HB")
             if HBatom is not None:
@@ -717,8 +716,6 @@ class BetaCarbon(TruncationScheme):
             res.add_atom(cap_atom)
             cap_index += 1
 
-        # The truncated residue now has exactly an alanine's heavy-atom/H
-        # complement (backbone + CB + HB1/HB2/HB3), so relabel it as ALA.
         res.resname = "ALA"
         for atom in res.atoms:
             atom.resname = "ALA"
