@@ -714,7 +714,7 @@ class BetaCarbon(TruncationScheme):
                 continue
             cap_atom = cap_H(atom, CBatom, name=f"HB{cap_index}", residue=res)
             res.remove_atom(atom)
-            self.region.add_atom(cap_atom)
+            res.add_atom(cap_atom)
             cap_index += 1
 
         # The truncated residue now has exactly an alanine's heavy-atom/H
