@@ -978,6 +978,12 @@ class QMzymeRegion:
         is given, a new QMzymeRegion with that name is created and returned
         instead, leaving this QMzymeRegion untouched.
 
+        .. note:: To make the returned region accessible as ``QMzymeModel.<name>``,
+            pass it to :meth:`~QMzyme.QMzymeModel.QMzymeModel.set_region`:
+
+            >>> new_region = QMzymeModel.QMzymeRegion.truncate(scheme=..., selection='all', name='name')
+            >>> QMzymeModel.set_region(model, new_region)
+
         :param scheme: Specifies the truncation scheme to use. Options can be found
             in :py:mod:`~QMzyme.TruncationSchemes`.
         :type scheme: :py:class:`~QMzyme.TruncationSchemes.TruncationScheme` concrete class, 
