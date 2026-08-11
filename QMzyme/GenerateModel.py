@@ -244,7 +244,7 @@ class GenerateModel(QMzymeModel):
         # Creates the truncated region as a whole region
         self.set_region(truncated_region)
 
-        print(f"\nTruncated region, {truncated_region} has been created. It is also stored in"
+        print(f"\nTruncated region, {truncated_region} has been created. It is also stored in "
               f"QMzyme.CalculateModel.calculation under key {calc_type}. This model will be used to write the calculation input.")
 
     def write_input(self, filename=None, memory='24GB', nprocs=12, reset_calculation=False):
