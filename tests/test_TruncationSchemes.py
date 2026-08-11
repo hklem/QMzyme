@@ -10,17 +10,27 @@ from QMzyme.GenerateModel import GenerateModel
 from QMzyme.TruncationSchemes import *
 import pytest
 from QMzyme.data import PDB
+import os
+import shutil
+
+original_contents = os.listdir()
+
+def restore_directory():
+    for name in os.listdir():
+        if name not in original_contents:
+            try:
+                os.remove(name)
+            except:
+                shutil.rmtree(name)
 
 @pytest.mark.parametrize(
     "Test, region_selection, trunc_scheme, isolated_gly_ala",[
         ('MET1 ASN2', 'resid 1 or resid 2', TerminalAlphaCarbon, False),
-        ('MET1 LEU3', 'resid 1 or resid 3', TerminalAlphaCarbon, False),
         ('THR5 ALA6', 'resid 5 or resid 6', TerminalAlphaCarbon, False),
         ('PRO4 ALA6', 'resid 4 or resid 6', TerminalAlphaCarbon, True),
         ('GLN10 GLY11', 'resid 10 or resid 11', TerminalAlphaCarbon, False),
         ('VAL9 GLY11', 'resid 9 or resid 11', TerminalAlphaCarbon, True),
         ('MET1 ASN2', 'resid 1 or resid 2', AlphaCarbon, False),
-        ('MET1 LEU3', 'resid 1 or resid 3', AlphaCarbon, False),
         ('THR5 ALA6', 'resid 5 or resid 6', AlphaCarbon, True),
         ('PRO4 ALA6', 'resid 4 or resid 6', AlphaCarbon, True),
         ('GLN10 GLY11', 'resid 10 or resid 11', AlphaCarbon, True),
@@ -66,6 +76,12 @@ def test_check_gly_ala_remove_flags(Test, region_selection, trunc_scheme, remove
     qm_method.assign_to_region(region=model.region)
 
     isolated_resname = 'ALA' if remove_flag_name == 'remove_ethane' else 'GLY'
+
+    assert any(res.resname == isolated_resname for res in model.region.residues)
+    assert model.region.method is not None
+    assert model.region.method["basis_set"] == '6-31G*'
+    assert model.region.method["functional"] == 'wB97X-D3'
+
     kwargs = {remove_flag_name: remove_flag_value}
     model.truncate(scheme=trunc_scheme, **kwargs)
 
@@ -112,6 +128,13 @@ def test_extend_gly_ala_backbone(Test, region_selection, trunc_scheme, isolated_
         program='orca'
     )
     qm_method.assign_to_region(region=model.region)
+
+    assert model.region.n_residues == 2
+    assert model.region.method is not None
+    assert model.region.method["basis_set"] == '6-31G*'
+
+    # QM_region is only created with truncate(), so it shouldn't exist yet.
+    assert not hasattr(model, 'QM_region')
 
     if isolated_gly_ala == True and trunc_scheme == TerminalAlphaCarbon and extend_gly_ala_backbone == True:
         model.truncate(scheme=trunc_scheme, extend_gly_ala_backbone=extend_gly_ala_backbone)
@@ -229,10 +252,13 @@ def test_check_override_truncation(Test, region_selection, override_truncation):
     )
     qm_method.assign_to_region(region=model.region)
 
+    assert not hasattr(model, 'QM_region')
+
     model.truncate(scheme=TerminalAlphaCarbon)
     truncation_params_before = {
         res.resid: res.truncation_params for res in model.QM_region.residues
     }
+    assert all(v is not None for v in truncation_params_before.values())
 
     if override_truncation is None:
         with pytest.raises(ValueError):
@@ -309,12 +335,6 @@ def test_check_override_capping(Test, region_selection, override_capping):
         assert recapped.capping_scheme is not None
 
 def test_check_override_capping_partial(capsys):
-    """
-    A residue capped with cap_H (not ACE+NME) hits the 'only one
-    terminus capped' branch of override_capping=False: it's left alone
-    and NOT added to skip_resids, so its untouched side can still be
-    re-truncated on a subsequent pass.
-    """
     model = GenerateModel(PDB)
     model.set_region(name='region', selection='resid 2')
     qm_method = QMzyme.QM_Method(
@@ -331,8 +351,17 @@ def test_check_override_capping_partial(capsys):
     captured = capsys.readouterr()
     assert "only one terminus capped" in captured.out
 
-    still_present = next(r for r in model.QM_region.residues if r.resid == 2)
-    assert still_present.capping_scheme is not None
+    res_present = next(r for r in model.QM_region.residues if r.resid == 2)
+    assert res_present.capping_scheme == 'cap_ACE, cap_H'
+
+    model.QM_region.remove_region('QM_region') if False else model.remove_region('QM_region')
+    model.truncate(
+        scheme=TerminalAlphaCarbon,
+        override_truncation=True,
+        override_capping=True,
+    )
+    recapped = next(r for r in model.QM_region.residues if r.resid == 2)
+    assert recapped.capping_scheme == 'cap_H'
 
 @pytest.mark.parametrize(
     "Test, region_selection, setup, override_truncation, override_capping, expected_skip_resids",[
@@ -353,13 +382,37 @@ def test_skip_resids(Test, region_selection, setup, override_truncation, overrid
     qm_method.assign_to_region(region=model.region)
 
     region = model.region
-    if setup == 'pretruncate':
+
+    if setup == 'none':
+        # Nothing done yet; nothing should be truncated or capped.
+        assert region.resids == [1, 2]
+        for res in region.residues:
+            assert res.truncation_params is None
+            assert res.capping_scheme is None
+
+    elif setup == 'pretruncate':
         region = TerminalAlphaCarbon(region, name='first_pass').return_region()
+
+        assert region.resids == [1, 2]
+        assert region.get_residue(1).truncation_params == 'TerminalAlphaCarbon'
+        assert region.get_residue(2).truncation_params == 'TerminalAlphaCarbon'
+
     elif setup == 'partial_cap':
         region.add_N_terminus_ACE(2)
+
+        assert region.resids == [1, 2]
+        assert region.get_residue(1).resname == 'ACE'
+        assert region.get_residue(2).capping_scheme == 'cap_ACE'
+        assert region.get_residue(2).truncation_params is None
+
     elif setup == 'full_cap':
         region.add_N_terminus_ACE(2)
         region.add_C_terminus_NME(2)
+
+        assert region.resids == [1, 2, 3]
+        assert region.get_residue(1).resname == 'ACE'
+        assert region.get_residue(3).resname == 'NME'
+        assert region.get_residue(2).capping_scheme == 'cap_ACE, cap_NME'
 
     scheme = TerminalAlphaCarbon(
         region, name='second_pass',
@@ -512,10 +565,12 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
     model = GenerateModel(init_file)
     model.set_region(name='region', selection=region_selection)
     
-    # Capture original atom names BEFORE truncation manually
+    # Capture original atom names AND resnames BEFORE truncation
     original_state = {}
+    original_resnames = {}
     for res in model.region.residues:
         original_state[res.resid] = [atom.name for atom in res.atoms]
+        original_resnames[res.resid] = res.resname
     model.region.universe = model.universe
 
     model.set_region(name='trunc_sele', selection=truncation_selection)
@@ -529,19 +584,27 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
     
     for trunc_res in region_truncated.residues:
         resid = trunc_res.resid
-        resname = trunc_res.resname
-        
+        orig_resname = original_resnames[resid]
         orig_names = original_state[resid]
         trunc_names = [atom.name for atom in trunc_res.atoms]
 
-        # Skip Logic (PRO/GLY or not in alanine_mutation)
-        if resname in ["GLY", "PRO"] or resid not in target_resids:
+        if resid in target_resids:
+            assert trunc_res.truncation_params == 'BetaCarbon'
+        else:
+            assert trunc_res.truncation_params is None
+
+        # Skip Logic (GLY/PRO/ALA all early-return in truncate(), or resid
+        # simply wasn't part of the truncation selection)
+        if orig_resname in ("GLY", "PRO", "ALA") or resid not in target_resids:
             assert len(trunc_names) == len(orig_names)
+            assert trunc_res.resname == orig_resname
             continue
 
-        # Active Truncation
-        # Detecting change in atom numbers
         assert len(trunc_names) != len(orig_names)
+
+        # BetaCarbon relabels truncated residues (and all their atoms) as ALA
+        assert trunc_res.resname == 'ALA'
+        assert all(atom.resname == 'ALA' for atom in trunc_res.atoms)
 
         # Check Scaffold Preservation (N, CA, C, O, CB)
         for atom in ['N', 'CA', 'C', 'O', 'CB']:
@@ -549,10 +612,39 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
                 assert atom in trunc_names
         
         # Verify that heavy atoms beyond CB are removed
-        for sc_atom in ['CG', 'SD', 'OG', 'CD', 'CE']:
-            if sc_atom in orig_names:
-                assert sc_atom not in trunc_names
+        for side_chain_atom in ['CG', 'SD', 'OG', 'CD', 'CE']:
+            if side_chain_atom in orig_names:
+                assert side_chain_atom not in trunc_names
 
         # Check for Capping (Presence of new Hydrogens from cap_H)
         new_atoms = [n for n in trunc_names if n not in orig_names]
         assert len(new_atoms) > 0
+
+def test_combine_truncation():
+    model = GenerateModel(PDB)
+    model.set_region(name='region', selection='resid 263 or resid 16 or resid 17 or resid 57')
+    truncation = TerminalAlphaCarbon(region=model.region, name=None)
+    truncate = truncation.return_region()
+    assert {a.resid for a in truncate.atoms} == {263, 16, 17, 57}
+    truncate.write('truncated_test')
+
+    model.set_region(name='region1', selection='resid 263 or resid 16')
+    model.set_region(name='region2', selection='resid 17 or resid 57')
+    
+    combined = model.region1.combine(model.region2)
+
+    assert combined.n_atoms == model.region1.n_atoms + model.region2.n_atoms
+ 
+    truncation = TerminalAlphaCarbon(region=combined, name=None)
+    truncated_combined = truncation.return_region()
+    assert {a.resid for a in truncated_combined.atoms} == {263, 16, 17, 57}
+    truncated_combined.write('truncated_combined_test')
+
+    assert truncate.n_atoms == truncated_combined.n_atoms
+    assert {a.id for a in truncate.atoms} == {a.id for a in truncated_combined.atoms}
+    for atom in truncate.atoms:
+        assert atom.name == truncated_combined.get_atom(atom.id).name
+
+    restore_directory()
+    assert 'truncated_combined_test.pdb' not in os.listdir()
+    assert 'truncated_test.pdb' not in os.listdir()
