@@ -457,8 +457,7 @@ def test_insert_bridge_residue(capsys):
     assert len(bridged_rev) != 6
     assert region_rev.n_atoms != n_before_bridge_rev
 
-    # Bridge residue is Proline: should be kept whole, bit run through
-    # BetaCarbon truncation, so ring atoms (CB/CG/CD) survive intact
+    # Bridge residue is Proline: should be kept whole.
     model_pro = GenerateModel(PDB)
     model_pro.set_region(name='test', selection='resid 3')
     region_pro = model_pro.test
@@ -467,7 +466,6 @@ def test_insert_bridge_residue(capsys):
     pro_atoms = [a for a in region_pro.atoms if a.resid == 4]
     pro_atom_names = {a.name for a in pro_atoms}
     assert pro_atoms[0].resname == 'PRO'
-    # full proline ring retained -> not reduced to backbone-only via BetaCarbon
     assert {'CB', 'CG', 'CD'}.issubset(pro_atom_names)
 
     pro_residue = next(r for r in region_pro.residues if r.resid == 4)
@@ -487,7 +485,5 @@ def test_insert_bridge_residue(capsys):
 
     assert region_fail._cap_flags[3]['NME'] is False
     assert region_fail._cap_flags[3]['ACE'] is True
-    # bridge attempt fired on resid 3 (no-op here since resid 3 isn't cap-only,
-    # but confirms no exception was raised and the real residue atoms remain)
     resid3_atoms = [a for a in region_fail.atoms if a.resid == 3]
     assert resid3_atoms[0].resname == 'LEU'
