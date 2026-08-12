@@ -337,6 +337,7 @@ class QMzymeRegion:
         """
         from QMzyme.RegionBuilder import RegionBuilder
         from QMzyme.TruncationSchemes import BetaCarbon
+        warnings.simplefilter("always", UserWarning)
 
         # Find any atoms already present in the region for this resid
         existing_atoms_for_resid = [a for a in self.atoms if a.resid == bridge_resid]
@@ -384,11 +385,11 @@ class QMzymeRegion:
 
         if hasattr(self, '_cap_flags'):
             self._cap_flags.pop(bridge_resid, None)
-    
+
     def add_N_terminus_ACE(self, resid: int):
         """
         Cap the N-terminus of a single peptide residue with an ACE cap.
-    
+
         If the previous resid (resid - 1) is already in the region,
         the terminus is skipped.
 
@@ -397,43 +398,44 @@ class QMzymeRegion:
 
         Otherwise, the ACE cap is built from the previous residue's
         backbone.
-    
+
         :param resid: The resid of the residue whose N-terminus should be capped.
         :type resid: int
         :raises ValueError: If ``resid`` is not an integer, or matches no
             atoms in the region, or the residue is missing backbone atoms.
         """
         from QMzyme.truncation_utils import cap_ACE
-    
+        warnings.simplefilter("always", UserWarning)
+
         # Checking if the resid is a single integer value
         if not isinstance(resid, (int, np.integer)):
             raise ValueError("'resid' must be a single integer.")
-    
+
         # Build a lookup dict mapping each resid -> list of atoms with that resid
         by_resid = {}
         for atom in self.atoms:
             # setdefault creates an empty list the first time a resid is seen, then appends
             by_resid.setdefault(atom.resid, []).append(atom)
-    
+
         # Fetch the atoms belonging to the residue we want to cap (None if resid not present)
         residue_atoms = by_resid.get(resid)
         if not residue_atoms:
             # No atoms found for this resid at all -> can't proceed
             raise ValueError(f"resid {resid} matched no atoms in the region.")
-    
+
         # Grab the specific N atom object (needed to build the ACE cap and for segid lookup)
         N  = next(a for a in residue_atoms if a.name == backbone_atoms['N'])
 
         CA = next((a for a in residue_atoms if a.name == backbone_atoms['CA']), None)
         ca_fixed = CA is not None and getattr(CA, 'is_fixed', False)
-    
+
         # The residue immediately preceding this one in sequence (N-terminal neighbor)
         neighbor_resid = resid - 1
         # Set of all resids currently present in this region/selection
         existing_resids = {a.resid for a in self.atoms}
         # Look up the residue name of the neighbor, if it exists in this region (else None)
         neighbor_resname = next((a.resname for a in self.atoms if a.resid == neighbor_resid), None)
-    
+
         # Case 1: the neighboring residue is already part of this region
         if neighbor_resid in existing_resids:
             # If that neighbor is itself an NME cap, insert a bridging residue between them
@@ -441,13 +443,13 @@ class QMzymeRegion:
                 self._insert_bridge_residue(neighbor_resid)
             # Either way, no ACE cap is needed here since the chain continues into the region
             return
-    
+
         # Case 2: neighbor isn't in the region
         neighbor_exists = len(MDAwrapper.select_atoms(
             self._universe,
             f"segid {N.segid} and resid {neighbor_resid}"
         )) > 0
-    
+
         # If the neighbor truly doesn't exist, no cap needed
         if not neighbor_exists:
             warnings.warn(
@@ -456,7 +458,7 @@ class QMzymeRegion:
                 UserWarning, stacklevel=2,
             )
             return
-    
+
         # Case 3: neighbor exists in the universe but not in the region. Attempt to build the ACE cap
         try:
             capped = cap_ACE(N)
@@ -465,44 +467,37 @@ class QMzymeRegion:
             # Check whether an NME attempt (success or failure) has also already happened for this resid
             flags = self._cap_flags.get(resid, {})
             if 'NME' in flags:
-                # If both caps have been attempted, try to bridge the residue instead of capping
                 try:
                     self._insert_bridge_residue(resid)
                 except Exception as ex:
-                    warnings.warn(
-                        f"Bridge insertion skipped for resid {resid}: {ex}",
-                        UserWarning, stacklevel=2,
-                    )
-            warnings.warn(
-                f"ACE cap skipped for resid {resid}: {e}",
-                UserWarning, stacklevel=2,
-            )
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}: {ex}", UserWarning, stacklevel=2)
+            warnings.warn(f"ACE cap skipped for resid {resid}: {e}", UserWarning, stacklevel=2)
             return
-    
-        # Add each newly created ACE cap atom into this region
+
         for atom in capped:
             self.add_atom(atom)
             if ca_fixed and atom.name == 'CH3':
                 atom.is_fixed = True
-    
-        # Record that the ACE cap succeeded for this resid
+
         self._cap_flags.setdefault(resid, {})['ACE'] = True
-    
-        # If both ACE and NME have now been attempted (regardless of success/failure), try bridging
         flags = self._cap_flags.get(resid, {})
         if 'ACE' in flags and 'NME' in flags:
             try:
                 self._insert_bridge_residue(neighbor_resid)
             except Exception as be:
-                warnings.warn(
-                    f"Bridge insertion skipped for resid {resid}: {be}",
-                    UserWarning, stacklevel=2,
-                )
-    
+                warnings.warn(f"Bridge insertion skipped for resid {resid}: {be}", UserWarning, stacklevel=2)
+        else:
+            far_resid = neighbor_resid - 1
+            if 'NME' in self._cap_flags.get(far_resid, {}):
+                try:
+                    self._insert_bridge_residue(neighbor_resid)
+                except Exception as be:
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}: {be}", UserWarning, stacklevel=2)     
+
     def add_C_terminus_NME(self, resid: int):
         """
         Cap the C-terminus of a single peptide residue with an NME cap.
-    
+
         If the next resid (resid + 1) is already in the region,
         the terminus is skipped.
 
@@ -514,23 +509,24 @@ class QMzymeRegion:
 
         Otherwise, the NME cap is built from the neighbouring residue's
         backbone.
-    
+
         :param resid: The resid of the residue whose C-terminus should be capped.
         :type resid: int
         :raises ValueError: If ``resid`` is not an integer, or matches no
             atoms in the region, or the residue is missing backbone atoms.
         """
         from QMzyme.truncation_utils import cap_NME
-    
+        warnings.simplefilter("always", UserWarning)
+
         # Checking if the resid is a single integer value
         if not isinstance(resid, (int, np.integer)):
             raise ValueError("'resid' must be a single integer.")
-    
+
         # Build a lookup dict mapping each resid -> list of atoms with that resid
         by_resid = {}
         for atom in self.atoms:
             by_resid.setdefault(atom.resid, []).append(atom)
-    
+
         # Fetch the atoms belonging to the residue we want to cap (None if resid not present)
         residue_atoms = by_resid.get(resid)
         if not residue_atoms:
@@ -541,14 +537,14 @@ class QMzymeRegion:
 
         CA = next((a for a in residue_atoms if a.name == backbone_atoms['CA']), None)
         ca_fixed = CA is not None and getattr(CA, 'is_fixed', False)
-    
+
         # The residue immediately following this one in sequence (C-terminal neighbor)
         neighbor_resid = resid + 1
         # Set of all resids currently present in this region/selection
         existing_resids = {a.resid for a in self.atoms}
         # Look up the residue name of the neighbor, if it exists in this region (else None)
         neighbor_resname = next((a.resname for a in self.atoms if a.resid == neighbor_resid), None)
-    
+
         # Case 1: the neighboring residue is already part of this region
         if neighbor_resid in existing_resids:
             # If that neighbor is itself an ACE cap, insert a bridging residue between them
@@ -556,13 +552,13 @@ class QMzymeRegion:
                 self._insert_bridge_residue(neighbor_resid)
             # Either way, no NME cap is needed here since the chain continues into the region
             return
-    
+
         # Case 2: neighbor isn't in the region — check whether it exists anywhere in the full universe
         neighbor_exists = len(MDAwrapper.select_atoms(
             self._universe,
             f"segid {C.segid} and resid {neighbor_resid}"
         )) > 0
-    
+
         # If the neighbor truly doesn't exist, this is a genuine chain terminus — no cap needed
         if not neighbor_exists:
             warnings.warn(
@@ -571,52 +567,33 @@ class QMzymeRegion:
                 UserWarning, stacklevel=2,
             )
             return
-    
-        # Case 3: neighbor exists in the universe but not in the region -> attempt to build the NME cap
+
         try:
             capped = cap_NME(C)
         except ValueError as e:
-            # Building the cap failed (e.g. missing atoms, Proline) — record this as a failed attempt
             self._cap_flags.setdefault(resid, {})['NME'] = False
-    
-            # Check whether an ACE attempt (success or failure) has also already happened for this resid
             flags = self._cap_flags.get(resid, {})
             if 'ACE' in flags:
-                # Both caps have been attempted — try to bridge the residue that's actually
-                # causing the failure (the neighbor, e.g. Proline) instead of capping
                 try:
                     self._insert_bridge_residue(neighbor_resid)
                 except Exception as ex:
-                    warnings.warn(
-                        f"Bridge insertion skipped for resid {resid}: {ex}",
-                        UserWarning, stacklevel=2,
-                    )
-            warnings.warn(
-                f"NME cap skipped for resid {resid}: {e}",
-                UserWarning, stacklevel=2,
-            )
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}: {ex}", UserWarning, stacklevel=2)
+            warnings.warn(f"NME cap skipped for resid {resid}: {e}", UserWarning, stacklevel=2)
             return
-    
-        # Add each newly created NME cap atom into this region
+
         for atom in capped:
             self.add_atom(atom)
             if ca_fixed and atom.name == 'CH3':
                 atom.is_fixed = True
-    
-        # Record that the NME cap succeeded for this resid
+
         self._cap_flags.setdefault(resid, {})['NME'] = True
-    
-        # If both ACE and NME have now been attempted (regardless of success/failure), try bridging
         flags = self._cap_flags.get(resid, {})
         if 'ACE' in flags and 'NME' in flags:
             try:
                 self._insert_bridge_residue(resid)
             except Exception as be:
-                warnings.warn(
-                    f"Bridge insertion skipped for resid {resid}: {be}",
-                    UserWarning, stacklevel=2,
-                )
-                    
+                warnings.warn(f"Bridge insertion skipped for resid {resid}: {be}", UserWarning, stacklevel=2)
+
     def sorted_atoms(self, override_same_id=False):
         """
         Returns a list of atoms sorted by their IDs, with optional duplicate handling.
