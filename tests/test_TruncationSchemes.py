@@ -64,7 +64,7 @@ def test_check_gly_ala(Test, region_selection, trunc_scheme, isolated_gly_ala):
         ('THR5 ALA6, remove_ethane=False keeps isolated ALA + warns (AlphaCarbon)', 'resid 5 or resid 6', AlphaCarbon, 'remove_ethane', False),
     ]
 )
-def test_check_gly_ala_remove_flags(Test, region_selection, trunc_scheme, remove_flag_name, remove_flag_value, capsys):
+def test_check_gly_ala_remove_flags(Test, region_selection, trunc_scheme, remove_flag_name, remove_flag_value):
     model = GenerateModel(PDB)
     model.set_region(name='region', selection=region_selection)
     qm_method = QMzyme.QM_Method(
@@ -83,20 +83,21 @@ def test_check_gly_ala_remove_flags(Test, region_selection, trunc_scheme, remove
     assert model.region.method["functional"] == 'wB97X-D3'
 
     kwargs = {remove_flag_name: remove_flag_value}
-    model.truncate(scheme=trunc_scheme, **kwargs)
+    organic_group = 'ethane' if remove_flag_name == 'remove_ethane' else 'methane'
+
+    if remove_flag_value is False:
+        # residue stays isolated -> expect the warning
+        with pytest.warns(UserWarning, match=organic_group):
+            model.truncate(scheme=trunc_scheme, **kwargs)
+    else:
+        model.truncate(scheme=trunc_scheme, **kwargs)
 
     isolated_present = any(res.resname == isolated_resname for res in model.QM_region.residues)
 
     if remove_flag_value is True:
-        # remove_residue() actually pulled the isolated residue out of the region
         assert not isolated_present
-
     else:
         assert isolated_present
-        captured = capsys.readouterr()
-        organic_group = 'ethane' if remove_flag_name == 'remove_ethane' else 'methane'
-        assert organic_group in captured.out
-        assert "may not be an appropriate representation" in captured.out
 
 @pytest.mark.parametrize(
     "Test, region_selection, trunc_scheme, isolated_gly_ala, extend_gly_ala_backbone",[
