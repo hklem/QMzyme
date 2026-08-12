@@ -223,8 +223,8 @@ def cap_NME(replace_atom):
             raise ValueError(
                 f"Cannot build NME cap: residue {following_resid} is Proline. "
                 "Proline's backbone N has no amide H due to it bonded to the ring "
-                "CD carbon instead. This results in the side chain constraining the"
-                "backbone geometry in a way an NME cap can't represent. Choose a"
+                "CD carbon instead. This results in the side chain constraining the "
+                "backbone geometry in a way an NME cap can't represent. Choose a "
                 "different cut point or handle this residue some other way."
             )
     
