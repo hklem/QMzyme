@@ -150,7 +150,8 @@ class TruncationScheme(abc.ABC):
         No exception is raised and no action is taken if no Gly/Ala residues
         in the selection would be isolated by truncation.
         """
-
+        warnings.simplefilter("always", UserWarning)
+        
         if self._gly_ala_check is None:
             return
 
@@ -258,17 +259,21 @@ class TruncationScheme(abc.ABC):
             for res in ala_ethane_region:
                 self.region.remove_residue(res)
         
-        # If remove_methane is False, return a warning message
-        if self.remove_methane is False and isolated_gly:
-            for res, org_group in isolated_gly: 
-                print(f"Truncation of Residue {res} would result in a {org_group}")
-            print("These organic groups may not be an appropriate representation of the active site region.\n")
+        warning_lines = []
 
-        # If remove_ethane is False, return a warning message
+        if self.remove_methane is False and isolated_gly:
+            for res, org_group in isolated_gly:
+                warning_lines.append(f"Truncation of Residue {res} would result in a {org_group}")
+
         if self.remove_ethane is False and isolated_ala:
             for res, org_group in isolated_ala:
-                print(f"Truncation of Residue {res} would result in an {org_group}")
-            print("These organic groups may not be an appropriate representation of the active site region.\n")
+                warning_lines.append(f"Truncation of Residue {res} would result in an {org_group}")
+
+        if warning_lines:
+            warning_lines.append(
+                "These organic groups may not be an appropriate representation of the active site region."
+            )
+            warnings.warn("\n".join(warning_lines), UserWarning, stacklevel=2)
 
         # If extend_gly_ala_backbone is True and there is isolated Gly or Ala, go through the protocol
         if self.extend_gly_ala_backbone is True and (isolated_gly or isolated_ala):
