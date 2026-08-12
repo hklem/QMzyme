@@ -459,10 +459,22 @@ def test_insert_bridge_residue(capsys):
 
     # Bridge residue is Proline: should be kept whole.
     model_pro = GenerateModel(PDB)
-    model_pro.set_region(name='test', selection='resid 3')
+    model_pro.set_region(name='test', selection='resid 3 or resid 5')
     region_pro = model_pro.test
 
-    region_pro._insert_bridge_residue(4)  # PRO4, inserted directly as bridge
+    region_pro.add_C_terminus_NME(resid = 3)
+    region_pro.add_N_terminus_ACE(resid = 5)
+    pro_atoms = [a for a in region_pro.atoms if a.resid == 4]
+    pro_atom_names = {a.name for a in pro_atoms}
+    assert pro_atoms[0].resname == 'PRO'
+    assert {'CB', 'CG', 'CD'}.issubset(pro_atom_names)
+
+    model_pro = GenerateModel(PDB)
+    model_pro.set_region(name='test', selection='resid 3 or resid 5')
+    region_pro = model_pro.test
+
+    region_pro.add_N_terminus_ACE(resid = 5)
+    region_pro.add_C_terminus_NME(resid = 3)
     pro_atoms = [a for a in region_pro.atoms if a.resid == 4]
     pro_atom_names = {a.name for a in pro_atoms}
     assert pro_atoms[0].resname == 'PRO'
