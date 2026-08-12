@@ -470,8 +470,8 @@ class QMzymeRegion:
                 try:
                     self._insert_bridge_residue(resid)
                 except Exception as ex:
-                    warnings.warn(f"Bridge insertion skipped for resid {resid}: {ex}", UserWarning, stacklevel=2)
-            warnings.warn(f"ACE cap skipped for resid {resid}: {e}", UserWarning, stacklevel=2)
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}. {ex}", UserWarning, stacklevel=2)
+            warnings.warn(f"ACE cap skipped for resid {resid}. {e}", UserWarning, stacklevel=2)
             return
 
         for atom in capped:
@@ -485,14 +485,14 @@ class QMzymeRegion:
             try:
                 self._insert_bridge_residue(neighbor_resid)
             except Exception as be:
-                warnings.warn(f"Bridge insertion skipped for resid {resid}: {be}", UserWarning, stacklevel=2)
+                warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)
         else:
             far_resid = neighbor_resid - 1
             if 'NME' in self._cap_flags.get(far_resid, {}):
                 try:
                     self._insert_bridge_residue(neighbor_resid)
                 except Exception as be:
-                    warnings.warn(f"Bridge insertion skipped for resid {resid}: {be}", UserWarning, stacklevel=2)     
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)     
 
     def add_C_terminus_NME(self, resid: int):
         """
@@ -577,8 +577,8 @@ class QMzymeRegion:
                 try:
                     self._insert_bridge_residue(neighbor_resid)
                 except Exception as ex:
-                    warnings.warn(f"Bridge insertion skipped for resid {resid}: {ex}", UserWarning, stacklevel=2)
-            warnings.warn(f"NME cap skipped for resid {resid}: {e}", UserWarning, stacklevel=2)
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}. {ex}", UserWarning, stacklevel=2)
+            warnings.warn(f"NME cap skipped for resid {resid}. {e}", UserWarning, stacklevel=2)
             return
 
         for atom in capped:
@@ -592,7 +592,7 @@ class QMzymeRegion:
             try:
                 self._insert_bridge_residue(resid)
             except Exception as be:
-                warnings.warn(f"Bridge insertion skipped for resid {resid}: {be}", UserWarning, stacklevel=2)
+                warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)
 
     def sorted_atoms(self, override_same_id=False):
         """
