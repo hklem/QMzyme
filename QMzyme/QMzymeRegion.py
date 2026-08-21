@@ -337,7 +337,6 @@ class QMzymeRegion:
         """
         from QMzyme.RegionBuilder import RegionBuilder
         from QMzyme.TruncationSchemes import BetaCarbon
-        warnings.simplefilter("always", UserWarning)
 
         # Find any atoms already present in the region for this resid
         existing_atoms_for_resid = [a for a in self.atoms if a.resid == bridge_resid]
@@ -405,7 +404,7 @@ class QMzymeRegion:
             atoms in the region, or the residue is missing backbone atoms.
         """
         from QMzyme.truncation_utils import cap_ACE
-        warnings.simplefilter("always", UserWarning)
+        warnings.filterwarnings("always", message=r"NME cap skipped|Skipping NME cap|Bridge insertion skipped", category=UserWarning,)
 
         # Checking if the resid is a single integer value
         if not isinstance(resid, (int, np.integer)):
@@ -483,7 +482,7 @@ class QMzymeRegion:
         flags = self._cap_flags.get(resid, {})
         if 'ACE' in flags and 'NME' in flags:
             try:
-                self._insert_bridge_residue(neighbor_resid)
+                self._insert_bridge_residue(resid)
             except Exception as be:
                 warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)
         else:
@@ -516,7 +515,7 @@ class QMzymeRegion:
             atoms in the region, or the residue is missing backbone atoms.
         """
         from QMzyme.truncation_utils import cap_NME
-        warnings.simplefilter("always", UserWarning)
+        warnings.filterwarnings("always", message=r"NME cap skipped|Skipping NME cap|Bridge insertion skipped", category=UserWarning,)
 
         # Checking if the resid is a single integer value
         if not isinstance(resid, (int, np.integer)):
@@ -575,7 +574,7 @@ class QMzymeRegion:
             flags = self._cap_flags.get(resid, {})
             if 'ACE' in flags:
                 try:
-                    self._insert_bridge_residue(neighbor_resid)
+                    self._insert_bridge_residue(resid)
                 except Exception as ex:
                     warnings.warn(f"Bridge insertion skipped for resid {resid}. {ex}", UserWarning, stacklevel=2)
             warnings.warn(f"NME cap skipped for resid {resid}. {e}", UserWarning, stacklevel=2)
