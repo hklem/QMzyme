@@ -73,6 +73,8 @@ def test_import_region():
     model.set_catalytic_center(selection='resname EQU and segid A')
     model.set_region(selection=DistanceCutoff, cutoff=3)
 
+    assert len(model.regions) == 2
+
     region_19nt = model.import_region(LIG, name='region_19nt')
     QMzyme.data.residue_charges.update({'6VW': 0})
 

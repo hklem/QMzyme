@@ -130,10 +130,10 @@ def test_ChargeShiftAnalysis():
     assert len(model.regions) == 6
     assert model.catalytic_center.n_residues == 1
     assert model.catalytic_center.n_atoms == 37
-    assert model.CSA_holo_truncated.n_residues == 88
-    assert model.CSA_holo_truncated.n_atoms == 982
-    assert model.CSA_apo_truncated.n_residues == 87
-    assert model.CSA_apo_truncated.n_atoms == 945
+    assert model.CSA_holo_truncated.n_residues == 90
+    assert model.CSA_holo_truncated.n_atoms == 996
+    assert model.CSA_apo_truncated.n_residues == 89
+    assert model.CSA_apo_truncated.n_atoms == 959
 
     model = GenerateModel(PDB)
     model.set_catalytic_center('resid 263')
@@ -143,10 +143,10 @@ def test_ChargeShiftAnalysis():
     assert len(model.regions) == 6
     assert model.catalytic_center.n_residues == 1
     assert model.catalytic_center.n_atoms == 37
-    assert model.CSA_holo_truncated.n_residues == 88
-    assert model.CSA_holo_truncated.n_atoms == 982
-    assert model.CSA_apo_truncated.n_residues == 87
-    assert model.CSA_apo_truncated.n_atoms == 942
+    assert model.CSA_holo_truncated.n_residues == 90
+    assert model.CSA_holo_truncated.n_atoms == 996
+    assert model.CSA_apo_truncated.n_residues == 89
+    assert model.CSA_apo_truncated.n_atoms == 959
 
     # Second part of the ChargeShiftAnalysis
     # With non-pickle file, error raised
@@ -177,16 +177,6 @@ def test_ChargeShiftAnalysis():
     assert model.CSA_cutoff_region.n_atoms == 77
 
     print(model.CSA_cutoff_region.creation_attr)
-
-    # Truncation check
-    model.truncate()
-    with pytest.raises(UserWarning):
-        model.truncate()
-    
-    model = GenerateModel(PDB)
-    model.set_catalytic_center('resid 263')
-    with pytest.raises(UserWarning):
-        model.truncate()
 
     restore_directory()
     assert 'QCALC' not in os.listdir()

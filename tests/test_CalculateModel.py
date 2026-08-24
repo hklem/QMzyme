@@ -1,6 +1,5 @@
 from QMzyme.CalculateModel import QM_Method
 from QMzyme.GenerateModel import GenerateModel
-#from importlib_resources import files
 from QMzyme.data import PDB
 import os
 import shutil
@@ -27,10 +26,12 @@ def test_QM_Method(Test, program):
     region_name = 'cutoff_3'
     model.set_region(name=region_name, selection='byres around 3 resid 263')
     # check basis_set info is set for all atoms
-    bs1 = '6-31g(d)'
     ids = model.cutoff_3.get_ids('name', 'CA')
     model.cutoff_3.set_fixed_atoms(ids)
     region, basis_set, functional = model.cutoff_3, '6-31G*', 'wB97X-D3'
+
+    assert region.method is None
+    
     qm_method = QM_Method(
         basis_set=basis_set, 
         functional=functional, 

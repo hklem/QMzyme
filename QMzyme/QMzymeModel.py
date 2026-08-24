@@ -292,6 +292,8 @@ class QMzymeModel:
         """
         Prints a formatted overview of the model and its regions, including 
         atom/residue counts, designated methods, and creation parameters.
+        To view more information about a specific region see the
+        QMzymeRegion.QMzymeRegion.summarize() method.
         """
         print("-" * 29)
         print(f"Model Overview: {self.name} ")
@@ -300,7 +302,7 @@ class QMzymeModel:
         print(f"  - total residues: {self.universe.residues.n_residues}")
         print(f"  - total regions: {len(self.regions)}")
         print("-" * 29)
-        print("Region Overview") 
+        print("Region Overview")
         print("-" * 29)
 
         for region in self.regions:
@@ -318,12 +320,21 @@ class QMzymeModel:
             try:
                 attr = region.creation_attr
                 for key, value in attr.items():
-                    # Avoid duplicate printing of counts
-                    if key not in ['total_atoms', 'total_residues']:
-                        print(f"  - {key}: {value}")
-            
+                    if key in ['total_atoms', 'total_residues']:
+                        continue
+                    if key == 'selection_scheme' and 'parent_region' in attr:
+                        continue
+                    print(f"  - {key}: {value}")
             except AttributeError:
-                print("  - selection scheme: information not available")
+                print("  - selection_scheme: information not available")
+
+            # Derive truncation_scheme from residue-level truncation_params
+            residue_schemes = []
+            for scheme in region._residue_truncation_attr.values():
+                if scheme is not None and scheme not in residue_schemes:
+                    residue_schemes.append(scheme)
+            if residue_schemes:
+                print(f"  - truncation_scheme: {residue_schemes}")
 
             print("-" * 29)
 

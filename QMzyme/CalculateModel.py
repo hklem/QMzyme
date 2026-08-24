@@ -26,6 +26,7 @@ class CalculateModel:
     """
     calculation = {}
     calc_type = None
+    combined = False 
 
     def add(self, type, region):
         if type == 'QM' and 'QM' in CalculateModel.calculation:
@@ -68,10 +69,12 @@ class CalculateModel:
         CalculateModel.calc_type = calc_type
         CalculationFactory._make_calculation(calc_type)().assign_to_region(region=combined)
         CalculateModel.calculation[calc_type] = combined
+        CalculateModel.combined = True
 
     def _reset():
         CalculateModel.calculation = {}
         CalculateModel.calc_type = None
+        CalculateModel.combined = False
     
 class CalculationBase:
     """
@@ -95,7 +98,7 @@ class CalculationBase:
         self.mult = mult
         region.set_method(self.__dict__)
         self._set_charge(region, charge)
-        region.set_atom_segid(region.method["type"])
+        region.set_residue_method(region.method["type"])
         CalculateModel().add(type=self.type, region=region)
 
     def _set_charge(self, region, charge):
@@ -181,12 +184,12 @@ class MultiscaleCalculationBase(CalculationBase):
         self._set_charge(self.region, charge)
         self._set_qm_input()
         # fix segids
-        for atom in self.region.atoms:
-            if atom.id in CalculateModel.calculation['QM'].ids:
-                setattr(atom, "segid", "QM")
+        qm_ids = set(CalculateModel.calculation['QM'].ids)
+        for res in self.region.residues:
+            if any(atom.id in qm_ids for atom in res.atoms):
+                res.method_type = "QM"
             else:
-                #setattr(atom, "segid", CalculateModel.calc_type[2:])
-                setattr(atom, "segid", CalculateModel.calc_type[2:])
+                res.method_type = CalculateModel.calc_type[2:]
 
     def _set_qm_input(self):
         # QM/QM2 or QM/XTB. QMChargeField duck types this method.

@@ -11,7 +11,7 @@ import numpy as np
 import copy
 from QMzyme import MDAnalysisWrapper as MDAwrapper
 from QMzyme.data import residue_charges, backbone_atoms
-
+from QMzyme.converters import *
 
 _QMzymeAtom = TypeVar("_QMzymeAtom", bound="QMzymeAtom")
 
@@ -34,6 +34,10 @@ class QMzymeRegion:
             self.method = None
         self._selection_attr = {}
         self._creation_attr = {}
+        self._residue_truncation_attr = {}
+        self._residue_capping_attr = {}
+        self._residue_method_attr = {} 
+        self._cap_flags = {}
 
     def __repr__(self):
         return f"<QMzymeRegion {self.name} contains {self.n_atoms} atom(s) and {self.n_residues} residue(s)>"
@@ -244,20 +248,25 @@ class QMzymeRegion:
         if resid in self.resids:
             return True
         return False
-    
+
     def add_atom(self, atom: _QMzymeAtom, override_same_id=False):
         """
         Adds additional QMzymeAtom to the QMzymeRegion.
 
         :param atom: The atom you want to add to the QMzymeRegion. 
         :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
-        :param overrisde_same_id: An argument to decide if the atoms with same IDs are replaced.
-        :type overrisde_same_id: bool, optional
+        :param override_same_id: An argument to decide if the atoms with same IDs are replaced.
+        :type override_same_id: bool, optional
 
         .. warning:: Ths will modify the QMzymeRegion directly.
         """
         self.atoms.append(atom)
         self.atoms = self.sorted_atoms(override_same_id=override_same_id)
+        if hasattr(self, 'region'):
+            self.region.add_atom(atom, override_same_id=override_same_id)
+        else:
+            current = self._selection_attr.get('selection_scheme', self.name)
+            self.set_creation_attr(selection_scheme=f"{current} + atom {atom.id}")
 
     def remove_atom(self, atom: _QMzymeAtom):
         """
@@ -271,6 +280,318 @@ class QMzymeRegion:
         .. warning:: Ths will modify the QMzymeRegion directly.
         """
         self.atoms.remove(atom)
+        if hasattr(self, 'region'):
+            self.region.remove_atom(atom)
+        else:
+            current = self._selection_attr.get('selection_scheme', self.name)
+            self.set_creation_attr(selection_scheme=f"{current} - atom {atom.id}")
+
+    def add_residue(self, residue: "QMzymeResidue", override_same_id: bool = False):
+        """
+        Adds all atoms of a QMzymeResidue to the QMzymeRegion.
+
+        :param residue: The residue to add to the region.
+        :type residue: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
+        :param override_same_id: An argument to decide if the atoms with same IDs are replaced.
+        :type override_same_id: bool, optional
+
+        .. warning:: This will modify the QMzymeRegion directly.
+        """
+        for atom in residue.atoms:
+            self.add_atom(atom, override_same_id=override_same_id)
+
+        # Set selection attribute
+        current = self._selection_attr.get('selection_scheme', self.name)
+        self.set_creation_attr(selection_scheme=f"{current} + resid {residue.resid}")
+
+
+    def remove_residue(self, residue: "QMzymeResidue"):
+        """
+        Removes all atoms of a QMzymeResidue from the QMzymeRegion.
+
+        :param residue: The residue to remove from the region.
+        :type residue: :class:`~QMzyme.QMzymeRegion.QMzymeResidue`
+
+        .. warning:: This will modify the QMzymeRegion directly.
+        """
+        for atom in residue.atoms:
+            self.remove_atom(atom)
+
+        # Set selection attribute
+        current = self._selection_attr.get('selection_scheme', self.name)
+        self.set_creation_attr(selection_scheme=f"{current} - resid {residue.resid}")
+
+    def _insert_bridge_residue(self, bridge_resid: int):
+        """
+        Insert a backbone or full residue at bridge_resid so it
+        bridges two independently-capped neighboring termini instead of being
+        represented twice as ACE and NME cap fragments.
+
+        If bridge_resid currently only holds ACE/NME cap atoms, those are
+        removed first to make room for the real residue. GLY/PRO and the
+        caps themselves are kept whole; all other residues are reduced via
+        BetaCarbon truncation to only preserve the backbone atoms.
+
+        :param bridge_resid: The resid of the residue connecting two capped termini.
+        :type bridge_resid: int
+        """
+        from QMzyme.RegionBuilder import RegionBuilder
+        from QMzyme.TruncationSchemes import BetaCarbon
+
+        # Find any atoms already present in the region for this resid
+        existing_atoms_for_resid = [a for a in self.atoms if a.resid == bridge_resid]
+
+        if existing_atoms_for_resid:
+            # If the residue is ACE and NME, exclude the cap atoms
+            existing_resnames = {a.resname for a in existing_atoms_for_resid}
+            if existing_resnames <= {"ACE", "NME"}:
+                self.atoms = [a for a in self.atoms if a.resid != bridge_resid]
+            else:
+                return
+
+        # Fetch the full residue's atoms from the universe
+        bridge_atoms = MDAwrapper.select_atoms(self._universe, f"resid {bridge_resid}")
+        if len(bridge_atoms) == 0:
+            return
+
+        resname = bridge_atoms[0].resname
+        bridge_region = RegionBuilder(atom_group=bridge_atoms, name="temp").get_region()
+
+        # Add the full residue's atoms
+        for atom in bridge_region.atoms:
+            self.add_atom(atom)
+
+        # Truncate via BetaCarbon for standard amino acids, skipping GLY/PRO (kept whole) or ACE/NME cap residues
+        if resname not in ("GLY", "PRO", "ACE", "NME"):
+            backbone = BetaCarbon(self, name=self.name, selection=f"resid {bridge_resid}")
+
+            # Swap in the truncated atoms for this resid in place of the untruncated ones just added above.
+            self.atoms = [a for a in self.atoms if a.resid != bridge_resid] + [
+                a for a in backbone.region.atoms if a.resid == bridge_resid
+            ]
+
+            # Locate the matching residue objects on both sides so the truncation_params can be carried over below.
+            backbone_residue = next((r for r in backbone.region.residues if r.resid == bridge_resid), None)
+            try:
+                self_residue = next((r for r in self.residues if r.resid == bridge_resid), None)
+            except Exception:
+                self_residue = None
+
+            # Record that this residue was truncated, now that both
+            # residue objects were successfully resolved.
+            if backbone_residue is not None and self_residue is not None:
+                self_residue.truncation_params = backbone_residue.truncation_params
+
+        if hasattr(self, '_cap_flags'):
+            self._cap_flags.pop(bridge_resid, None)
+
+    def add_N_terminus_ACE(self, resid: int):
+        """
+        Cap the N-terminus of a single peptide residue with an ACE cap.
+
+        If the previous resid (resid - 1) is already in the region,
+        the terminus is skipped.
+
+        If the previous resid does not exist in the universe (true
+        chain end), a warning is issued and the terminus is skipped.
+
+        Otherwise, the ACE cap is built from the previous residue's
+        backbone.
+
+        :param resid: The resid of the residue whose N-terminus should be capped.
+        :type resid: int
+        :raises ValueError: If ``resid`` is not an integer, or matches no
+            atoms in the region, or the residue is missing backbone atoms.
+        """
+        from QMzyme.truncation_utils import cap_ACE
+        warnings.filterwarnings("always", message=r"NME cap skipped|Skipping NME cap|Bridge insertion skipped", category=UserWarning,)
+
+        # Checking if the resid is a single integer value
+        if not isinstance(resid, (int, np.integer)):
+            raise ValueError("'resid' must be a single integer.")
+
+        # Build a lookup dict mapping each resid -> list of atoms with that resid
+        by_resid = {}
+        for atom in self.atoms:
+            # setdefault creates an empty list the first time a resid is seen, then appends
+            by_resid.setdefault(atom.resid, []).append(atom)
+
+        # Fetch the atoms belonging to the residue we want to cap (None if resid not present)
+        residue_atoms = by_resid.get(resid)
+        if not residue_atoms:
+            # No atoms found for this resid at all -> can't proceed
+            raise ValueError(f"resid {resid} matched no atoms in the region.")
+
+        # Grab the specific N atom object (needed to build the ACE cap and for segid lookup)
+        N  = next(a for a in residue_atoms if a.name == backbone_atoms['N'])
+
+        CA = next((a for a in residue_atoms if a.name == backbone_atoms['CA']), None)
+        ca_fixed = CA is not None and getattr(CA, 'is_fixed', False)
+
+        # The residue immediately preceding this one in sequence (N-terminal neighbor)
+        neighbor_resid = resid - 1
+        # Set of all resids currently present in this region/selection
+        existing_resids = {a.resid for a in self.atoms}
+        # Look up the residue name of the neighbor, if it exists in this region (else None)
+        neighbor_resname = next((a.resname for a in self.atoms if a.resid == neighbor_resid), None)
+
+        # Case 1: the neighboring residue is already part of this region
+        if neighbor_resid in existing_resids:
+            # If that neighbor is itself an NME cap, insert a bridging residue between them
+            if neighbor_resname == 'NME':
+                self._insert_bridge_residue(neighbor_resid)
+            # Either way, no ACE cap is needed here since the chain continues into the region
+            return
+
+        # Case 2: neighbor isn't in the region
+        neighbor_exists = len(MDAwrapper.select_atoms(
+            self._universe,
+            f"segid {N.segid} and resid {neighbor_resid}"
+        )) > 0
+
+        # If the neighbor truly doesn't exist, no cap needed
+        if not neighbor_exists:
+            warnings.warn(
+                f"Skipping ACE cap for resid {resid}: resid {neighbor_resid} "
+                "does not exist in the universe (true chain terminus).",
+                UserWarning, stacklevel=2,
+            )
+            return
+
+        # Case 3: neighbor exists in the universe but not in the region. Attempt to build the ACE cap
+        try:
+            capped = cap_ACE(N)
+        except ValueError as e:
+            self._cap_flags.setdefault(resid, {})['ACE'] = False
+            # Check whether an NME attempt (success or failure) has also already happened for this resid
+            flags = self._cap_flags.get(resid, {})
+            if 'NME' in flags:
+                try:
+                    self._insert_bridge_residue(resid)
+                except Exception as ex:
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}. {ex}", UserWarning, stacklevel=2)
+            warnings.warn(f"ACE cap skipped for resid {resid}. {e}", UserWarning, stacklevel=2)
+            return
+
+        for atom in capped:
+            self.add_atom(atom)
+            if ca_fixed and atom.name == 'CH3':
+                atom.is_fixed = True
+
+        self._cap_flags.setdefault(resid, {})['ACE'] = True
+        flags = self._cap_flags.get(resid, {})
+        if 'ACE' in flags and 'NME' in flags:
+            try:
+                self._insert_bridge_residue(resid)
+            except Exception as be:
+                warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)
+        else:
+            far_resid = neighbor_resid - 1
+            if 'NME' in self._cap_flags.get(far_resid, {}):
+                try:
+                    self._insert_bridge_residue(neighbor_resid)
+                except Exception as be:
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)     
+
+    def add_C_terminus_NME(self, resid: int):
+        """
+        Cap the C-terminus of a single peptide residue with an NME cap.
+
+        If the next resid (resid + 1) is already in the region,
+        the terminus is skipped.
+
+        If the next resid does not exist in the universe (true
+        chain end), a warning is issued and the terminus is skipped.
+
+        If the next resid is Proline, a warning is issued and the
+        residue is skipped.
+
+        Otherwise, the NME cap is built from the neighbouring residue's
+        backbone.
+
+        :param resid: The resid of the residue whose C-terminus should be capped.
+        :type resid: int
+        :raises ValueError: If ``resid`` is not an integer, or matches no
+            atoms in the region, or the residue is missing backbone atoms.
+        """
+        from QMzyme.truncation_utils import cap_NME
+        warnings.filterwarnings("always", message=r"NME cap skipped|Skipping NME cap|Bridge insertion skipped", category=UserWarning,)
+
+        # Checking if the resid is a single integer value
+        if not isinstance(resid, (int, np.integer)):
+            raise ValueError("'resid' must be a single integer.")
+
+        # Build a lookup dict mapping each resid -> list of atoms with that resid
+        by_resid = {}
+        for atom in self.atoms:
+            by_resid.setdefault(atom.resid, []).append(atom)
+
+        # Fetch the atoms belonging to the residue we want to cap (None if resid not present)
+        residue_atoms = by_resid.get(resid)
+        if not residue_atoms:
+            raise ValueError(f"resid {resid} matched no atoms in the region.")
+
+        # Grab the specific C atom object (needed to build the NME cap and for segid lookup)
+        C  = next(a for a in residue_atoms if a.name == backbone_atoms['C'])
+
+        CA = next((a for a in residue_atoms if a.name == backbone_atoms['CA']), None)
+        ca_fixed = CA is not None and getattr(CA, 'is_fixed', False)
+
+        # The residue immediately following this one in sequence (C-terminal neighbor)
+        neighbor_resid = resid + 1
+        # Set of all resids currently present in this region/selection
+        existing_resids = {a.resid for a in self.atoms}
+        # Look up the residue name of the neighbor, if it exists in this region (else None)
+        neighbor_resname = next((a.resname for a in self.atoms if a.resid == neighbor_resid), None)
+
+        # Case 1: the neighboring residue is already part of this region
+        if neighbor_resid in existing_resids:
+            # If that neighbor is itself an ACE cap, insert a bridging residue between them
+            if neighbor_resname == 'ACE':
+                self._insert_bridge_residue(neighbor_resid)
+            # Either way, no NME cap is needed here since the chain continues into the region
+            return
+
+        # Case 2: neighbor isn't in the region — check whether it exists anywhere in the full universe
+        neighbor_exists = len(MDAwrapper.select_atoms(
+            self._universe,
+            f"segid {C.segid} and resid {neighbor_resid}"
+        )) > 0
+
+        # If the neighbor truly doesn't exist, this is a genuine chain terminus — no cap needed
+        if not neighbor_exists:
+            warnings.warn(
+                f"Skipping NME cap for resid {resid}: resid {neighbor_resid} "
+                "does not exist in the universe (true chain terminus).",
+                UserWarning, stacklevel=2,
+            )
+            return
+
+        try:
+            capped = cap_NME(C)
+        except ValueError as e:
+            self._cap_flags.setdefault(resid, {})['NME'] = False
+            flags = self._cap_flags.get(resid, {})
+            if 'ACE' in flags:
+                try:
+                    self._insert_bridge_residue(resid)
+                except Exception as ex:
+                    warnings.warn(f"Bridge insertion skipped for resid {resid}. {ex}", UserWarning, stacklevel=2)
+            warnings.warn(f"NME cap skipped for resid {resid}. {e}", UserWarning, stacklevel=2)
+            return
+
+        for atom in capped:
+            self.add_atom(atom)
+            if ca_fixed and atom.name == 'CH3':
+                atom.is_fixed = True
+
+        self._cap_flags.setdefault(resid, {})['NME'] = True
+        flags = self._cap_flags.get(resid, {})
+        if 'ACE' in flags and 'NME' in flags:
+            try:
+                self._insert_bridge_residue(resid)
+            except Exception as be:
+                warnings.warn(f"Bridge insertion skipped for resid {resid}. {be}", UserWarning, stacklevel=2)
 
     def sorted_atoms(self, override_same_id=False):
         """
@@ -496,7 +817,7 @@ class QMzymeRegion:
 
     def guess_charge(self, verbose=True):
         """
-        Guesses charge based on the residue_charges information in QMzyme\configuration\__init__.py.
+        Guesses charge based on the residue_charges information in QMzyme/configuration/__init__.py.
         QMzyme contains charge information of standard AMBER amino acid residues.
         If non-AMBER residues are present, it will raise an error. To update the charge of the
         unknown residue, the user can use QMzyme.data.residue_charges.update({'unknown residue name': int})
@@ -504,7 +825,7 @@ class QMzymeRegion:
         :param verbose: Returns print statements including warning and estimated charge.
         :type verbose: bool
         """
-        if hasattr(self.atoms[0], "charge"):
+        if all(hasattr(atom, "charge") for atom in self.atoms):
             self.read_charges(verbose)
             return
         txt = ''
@@ -595,6 +916,7 @@ class QMzymeRegion:
         if name == None:
             name = f"{self.name}_{other.name}_combined"
         combined_region = QMzymeRegion(name=name, atoms=combined_atoms, universe=self._universe)
+        combined_region.set_creation_attr(selection_scheme=f"{self.name} + {other.name}")
         setattr(combined_region, "universe", self.atom_group.universe)
         return combined_region
     
@@ -620,8 +942,92 @@ class QMzymeRegion:
             if not atom.is_within(other):
                 atoms.append(atom)
         region = QMzymeRegion(name=name, atoms=atoms, universe=self._universe)
+        region.set_creation_attr(selection_scheme=f"{self.name} - {other.name}")
         return region
-    
+
+    def truncate(self, scheme, selection: str, name: str = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
+        """
+        Truncates the residues in `selection` according to `scheme`.
+
+        If `name` is None (default), this modifies this QMzymeRegion's atoms
+        and truncation/capping metadata in place and returns self. If `name`
+        is given, a new QMzymeRegion with that name is created and returned
+        instead, leaving this QMzymeRegion untouched.
+
+        .. note:: To make the returned region accessible as ``QMzymeModel.<name>``,
+            pass it to :meth:`~QMzyme.QMzymeModel.QMzymeModel.set_region`:
+
+            >>> new_region = QMzymeModel.QMzymeRegion.truncate(scheme=..., selection='all', name='name')
+            >>> QMzymeModel.set_region(model, new_region)
+
+        :param scheme: Specifies the truncation scheme to use. Options can be found
+            in :py:mod:`~QMzyme.TruncationSchemes`.
+        :type scheme: :py:class:`~QMzyme.TruncationSchemes.TruncationScheme` concrete class, 
+            default=:class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon`
+        :param selection: MDAnalysis selection string specifying which residues
+            in the region should be truncated by this call. Residues outside
+            this selection are left untouched.
+        :type selection: str
+        :param name: Name to give to the new truncated region. If None, the
+            region is truncated in place and self is returned.
+        :type name: str, optional, default=None
+        :param remove_methane: Controls how isolated Gly residues (which would
+            otherwise be reduced to a methane upon truncation) are handled.
+            If True, isolated Gly residues are removed from the region. If False,
+            they are truncated and kept as a methane. If None and an isolated Gly is
+            present (and extend_gly_ala_backbone is False), a ValueError is raised
+            prompting the user to decide.
+        :type remove_methane: bool, optional, default=None
+        :param remove_ethane: Controls how isolated Ala residues (which would
+            otherwise be reduced to a ethane upon truncation) are handled. If True,
+            isolated Ala residues are removed from the region. If False, they are
+            are truncated and kept as a ethane. If None and an isolated Ala is
+            present (and extend_gly_ala_backbone is False), a ValueError is raised
+            prompting the user to decide.
+        :type remove_ethane: bool, optional, default=None
+        :param extend_gly_ala_backbone: If True, isolated Gly/Ala residues are
+            capped with ACE/NME groups instead of being removed or flagged,
+            extending the backbone rather than truncating it down to a small
+            organic group. Currently only supported with the
+            :class:`~QMzyme.TruncationSchemes.TerminalAlphaCarbon` scheme.
+        :type extend_gly_ala_backbone: bool, default=False
+        :param override_truncation: Controls behavior for residues in the
+            selection that have already been truncated. If None, a ValueError
+            is raised prompting the user to decide. If False, already-truncated
+            residues are skipped. If True, already-truncated residues are reverted
+            to their untruncated state and re-truncated.
+        :type override_truncation: bool, optional, default=None
+        :param override_capping: Controls behavior for residues in the
+            selection that have already been capped. If None, a ValueError
+            is raised prompting the user to decide. If False, fully-capped
+            residues are skipped; residues capped on only one terminus are
+            still processed so the remaining uncapped terminus can be truncated.
+            If True, already-capped residues are reverted to their uncapped
+            state and re-capped/re-truncated.
+        :type override_capping: bool, optional, default=None
+
+        :returns: self if name is None, otherwise the new truncated QMzymeRegion.
+        :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
+        """
+
+        # Selecting a region based on the truncation scheme
+        s = scheme(
+            region=self,
+            name=name,
+            selection=selection,
+            remove_methane=remove_methane, 
+            remove_ethane=remove_ethane, 
+            extend_gly_ala_backbone=extend_gly_ala_backbone,
+            override_truncation=override_truncation,
+            override_capping=override_capping
+        )
+        truncated_region = s.return_region()
+
+        if name is None:
+            return
+        else:
+            return truncated_region
+
     def get_overlapping_atoms(self, other):
         """
         :param other: Other QMzymeRegion to measure overlap with.
@@ -646,6 +1052,18 @@ class QMzymeRegion:
         for atom in self.atoms:
             atom.segid = segid
     
+    def set_residue_method(self, method_type):
+        """
+        Records the calculation method type (e.g. 'QM', 'QM2', 'XTB') on every
+        residue currently in this region. This is useful when trying to add
+        ACE and NME capping with appropriate method to the CalculateModel instance.
+
+        :param method_type: Method type label to record (e.g. 'QM', 'XTB').
+        :type method_type: str
+        """
+        for res in self.residues:
+            res.method_type = method_type
+    
     # def guess_bonds():
     #     """
     #     Method under development.
@@ -666,7 +1084,12 @@ class QMzymeRegion:
             "Resname": [],
             "Charge": [],
             "Removed atoms": [],
+            "Added atoms": [],
             "Fixed atoms": [],
+            "Truncation scheme": [],
+            "Capping scheme": [],
+            "Calculation method": [],
+            "Segids": [],
         }
         for res in self.residues:
             summary["Resid"].append(res.resid)
@@ -674,9 +1097,14 @@ class QMzymeRegion:
             if not hasattr(res, "charge"):
                 res.guess_charge(verbose=False)
             summary["Charge"].append(res.charge)
-            summary["Removed atoms"].append(res.removed_atoms)
+            summary["Removed atoms"].append([a.name for a in res.removed_atoms])
+            summary["Added atoms"].append([a.name for a in res.added_atoms])
             summary["Fixed atoms"].append([a.name for a in res.get_atoms('is_fixed', True)])
-        summary["Segids"] = [res.atoms[0].segid for res in self.residues]
+            summary["Truncation scheme"].append(getattr(self, '_residue_truncation_attr', {}).get(res.resid, "None") or "None")
+            summary["Capping scheme"].append(res.capping_scheme or "None")
+            summary["Calculation method"].append(res.method_type or "None") 
+            summary["Segids"].append(res.atoms[0].segid)
+
         if filename == None:
             return summary
         if not filename.endswith('.txt'):
@@ -820,6 +1248,112 @@ class QMzymeResidue(QMzymeRegion):
             rep += f"{self.chain}>"
         return rep
 
+    @property
+    def removed_atoms(self):
+        """
+        List of atoms removed from the QMzymeResidue. Often, this is done with
+        remove_atom() method or truncate() method.
+        """
+        removed_atoms=[]
+        u = self.region._universe
+        sel = f'resid {self.resid}'
+        if self.chain is not None and self.chain != 'X' and self.chain != '':
+            sel += f' and chainID {self.chain}'
+        ag = u.select_atoms(sel)
+        for univatom in ag:
+            if univatom.name not in [a.name for a in self.atoms]:
+                missing_atom = mda_atom_to_qmz_atom(univatom)
+                removed_atoms.append(missing_atom)
+        return removed_atoms
+
+    @removed_atoms.setter
+    def removed_atoms(self, value):
+        """
+        Setter to explicitly override or clear removed_atoms.
+        """
+        self._removed_atoms = value
+
+    @property
+    def added_atoms(self):
+        added_atoms = []
+        u = self.region._universe
+        sel = f'resid {self.resid}'
+        if self.chain is not None and self.chain != 'X' and self.chain != '':
+            sel += f' and chainID {self.chain}'
+        ag = u.select_atoms(sel)
+
+        universe_pairs = {(univatom.name, univatom.id) for univatom in ag}
+        for atom in self.atoms:
+            if (atom.name, atom.id) not in universe_pairs:
+                added_atoms.append(atom)
+        return added_atoms
+
+    @added_atoms.setter
+    def added_atoms(self, value):
+        """
+        Setter to explicitly override or clear added_atoms.
+        """
+        self._added_atoms = value
+
+    @property
+    def truncation_params(self):
+        """
+        The truncation scheme applied to this residue (e.g. 'CA_terminal').
+        """
+        return self.region._residue_truncation_attr.get(self.resid, None)
+
+    @truncation_params.setter
+    def truncation_params(self, scheme: str):
+        self.region._residue_truncation_attr[self.resid] = scheme
+
+    @property
+    def capping_scheme(self):
+        """
+        Derived from the actual live state of the region rather than call history.
+        ACE/NME are detected from the resnames of immediately neighboring residues;
+        cap_H is read from the stored record because its atoms are added directly
+        to this residue and cannot be distinguished by neighbor resname alone.
+        """
+        scheme_parts = []
+
+        # Build a resid → {resname, ...} map from the region's current atoms.
+        region_resid_resnames: dict = {}
+        for a in self.region.atoms:
+            region_resid_resnames.setdefault(a.resid, set()).add(a.resname)
+
+        # ACE cap: immediately preceding resid in the region carries resname ACE.
+        if 'ACE' in region_resid_resnames.get(self.resid - 1, set()):
+            scheme_parts.append('cap_ACE')
+
+        # NME cap: immediately following resid in the region carries resname NME.
+        if 'NME' in region_resid_resnames.get(self.resid + 1, set()):
+            scheme_parts.append('cap_NME')
+
+        # cap_H must be stored explicitly — fall back to the dict for this only.
+        stored = self.region._residue_capping_attr.get(self.resid, None)
+        if stored and 'cap_H' in stored:
+            scheme_parts.append('cap_H')
+
+        return ', '.join(scheme_parts) if scheme_parts else None
+
+    @capping_scheme.setter
+    def capping_scheme(self, scheme: str):
+        self.region._residue_capping_attr[self.resid] = scheme
+
+    @property
+    def method_type(self):
+        """
+        The calculation method type (e.g. 'QM', 'QM2', 'XTB', 'ChargeField')
+        assigned to this residue. Tracked independently of segid so that
+        segid retains its original topology role.
+        """
+        return self.region._residue_method_attr.get(self.resid, None)
+
+    @method_type.setter
+    def method_type(self, value: str):
+        self.region._residue_method_attr[self.resid] = value
+
+
     def get_atom(self, atom_name):
         """
         Selects QmzymeAtom with specific atom name within the region.
@@ -842,7 +1376,7 @@ class QMzymeResidue(QMzymeRegion):
 
     def guess_charge(self, verbose=True):
         """
-        Guesses charge based on the residue_charges information in QMzyme\configuration\__init__.py.
+        Guesses charge based on the residue_charges information in QMzyme/configuration/__init__.py.
         QMzyme contains charge information of standard AMBER amino acid residues.
         If non-AMBER residues are present, it will raise an error. To update the charge of the
         unknown residue, the user can use QMzyme.data.residue_charges.update({'unknown residue name': int})
@@ -850,7 +1384,7 @@ class QMzymeResidue(QMzymeRegion):
         :param verbose: Returns print statements including warning and estimated charge.
         :type verbose: bool
         """
-        if hasattr(self.atoms[0], "charge"):
+        if all(hasattr(atom, "charge") for atom in self.atoms):
             self.read_charges(verbose)
             return
         txt = ''
@@ -908,32 +1442,3 @@ class QMzymeResidue(QMzymeRegion):
             else:
                 bb_atoms.append(self.get_atom(atom))
         return bb_atoms
-
-    def remove_atom(self, atom):
-        """
-        :param atom: The atom you want to remove from the QMzymeResidue. 
-        :type atom: :class:`~QMzyme.QMzymeAtom.QMzymeAtom`, required
-
-        .. warning:: Ths will modify the QMzymeResidue directly.
-        """
-
-        if atom in self.atoms:
-            self.atoms.remove(atom)
-            self.region.remove_atom(atom)
-
-    @property
-    def removed_atoms(self):
-        """
-        List of atoms removed from the QMzymeResidue. Often, this is done with
-        remove_atom() method or truncate() method.
-        """
-        removed_atoms=[]
-        u = self.region._universe
-        sel = f'resid {self.resid} and resname {self.resname}'
-        if self.chain is not None and self.chain != 'X' and self.chain != '':
-            sel += f' and chainID {self.chain}'
-        ag = u.select_atoms(sel)
-        for atom in ag:
-            if atom.name not in [a.name for a in self.atoms]:
-                removed_atoms.append(atom.name)
-        return removed_atoms
