@@ -335,7 +335,7 @@ def test_check_override_capping(Test, region_selection, override_capping):
         recapped = next(res for res in model.QM_region.residues if res.resname == 'ALA')
         assert recapped.capping_scheme is not None
 
-def test_check_override_capping_partial(capsys):
+def test_check_override_capping_partial():
     model = GenerateModel(PDB)
     model.set_region(name='region', selection='resid 2')
     qm_method = QMzyme.QM_Method(
@@ -344,13 +344,12 @@ def test_check_override_capping_partial(capsys):
     qm_method.assign_to_region(region=model.region)
 
     model.region.add_N_terminus_ACE(2)
-    model.truncate(
-        scheme=TerminalAlphaCarbon,
-        override_truncation=True,
-        override_capping=False,
-    )
-    captured = capsys.readouterr()
-    assert "only one terminus capped" in captured.out
+    with pytest.warns(UserWarning, match="only one terminus capped"):
+        model.truncate(
+            scheme=TerminalAlphaCarbon,
+            override_truncation=True,
+            override_capping=False,
+        )
 
     res_present = next(r for r in model.QM_region.residues if r.resid == 2)
     assert res_present.capping_scheme == 'cap_ACE, cap_H'
