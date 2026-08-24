@@ -7,7 +7,8 @@
 Module containing functions to truncate a QMzymeRegion based on some logic/scheme.
 """
 
-from QMzyme.data import protein_residues, backbone_atoms
+from QMzyme.data import backbone_atoms
+from QMzyme.data import protein_residues as protein_resname
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.truncation_utils import *
 from QMzyme.CalculateModel import CalculateModel
@@ -63,9 +64,14 @@ class TruncationScheme(abc.ABC):
     If `_gly_ala_check` is None, no Gly/Ala isolation check is performed for the
     subclass (e.g. BetaCarbon).
     """
- 
+    
     def __init__(self, region, name, selection = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
- 
+        warnings.filterwarnings(
+            "always",
+            message=r"Not all residues were truncated or called|Skipping residue|only one terminus capped|will be skipped from the BetaCarbon|skipped/failed",
+            category=UserWarning,
+        )
+        
         if name is not None:
             self.region = QMzymeRegion(name=name, atoms=list(region.atoms), universe=region._universe)
  
@@ -90,27 +96,30 @@ class TruncationScheme(abc.ABC):
         self.extend_gly_ala_backbone = extend_gly_ala_backbone
 
         selection_region = region._universe.select_atoms(self.selection)
-        self.residues_to_truncate = set(int(a.resid) for a in selection_region.residues)
+        self.resid_to_truncate = set(int(a.resid) for a in selection_region.residues)
         self.skip_resids = set()
+        self.skip_resids.update(
+            res.resid for res in self.region.residues if res.resid not in self.resid_to_truncate
+        )
  
         self._check_gly_ala()
         self._check_override_truncation()
         self._check_override_capping()
  
-        # Part for actual truncation! Residues that are no part of residues_to_truncate, skip_resids, and protein_residues are skipped
+        # Part for actual truncation! Residues that are no part of resid_to_truncate, skip_resids, and protein_resname are skipped
         for res in list(self.region.residues):
-            if res.resid not in self.residues_to_truncate:
+            if res.resid in self.skip_resids:
+                if res.resid in self.resid_to_truncate:
+                    res.truncation_params = self.__class__.__name__
                 continue
-            elif res.resid in self.skip_resids:
-                continue
-            elif res.resname not in protein_residues:
+            elif res.resname not in protein_resname:
                 continue
 
             self.truncate(res)
             res.truncation_params = self.__class__.__name__
 
         # Checking if all residues are truncated
-        protein_resid = [res for res in self.region.residues if res.resname in protein_residues]
+        protein_resid = [res for res in self.region.residues if res.resname in protein_resname]
         all_processed = all(
             (getattr(res, 'truncation_params', None) is not None or
              getattr(res, 'capping_scheme', None) is not None)
@@ -123,8 +132,9 @@ class TruncationScheme(abc.ABC):
 
         # Raise warning if the region is not truncated
         if not getattr(self.region, 'truncated', True):
-            print("Warning: not all residues were truncated or capped. 'truncated' attribute not set.")
- 
+            warnings.warn("Not All residues were truncated or capped. 'truncated' attribute not set",
+                          UserWarning, stacklevel=2)
+             
     def _check_gly_ala(self):
         """
         Identify Gly/Ala residues whose truncation would create a small organic group,
@@ -150,7 +160,8 @@ class TruncationScheme(abc.ABC):
         No exception is raised and no action is taken if no Gly/Ala residues
         in the selection would be isolated by truncation.
         """
-        warnings.simplefilter("always", UserWarning)
+        
+        #warnings.filterwarnings("always", category=UserWarning)
         
         if self._gly_ala_check is None:
             return
@@ -169,8 +180,8 @@ class TruncationScheme(abc.ABC):
             resname = res.resname.lower()
             resid = int(res.resid)
 
-            # If the residues are not within residues_to_truncate, skip
-            if resid not in self.residues_to_truncate:
+            # If the residues are not within resid_to_truncate, skip
+            if resid not in self.resid_to_truncate:
                 continue
             
             # If the resname is not Gly or Ala, skip
@@ -287,7 +298,7 @@ class TruncationScheme(abc.ABC):
                 self._capped_gly_ala = set()
 
                 # Create a list of residues to cap
-                to_cap = [int(res.resid) for res, _ in (isolated_gly + isolated_ala) if int(res.resid) in self.residues_to_truncate]
+                to_cap = [int(res.resid) for res, _ in (isolated_gly + isolated_ala) if int(res.resid) in self.resid_to_truncate]
 
                 if not to_cap:
                     return
@@ -329,7 +340,10 @@ class TruncationScheme(abc.ABC):
                                 cap_call(resid)
                             except Exception as e:
                                 # If there is an exception, return the error message
-                                print(f"     {cap_call.__name__}({resid}): skipped/failed: {e}")
+                                warnings.warn(
+                                    f"{cap_call.__name__}({resid}): skipped/failed: {e}",
+                                    UserWarning, stacklevel=2,
+                                )
                                 continue
                             
                             after = {int(r.resid) for r in self.region.residues}
@@ -414,7 +428,7 @@ class TruncationScheme(abc.ABC):
         # Check for residues that are already truncated
         already_truncated = [
             res for res in self.region.residues
-            if res.resid in self.residues_to_truncate
+            if res.resid in self.resid_to_truncate
             and getattr(res, 'truncation_params', None) is not None
             and res.truncation_params is not None
         ]
@@ -441,7 +455,10 @@ class TruncationScheme(abc.ABC):
         # If override_truncation is False, print residues that are being skipped.
         elif self.override_truncation is False:
             for res in already_truncated:
-                print(f"Skipping residue {res}: it has already been truncated with {res.truncation_params}.")
+                warnings.warn(
+                    f"Skipping residue {res}: it has already been truncated with {res.truncation_params}.",
+                    UserWarning, stacklevel=2
+                )
                 self.skip_resids.add(res.resid)
 
         # If override_truncation is True, undo the prior truncation
@@ -475,7 +492,7 @@ class TruncationScheme(abc.ABC):
         # Precompute cap status for each residue in selection
         already_capped = []
         for res in self.region.residues:
-            if res.resid not in self.residues_to_truncate:
+            if res.resid not in self.resid_to_truncate:
                 continue
             if res.resid in gly_ala_capped:
                 continue
@@ -509,10 +526,16 @@ class TruncationScheme(abc.ABC):
                 fully_capped = (has_ace_before and has_nme_after) or res.capping_scheme == 'cap_H'
 
                 if fully_capped:
-                    print(f"Skipping residue {res}: it has already been capped with {res.capping_scheme} or ACE+NME caps present.")
+                    warnings.warn(
+                        f"Skipping residue {res}: it has already been capped with {res.capping_scheme} or ACE+NME caps present.",
+                        UserWarning, stacklevel=2,
+                        )
                     self.skip_resids.add(res.resid)
                 else:
-                    print(f"Residue {res}: only one terminus capped ({res.capping_scheme}). Leaving that side alone; remaining uncapped terminus (if any) will still be truncated.")
+                    warnings.warn(
+                        f"Residue {res}: only one terminus capped ({res.capping_scheme}). Leaving that side alone; remaining uncapped terminus (if any) will still be truncated.",
+                        UserWarning, stacklevel=2,
+                    )
 
         # If override_capping is True, undo the caps and remove ACE/NME cap residues
         if self.override_capping is True:
@@ -562,7 +585,7 @@ class TerminalAlphaCarbon(TruncationScheme):
 
     def truncate(self, res):
         resname = res.resname
-        if resname not in protein_residues:
+        if resname not in protein_resname:
             return
 
         Natom = res.get_atom(backbone_atoms['N'])
@@ -614,7 +637,7 @@ class AlphaCarbon(TruncationScheme):
 
     def truncate(self, res):
         resname = res.resname
-        if resname not in protein_residues:
+        if resname not in protein_resname:
             return
 
         Natom = res.get_atom(backbone_atoms['N'])
@@ -678,7 +701,7 @@ class BetaCarbon(TruncationScheme):
 
     def truncate(self, res):
         resname = res.resname
-        if resname not in protein_residues:
+        if resname not in protein_resname:
             return
 
         if resname in ("GLY", "PRO"):
