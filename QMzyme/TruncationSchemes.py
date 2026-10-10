@@ -68,7 +68,7 @@ class TruncationScheme(abc.ABC):
     def __init__(self, region, name, selection = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         warnings.filterwarnings(
             "always",
-            message=r"Not all residues were truncated or called|Skipping residue|only one terminus capped|will be skipped from the BetaCarbon|skipped/failed",
+            message=r"Not all residues were truncated or called|Skipping residue|Residue(s)|only one terminus capped|will be skipped from the BetaCarbon|skipped/failed",
             category=UserWarning,
         )
         
@@ -121,7 +121,15 @@ class TruncationScheme(abc.ABC):
             res.truncation_params = self.__class__.__name__
 
         if self.nonprotein_resid:
-            warnings.warn(f"Skipping residue {self.nonprotein_resid}: the residue name is not a standard AMBER amino acid nomenclature.",UserWarning, stacklevel=2,)
+            warnings.warn(
+                f"Residue(s) {self.nonprotein_resid} does not follow standard AMBER "
+                "amino acid nomenclature and will be skipped. Its omission may "
+                "result in an incomplete truncation or chemically inaccurate QM model. "
+                "Please verify that the resulting model adequately represents "
+                "the system of interest.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         # Checking if all residues are truncated
         protein_resid = [res for res in self.region.residues if res.resname in protein_resname]
