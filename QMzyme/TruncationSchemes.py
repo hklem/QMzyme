@@ -114,7 +114,8 @@ class TruncationScheme(abc.ABC):
                     res.truncation_params = self.__class__.__name__
                 continue
             elif res.resname not in protein_resname:
-                self.nonprotein_resid.append(res)
+                if res.resname not in ('WAT','HOH'):
+                    self.nonprotein_resid.append(res)
                 continue
 
             self.truncate(res)
@@ -122,8 +123,8 @@ class TruncationScheme(abc.ABC):
 
         if self.nonprotein_resid:
             warnings.warn(
-                f"Residue(s) {self.nonprotein_resid} does not follow standard AMBER "
-                "amino acid nomenclature and will be skipped. Its omission may "
+                f"Residue(s) {self.nonprotein_resid} do not follow standard AMBER "
+                "amino acid nomenclature and will be skipped. Their omission may "
                 "result in an incomplete truncation or chemically inaccurate QM model. "
                 "Please verify that the resulting model adequately represents "
                 "the system of interest.",
