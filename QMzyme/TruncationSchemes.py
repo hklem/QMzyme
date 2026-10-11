@@ -717,7 +717,7 @@ class BetaCarbon(TruncationScheme):
             return
 
         if resname in ("GLY", "PRO"):
-            print(f"{res} will be skipped from the BetaCarbon truncation scheme, due to the residue being {resname}.")
+            print(f"{res} will be skipped from the BetaCarbon truncation scheme, due to {resname}'s unique structure properties playing a critical role in peptide backbone geometry.")
             return
 
         if resname == "ALA":
