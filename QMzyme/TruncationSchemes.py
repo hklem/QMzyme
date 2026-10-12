@@ -725,8 +725,11 @@ class BetaCarbon(TruncationScheme):
 
         elif resname == "PRO":
             warnings.warn(
-                f"Residue {res} will be skipped by the BetaCarbon truncation scheme because proline's side chain beyond Cβ forms part of the pyrrolidine ring "
-                "connecting to the backbone nitrogen; truncation would break the ring and result in an inaccurate representation of the residue.",
+                f"Residue {res} will be skipped by the BetaCarbon truncation scheme "
+                "because proline's side chain beyond Cβ forms part of the pyrrolidine "
+                "ring connecting to the backbone nitrogen; truncation would remove Cδ "
+                "and replace C\u03B3 with a hydrogen, breaking the Cδ\u2013N bond and leaving "
+                "the backbone nitrogen with an unsatisfied valence.",
                 UserWarning, stacklevel=2,
             )
             return            
