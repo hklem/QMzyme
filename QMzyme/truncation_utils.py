@@ -172,7 +172,7 @@ def cap_ACE(replace_atom):
 
 def cap_NME(replace_atom):
     """
-    Builds the atoms of an NME (N-methylamine) capping group from the residue
+    Builds the atoms of an NME (N-methylacetamine) capping group from the residue
     following `replace_atom`, capping the C-terminal cut point of
     `replace_atom`'s residue. This is done by copying N, H, CA of the
     following residue, and methyl-capping the CA. CA of the following
