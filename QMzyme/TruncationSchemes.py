@@ -68,7 +68,7 @@ class TruncationScheme(abc.ABC):
     def __init__(self, region, name, selection = None, remove_methane:bool = None, remove_ethane:bool = None, extend_gly_ala_backbone:bool = False, override_truncation:bool = None, override_capping:bool = None):
         warnings.filterwarnings(
             "always",
-            message=r"Not all residues were truncated or called|Skipping residue|Residue(s)|only one terminus capped|will be skipped from the BetaCarbon|skipped/failed",
+            message=r"Not all residues were truncated or called|Skipping residue|Residue(s)|Residue|only one terminus capped|will be skipped from the BetaCarbon|skipped/failed",
             category=UserWarning,
         )
         
@@ -717,7 +717,10 @@ class BetaCarbon(TruncationScheme):
             return
 
         if resname in ("GLY", "PRO"):
-            print(f"{res} will be skipped from the BetaCarbon truncation scheme, due to {resname}'s unique structure properties playing a critical role in peptide backbone geometry.")
+            warnings.warn(
+                f"Residue {res} will be skipped from the BetaCarbon truncation scheme, due to {resname}'s unique structure properties playing a critical role in peptide backbone geometry.",
+                UserWarning, stacklevel=2,
+            )
             return
 
         if resname == "ALA":
