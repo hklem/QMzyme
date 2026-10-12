@@ -716,12 +716,20 @@ class BetaCarbon(TruncationScheme):
         if resname not in protein_resname:
             return
 
-        if resname in ("GLY", "PRO"):
+        if resname == "GLY":
             warnings.warn(
-                f"Residue {res} will be skipped from the BetaCarbon truncation scheme, due to {resname}'s unique structure properties playing a critical role in peptide backbone geometry.",
+                f"Residue {res} will be skipped by the BetaCarbon truncation scheme because glycine lacks a Cβ atom.",
                 UserWarning, stacklevel=2,
             )
             return
+
+        elif resname == "PRO":
+            warnings.warn(
+                f"Residue {res} will be skipped by the BetaCarbon truncation scheme because proline's side chain beyond Cβ forms part of the pyrrolidine ring "
+                "connecting to the backbone nitrogen; truncation would break the ring and result in an inaccurate representation of the residue.",
+                UserWarning, stacklevel=2,
+            )
+            return            
 
         if resname == "ALA":
             return
