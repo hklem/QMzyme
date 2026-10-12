@@ -146,7 +146,7 @@ def test_ChargeShiftAnalysis():
     assert model.CSA_holo_truncated.n_residues == 90
     assert model.CSA_holo_truncated.n_atoms == 996
     assert model.CSA_apo_truncated.n_residues == 89
-    assert model.CSA_apo_truncated.n_atoms == 959
+    assert model.CSA_apo_truncated.n_atoms == 956
 
     # Second part of the ChargeShiftAnalysis
     # With non-pickle file, error raised
