@@ -55,7 +55,7 @@ def test_QMzymeModel():
     assert model.get_region(region_name='test_region') == region
 
     # negative test
-    with pytest.raises(UserWarning):
+    with pytest.raises(ValueError):
         model.get_region('blah')
 
     # check writing of pymol visualization script
@@ -72,6 +72,8 @@ def test_import_region():
 
     model.set_catalytic_center(selection='resname EQU and segid A')
     model.set_region(selection=DistanceCutoff, cutoff=3)
+
+    assert len(model.regions) == 2
 
     region_19nt = model.import_region(LIG, name='region_19nt')
     QMzyme.data.residue_charges.update({'6VW': 0})

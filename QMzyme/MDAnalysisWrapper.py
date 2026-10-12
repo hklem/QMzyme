@@ -47,7 +47,18 @@ def select_atoms(universe, selection):
 
 def universe_selection(universe, selection):
     sel = universe.select_atoms(selection)
-    return mda.Merge(sel.atoms)
+    new_universe = mda.Merge(sel.atoms)
+
+    if hasattr(universe, 'trajectory') and universe.trajectory.n_frames > 1:
+        current_frame = universe.trajectory.ts.frame
+        coordinates = np.array([
+            sel.positions.copy() for ts in universe.trajectory
+        ])
+        universe.trajectory[current_frame]
+        new_universe.load_new(coordinates, format=mda.coordinates.memory.MemoryReader)
+        new_universe.trajectory[current_frame]
+
+    return new_universe
 
 def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
     """
@@ -74,3 +85,14 @@ def get_neighbors(ag1, ag2, radius, remove_duplicates=True):
         else:
             atoms.append(atom)
     return sum(atoms)
+
+def find(atom_group, name):
+    """
+    Look up a single atom by name within an AtomGroup.
+ 
+    :param atom_group: MDAnalysis AtomGroup to search.
+    :param name: Atom name to search for.
+    :returns: MDAnalysisAtom object.
+    """
+    sel = atom_group.select_atoms(f"name {name}")
+    return sel[0] if len(sel) else None

@@ -93,9 +93,9 @@ class QMzymeModel:
         :type region: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
         """
         if region.n_atoms == 0:
-            raise UserWarning(f"Region contains no atoms and will not be created.")
+            raise ValueError(f"Region contains no atoms and will not be created.")
         if hasattr(self, region.name):
-            raise UserWarning(f"Region with name {region.name} already exists in QMzymeModel {self.name}."+
+            raise ValueError(f"Region with name {region.name} already exists in QMzymeModel {self.name}."+
                                "Please use a different region name or remove the existing region via remove_region({region.name}).")
         setattr(self, region.name, region)
         self.regions.append(region)
@@ -122,7 +122,7 @@ class QMzymeModel:
         try:
             return getattr(self,region_name)
         except:
-            raise UserWarning(f"Region with name {region_name} does not exist. "+
+            raise ValueError(f"Region with name {region_name} does not exist. "+
                               f"Existing regions are: {self.get_region_names()}")
         
     def has_region(self, region_name):
@@ -166,7 +166,7 @@ class QMzymeModel:
         :rtype: :class:`~QMzyme.QMzymeRegion.QMzymeRegion`
         """
         if name is None:
-            raise UserWarning("Please specify name of the new region.")
+            raise ValueError("Please specify name of the new region.")
 
         # Load the replacement ligand into an MDAnalysis universe
         add_universe = MDAnalysis.Universe(region_file)
@@ -292,6 +292,8 @@ class QMzymeModel:
         """
         Prints a formatted overview of the model and its regions, including 
         atom/residue counts, designated methods, and creation parameters.
+        To view more information about a specific region see the
+        QMzymeRegion.QMzymeRegion.summarize() method.
         """
         print("-" * 29)
         print(f"Model Overview: {self.name} ")
@@ -300,7 +302,7 @@ class QMzymeModel:
         print(f"  - total residues: {self.universe.residues.n_residues}")
         print(f"  - total regions: {len(self.regions)}")
         print("-" * 29)
-        print("Region Overview") 
+        print("Region Overview")
         print("-" * 29)
 
         for region in self.regions:
@@ -318,12 +320,21 @@ class QMzymeModel:
             try:
                 attr = region.creation_attr
                 for key, value in attr.items():
-                    # Avoid duplicate printing of counts
-                    if key not in ['total_atoms', 'total_residues']:
-                        print(f"  - {key}: {value}")
-            
+                    if key in ['total_atoms', 'total_residues']:
+                        continue
+                    if key == 'selection_scheme' and 'parent_region' in attr:
+                        continue
+                    print(f"  - {key}: {value}")
             except AttributeError:
-                print("  - selection scheme: information not available")
+                print("  - selection_scheme: information not available")
+
+            # Derive truncation_scheme from residue-level truncation_params
+            residue_schemes = []
+            for scheme in region._residue_truncation_attr.values():
+                if scheme is not None and scheme not in residue_schemes:
+                    residue_schemes.append(scheme)
+            if residue_schemes:
+                print(f"  - truncation_scheme: {residue_schemes}")
 
             print("-" * 29)
 

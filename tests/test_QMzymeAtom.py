@@ -86,7 +86,7 @@ def test_setters():
 
     # is_point_charge
     assert qmz_atom.is_point_charge == False
-    with pytest.raises(UserWarning):
+    with pytest.raises(ValueError):
         qmz_atom.set_point_charge()
     #assert qmz_atom.is_point_charge
 

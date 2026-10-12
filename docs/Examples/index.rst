@@ -13,7 +13,7 @@ A collection of tutorials to help understand the main features of QMzyme.
    QMxTB Calculation
    Ligand Parameterization
    Working with Trajectories
-   QMzyme  Serialization
+   QMzyme Serialization
    Molecule Replacement Using QMzyme
    Verifying Optimized Structures
 
@@ -26,6 +26,7 @@ A collection of "recipes" to perform specific tasks in QMzyme.
    :maxdepth: 2
 
    Inspecting Model Architecture
-   Manipulating QMzymeRegion
+   Modulating QMzymeRegion 
    Pymol Visualization
    Using Various SelectionScheme Classes
+   Using TruncationScheme Classes

@@ -58,13 +58,13 @@ def test_QM_only_calculation():
     # Truncate Model
     print(CalculateModel.calculation)
     print(CalculateModel.calc_type)
-    model.truncate()
+    model.truncate(remove_ethane=False)
 
     # Write QM Input File
     model.write_input()
     assert 'QCALC' in os.listdir()
-    assert 'cutoff_5_truncated.inp' in os.listdir('QCALC')
-    with open(os.path.join('QCALC', 'cutoff_5_truncated.inp'), 'r') as f:
+    assert 'QM_region.inp' in os.listdir('QCALC')
+    with open(os.path.join('QCALC', 'QM_region.inp'), 'r') as f:
         file = f.read()
     qm_input = file[file.find('!')+1:].split('\n')[0]
     assert qm_input.endswith(model.cutoff_5.method["qm_input"])
@@ -139,7 +139,7 @@ def test_QMXTB_calculation():
     model.cutoff_5.set_fixed_atoms(atoms=c_alpha_atoms)
 
     # check that warning is raised if a non-QM method is set before a QM method is set.
-    # with pytest.raises(UserWarning):
+    # with pytest.raises(ValueError):
     #     assert XTB_Method().assign_to_region(region=model.cutoff_5)
 
     qm_method = QM_Method(basis_set='6-31G*', 
@@ -149,7 +149,7 @@ def test_QMXTB_calculation():
 
     qm_method.assign_to_region(region=model.catalytic_center)
     XTB_Method().assign_to_region(region=model.cutoff_5)
-    model.truncate()
+    model.truncate(remove_ethane=False)
     model.write_input("test_qmxtb")
     assert CalculateModel.calculation['QMXTB'].n_atoms != model.cutoff_5.n_atoms
     with open(os.path.join('QCALC', 'test_qmxtb.inp'), 'r') as f:
@@ -196,14 +196,14 @@ def test2_QM_XTB_calculation():
     c_alpha_atoms = xtb_region.get_atoms(attribute='name', value='CA')
     xtb_region.set_fixed_atoms(atoms=c_alpha_atoms)
     xtb_method = XTB_Method().assign_to_region(region=xtb_region)
-    with pytest.raises(UserWarning):
+    with pytest.raises(ValueError):
         # you cannot add a region with the same name
         model.set_region(name='xtb_region', selection=xtb_region)
     model.remove_region('xtb_region') # replacing this region
     # need to add to model so combined regions can be truncated 
     model.set_region(name='xtb_region', selection=xtb_region)
 
-    model.truncate()
+    model.truncate(remove_ethane=False)
     model.write_input('test2_qmxtb')
 
     with open(os.path.join('QCALC', 'test2_qmxtb.inp'), 'r') as f:

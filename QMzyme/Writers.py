@@ -151,7 +151,7 @@ class QMQM2Writer(Writer):
         if high_region is None:
             high_region = CalculateModel.calculation['QM']
         if high_region.method["program"] != 'orca':
-            raise UserWarning("QM/QM2 calculation only supported for ORCA program.")
+            raise ValueError("QM/QM2 calculation only supported for ORCA program.")
         if low_region is None:
             low_region = CalculateModel.calculation['QM2']
         if full_region is None:
@@ -282,7 +282,7 @@ class QMXTBWriter(Writer):
         if high_region is None:
             high_region = CalculateModel.calculation['QM']
         if high_region.method["program"] != 'orca':
-            raise UserWarning("QM/QM2 calculation only supported for ORCA program.")
+            raise ValueError("QM/QM2 calculation only supported for ORCA program.")
         if low_region is None:
             low_region = CalculateModel.calculation['XTB']
         if full_region is None:
@@ -327,7 +327,7 @@ class WriterFactory:
         """
         writer = WriterFactory.writers.get(writer_type)
         if not writer:
-            raise UserWarning(f"No writer detected for calculation type {writer_type}.")
+            raise ValueError(f"No writer detected for calculation type {writer_type}.")
         return writer(filename, memory, nprocs, **kwargs)
     
 WriterFactory.register_writer('QM', QMWriter)
@@ -339,7 +339,7 @@ WriterFactory.register_writer('QMChargeField', QMMMWriter)
 def print_details(filename, format):
     filename = check_filename(filename, format)
     pth = os.path.join(os.path.abspath(''), 'QCALC')
-    print(f"File {os.path.join(pth, filename)} created.")
+    #print(f"File {os.path.join(pth, filename)} created.")
 
 def qprep_dict(method_dict):
     d = copy.copy(method_dict)

@@ -125,10 +125,10 @@ class QMzymeAtom:
         Sets ``is_point_charge=True`` for QMzymeAtom instance, unless 'value=False' is passed. This will eventually
         be used for calculations with charge embedding.
 
-        :raises: UserWarning if the atom does not have the attribute 'charge'.
+        :raises: ValueError if the atom does not have the attribute 'charge'.
         """
         if not hasattr(self, "charge"):
-            raise UserWarning(f"Cannot set atom {self} as point_charge because no charge information found.")
+            raise ValueError(f"Cannot set atom {self} as point_charge because no charge information found.")
         self.is_point_charge = value
 
     def get_chain(self):
