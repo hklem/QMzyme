@@ -32,6 +32,7 @@ from QMzyme.TruncationSchemes import TerminalAlphaCarbon
 from QMzyme.CalculateModel import CalculateModel, CalculationFactory
 from QMzyme.Writers import WriterFactory
 from QMzyme.data import protein_residues
+import warnings
 
 class GenerateModel(QMzymeModel):
     """
@@ -78,6 +79,11 @@ class GenerateModel(QMzymeModel):
 
     """
     def __init__(self, *args, name=None, universe=None, select_atoms='all', frame=0, pickle_file=None, **kwargs):
+        warnings.filterwarnings(
+            "always",
+            message=r"Model has not been truncated.",
+            category=UserWarning,
+        )
         CalculateModel._reset()
         super().__init__(*args, name=name, universe=universe, frame=frame, select_atoms=select_atoms, pickle_file=pickle_file, **kwargs)
 
@@ -284,16 +290,23 @@ class GenerateModel(QMzymeModel):
         if region is None or not getattr(region, "truncated", False):
             already_truncated = [res for res in region.residues if getattr(res, 'truncation_params', None) is not None]
             if not already_truncated:
-                print("\nWARNING: model has not been truncated. Resulting model may "+
-                    "not be a chemically complete structure (i.e., incomplete atomic "+
-                    "valencies due to removed atoms).\n")
+                warnings.warn(
+                    "The model has not been truncated. The resulting model may "+
+                    "not be a chemically complete structure (i.e., it may have "+
+                    "incomplete atomic valencies due to removed atoms).",
+                    UserWarning, stacklevel=2,
+                )
             else:
                 protein_resid = [res for res in region.residues if res.resname in protein_residues]
-                not_truncated = not_truncated = [res for res in protein_resid if getattr(res, 'truncation_params', None) is None]
-                raise ValueError("\nWARNING: model is only partially truncated. Resulting model may "+
-                    "not be a chemically complete structure (i.e., incomplete atomic "+
+                not_truncated = [res for res in protein_resid
+                    if not (any(s != 'BetaCarbon' for s in (getattr(res, 'truncation_params', None) or []))
+                    or getattr(res, 'capping_scheme', None) is not None)
+                ]
+                raise ValueError("The model is only partially truncated. The resulting model may "+
+                    "not be a chemically complete structure (i.e., it may have incomplete atomic "+
                     "valencies due to removed atoms).\n"
-                    f"Please truncate {not_truncated} using GenerateModel.truncate() or QMzymeRegion.truncate().")
+                    f"Please truncate {not_truncated} using GenerateModel.truncate() "+
+                    "or QMzymeRegion.truncate() with AlphaCarbon or TerminalAlphaCarbon TruncationScheme subclass.")
         
         writer_type = CalculateModel.calc_type
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
