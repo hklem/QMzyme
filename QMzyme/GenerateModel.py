@@ -292,8 +292,8 @@ class GenerateModel(QMzymeModel):
             if not already_truncated:
                 warnings.warn(
                     "The model has not been truncated. The resulting model may "+
-                    "not be a chemically complete structure (i.e., it may have "+
-                    "incomplete atomic valencies due to removed atoms).",
+                    "not be a chemically complete structure (i.e., it may contain "+
+                    "incomplete backbone structures or unsatisfied backbone valencies).",
                     UserWarning, stacklevel=2,
                 )
             else:
@@ -303,10 +303,11 @@ class GenerateModel(QMzymeModel):
                     or getattr(res, 'capping_scheme', None) is not None)
                 ]
                 raise ValueError("The model is only partially truncated. The resulting model may "+
-                    "not be a chemically complete structure (i.e., it may have incomplete atomic "+
-                    "valencies due to removed atoms).\n"
+                    "not be a chemically complete structure (i.e., it may contain incomplete "+
+                    "backbone structures or unsatisfied backbone valencies).\n"
                     f"Please truncate {not_truncated} using GenerateModel.truncate() "+
-                    "or QMzymeRegion.truncate() with AlphaCarbon or TerminalAlphaCarbon TruncationScheme subclass.")
+                    "or QMzymeRegion.truncate() with AlphaCarbon or "+
+                    "TerminalAlphaCarbon TruncationScheme subclass.")
         
         writer_type = CalculateModel.calc_type
         writer = WriterFactory.make_writer(writer_type, filename, memory, nprocs)
