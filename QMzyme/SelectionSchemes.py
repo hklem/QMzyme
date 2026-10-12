@@ -327,8 +327,6 @@ class ChargeShiftAnalysis(SelectionScheme):
                 model = QMzyme.GenerateModel("model.pkl") 
                 model.set_region(selection=QMzyme.SelectionSchemes.ChargeShiftAnalysis, holo_output_files={str}, apo_output_files={str}, pop={str}, charge_threshold={float})
                 
-
-
     .. note::
 
         Users are encouraged to evaluate the resulting region. There may be situations where a
