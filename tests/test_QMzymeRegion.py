@@ -263,7 +263,7 @@ def test_truncate():
     # Truncation should not add atoms beyond what the original selection had
     assert model.test.n_atoms < n_atoms_before
     assert model.test.n_atoms == 79
-    assert all(val == 'TerminalAlphaCarbon' for val in model.test._residue_truncation_attr.values())
+    assert all(val == ['TerminalAlphaCarbon'] for val in model.test._residue_truncation_attr.values())
     assert model.test._residue_capping_attr[5] == 'cap_H'
     assert all(val == 'QM' for val in model.test._residue_method_attr.values())
 
@@ -280,25 +280,25 @@ def test_truncate():
     for resid in range(1, 6):
         res = region.get_residue(resid)
         assert res.removed_atoms == []
-        assert res.truncation_params == 'TerminalAlphaCarbon'
+        assert res.truncation_params == ['TerminalAlphaCarbon']
 
     # AlphaCarbon: resid 6-10
     for resid in range(6, 11):
         res = region.get_residue(resid)
-        assert res.truncation_params == 'AlphaCarbon'
+        assert res.truncation_params == ['AlphaCarbon']
         assert res.capping_scheme == 'cap_H'
         assert res.removed_atoms != []
 
     # BetaCarbon: resid 11-15
     res_11 = region.get_residue(11)
-    assert res_11.truncation_params == 'BetaCarbon'
+    assert res_11.truncation_params == ['BetaCarbon']
     assert res_11.removed_atoms == []
     assert res_11.added_atoms == []
     assert res_11.capping_scheme is None
 
     for resid in [12, 13, 14, 15]:
         res = region.get_residue(resid)
-        assert res.truncation_params == 'BetaCarbon'
+        assert res.truncation_params == ['BetaCarbon']
 
     for resid in [12, 13, 15]:
         res = region.get_residue(resid)
