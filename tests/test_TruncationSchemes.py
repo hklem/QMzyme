@@ -394,8 +394,8 @@ def test_skip_resids(Test, region_selection, setup, override_truncation, overrid
         region = TerminalAlphaCarbon(region, name='first_pass').return_region()
 
         assert region.resids == [1, 2]
-        assert region.get_residue(1).truncation_params == 'TerminalAlphaCarbon'
-        assert region.get_residue(2).truncation_params == 'TerminalAlphaCarbon'
+        assert region.get_residue(1).truncation_params == ['TerminalAlphaCarbon']
+        assert region.get_residue(2).truncation_params == ['TerminalAlphaCarbon']
 
     elif setup == 'partial_cap':
         region.add_N_terminus_ACE(2)
@@ -589,7 +589,7 @@ def test_BetaCarbon(Test, init_file, region_selection, truncation_selection):
         trunc_names = [atom.name for atom in trunc_res.atoms]
 
         if resid in target_resids:
-            assert trunc_res.truncation_params == 'BetaCarbon'
+            assert trunc_res.truncation_params == ['BetaCarbon']
         else:
             assert trunc_res.truncation_params is None
 
