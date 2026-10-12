@@ -12,6 +12,7 @@ from QMzyme.data import protein_residues as protein_resname
 from QMzyme.QMzymeRegion import QMzymeRegion
 from QMzyme.truncation_utils import *
 from QMzyme.CalculateModel import CalculateModel
+import warnings
 import abc
 
 
@@ -111,7 +112,7 @@ class TruncationScheme(abc.ABC):
         for res in list(self.region.residues):
             if res.resid in self.skip_resids:
                 if res.resid in self.resid_to_truncate:
-                    res.truncation_params = self.__class__.__name__
+                    res.truncation_params = getattr(res, 'truncation_params', None) or [self.__class__.__name__]
                 continue
             elif res.resname not in protein_resname:
                 if res.resname not in ('WAT','HOH'):
@@ -119,7 +120,7 @@ class TruncationScheme(abc.ABC):
                 continue
 
             self.truncate(res)
-            res.truncation_params = self.__class__.__name__
+            res.truncation_params = [*(getattr(res, 'truncation_params', None) or []), self.__class__.__name__]
 
         if self.nonprotein_resid:
             warnings.warn(
@@ -135,8 +136,8 @@ class TruncationScheme(abc.ABC):
         # Checking if all residues are truncated
         protein_resid = [res for res in self.region.residues if res.resname in protein_resname]
         all_processed = all(
-            (getattr(res, 'truncation_params', None) is not None or
-             getattr(res, 'capping_scheme', None) is not None)
+            (any(s != 'BetaCarbon' for s in (getattr(res, 'truncation_params', None) or []))
+            or getattr(res, 'capping_scheme', None) is not None)
             for res in protein_resid
         ) 
 
@@ -423,8 +424,9 @@ class TruncationScheme(abc.ABC):
     def _check_override_truncation(self):
         """
         Identify residues in the selection that have already been truncated
-        (i.e. `QMzymeResidue.trucation_params` is not None and resolve them according
-        to the override_truncation argument.
+        (i.e. `QMzymeResidue.truncation_params` contains a scheme other than BetaCarbon,
+        or BetaCarbon when the current scheme is also BetaCarbon) and resolve them
+        according to the override_truncation argument.
  
         If override_truncation is None and all or part of the region has previously been truncated, raise ValueError with resolution protocol.
         
@@ -441,8 +443,8 @@ class TruncationScheme(abc.ABC):
         already_truncated = [
             res for res in self.region.residues
             if res.resid in self.resid_to_truncate
-            and getattr(res, 'truncation_params', None) is not None
-            and res.truncation_params is not None
+            and any(s != 'BetaCarbon' or s == self.__class__.__name__
+                    for s in getattr(res, 'truncation_params', None) or ())
         ]
 
         # If nothing is already truncated, return
